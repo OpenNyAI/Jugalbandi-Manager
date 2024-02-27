@@ -1,0 +1,13 @@
+#navbar {
+    display: flex;
+    flex-direction: column;
+    border-right: 2px solid #BFBFBF;
+    background: #FFF;
+    height: 100vh;
+    position: fixed;
+}
+
+#navbar a {
+    padding: 12px 20px;
+    fill: #B6B6B6;
+}

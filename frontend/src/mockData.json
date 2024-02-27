@@ -1,0 +1,25 @@
+{
+    "projects": [
+        {
+            "name": "Bandhu bot V03",
+            "credits": "25.63",
+            "status": "Active",
+            "added": "02/12/23",
+            "modified": "02/12/23"
+        },
+        {
+            "name": "Bandhu bot V02",
+            "credits": "25.63",
+            "status": "Active",
+            "added": "02/12/23",
+            "modified": "02/12/23"
+        },
+        {
+            "name": "Test Bot 03",
+            "credits": "25.63",
+            "status": "Configuration Pending",
+            "added": "02/12/23",
+            "modified": "02/12/23"
+        }
+    ]
+}

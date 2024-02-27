@@ -1,0 +1,18 @@
+.card {
+    cursor: pointer;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.card-img {
+    width: 90px;
+    height: 90px;
+    border-radius: 4px;
+    background-size: auto 48px;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.card-title {
+    text-align: center;
+}

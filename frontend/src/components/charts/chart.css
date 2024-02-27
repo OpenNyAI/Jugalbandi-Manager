@@ -1,0 +1,50 @@
+.barChart {
+  width: 400px;
+  height: 200px;
+}
+
+.pieChart {
+  width: 200px;
+  height: 200px;
+}
+
+.chartComponent {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 100px;
+}
+
+.chartPage {
+  margin: 50px auto;
+  width: 900px;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.chartGrid {
+  display: flex;
+  gap: 20px;
+}
+.chartLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.doughnutChart {
+  width: 275px;
+  height: 275px;
+}
+
+.chartMain {
+  border: 1px solid #ddd;
+  padding: 20px 50px;
+  border-radius: 10px;
+}
+
+.chartMain h3 {
+  margin: 0 0 20px 0;
+}

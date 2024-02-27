@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "jbmanager"
+version = "0.1.0"
+description = ""
+authors = []
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.108.0"
+python-dotenv = "^1.0.0"
+confluent-kafka = "^2.3.0"
+uvicorn = "^0.25.0"
+langchain = "0.0.351"
+pgvector = "^0.2.4"
+psycopg2-binary = "^2.9.9"
+langchain-openai = "^0.0.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

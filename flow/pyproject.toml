@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "flow"
+version = "0.1.0"
+description = ""
+authors = []
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+python-dotenv = "^1.0.0"
+confluent-kafka = "^2.3.0"
+requests = "^2.31.0"
+openai = "^1.8.0"
+tenacity = "^8.2.3"
+termcolor = "^2.4.0"
+transitions = "^0.9.0"
+pycryptodome = "^3.20.0"
+sqlalchemy = "^2.0.25"
+asyncpg = "^0.29.0"
+pydantic = "^2.5.3"
+azure-storage-blob = "^12.19.0"
+azure-identity = "^1.15.0"
+aiofiles = "^23.2.1"
+aiohttp = "^3.9.1"
+psycopg2-binary = "^2.9.9"
+
+[tool.poetry.group.dev.dependencies]
+fastapi = "^0.109.0"
+uvicorn = "^0.26.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

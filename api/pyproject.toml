@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "api"
+version = "0.1.0"
+description = ""
+authors = []
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.108.0"
+python-dotenv = "^1.0.0"
+confluent-kafka = "^2.3.0"
+uvicorn = "^0.25.0"
+requests = "^2.31.0"
+asyncpg = "^0.29.0"
+pytz = "^2023.3.post1"
+cachetools = "^5.3.2"
+pydantic = "^2.5.3"
+sqlalchemy = "^2.0.25"
+psycopg2-binary = "^2.9.9"
+cryptography = "^42.0.4"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

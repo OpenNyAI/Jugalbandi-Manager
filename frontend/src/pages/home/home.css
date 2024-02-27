@@ -1,0 +1,113 @@
+.home {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.top-section {
+    width: 85%;
+    display: flex;
+    margin-top: 100px;
+    gap: 70px;
+}
+
+.cards-container {
+    display: flex;
+    gap: 30px;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    font-weight: 500;
+}
+
+.user-info svg {
+    cursor: pointer;
+}
+
+.user-info .type, .user-info .value {
+    font-size: 14px;
+    line-height: 30px;
+}
+
+.user-info .value {
+    color: #5F5D5D;
+}
+
+.user-info .value svg {
+    height: 20px;
+}
+
+.user-info .type svg {
+    width: 14px;
+}
+
+.separator {
+    width: 100%;
+    height: 2px;
+    background: #BFBFBF;
+    margin: 53px 0;
+}
+.projects-container {
+    width: 85%;
+}
+.projects-container .title {
+    font-size: 28px;
+    font-weight: 500;
+}
+.title-container {
+    display: flex;
+    justify-content: space-between;
+}
+
+.projects-container .columns {
+    display: flex;
+    color: #535353;
+    font-size: 18px;
+    font-weight: 700;
+    margin: 15px 0 54px 450px;
+}
+.guide .card-img {
+    background-color: #FFF5EA;
+    background-image: url(/guide.png);
+}
+.blogs .card-img {
+    background-color: #EAF4FF;
+    background-image: url(/blogs.png);
+} 
+.community .card-img {
+    background-color: #F3FFF1;
+    background-image: url(/community.png);
+}
+.faq .card-img {
+    background-color: #FFF2F2;
+    background-image: url(/faq.png);
+}
+.credits {
+    width: 100px;
+}
+
+.status {
+    width: 250px;
+    padding-right: 25px;
+}
+
+.added {
+    width: 150px;
+}
+
+.modified {
+    width: 150px;
+}
+
+@media (min-width: 1600px) {
+    .top-section {
+        width: 75%;
+    }
+    .projects-container {
+        width: 75%;
+    }
+}

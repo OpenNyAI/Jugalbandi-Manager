@@ -1,0 +1,30 @@
+.project {
+    display: flex;
+    font-size: 18px;
+}
+
+.project .name {
+    width: 250px;
+    font-weight: 700;
+}
+
+.project svg {
+    margin: 0 12px;
+    cursor: pointer;
+}
+
+.project .settings-icon {
+    margin: 0 95px 0 35px;
+}
+
+.project .status {
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+}
+
+.project-container .bottom-line {
+    height: 1px;
+    background: #BFBFBF;
+    margin: 25px 0;
+}
