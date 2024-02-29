@@ -11,3 +11,7 @@
     padding: 12px 20px;
     fill: #B6B6B6;
 }
+.logout-button {
+    bottom: 70px;
+    position: absolute;
+}

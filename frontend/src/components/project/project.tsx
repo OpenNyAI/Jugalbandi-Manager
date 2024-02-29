@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
 import './project.css'
+import React from 'react';
 import moment from 'moment';
 import { sendRequest } from '@/api';
+import { useAuth } from '@/context/AuthContext';
 
 interface IProjectProps {
     id: string;
@@ -21,6 +23,15 @@ interface IProjectProps {
 
 function Project(props: IProjectProps) {
     const { refreshBots, id, name, credits, status, created_at, modified, showModel, setDataForModel, required_credentials, credentials } = props;
+    const { getAuthMethodType, getToken } = useAuth();
+    const [token, setToken] = React.useState('');
+    
+    React.useEffect(() => {
+        getToken().then((token:string) => {
+            setToken(token);
+        });
+    }, []);
+
     const APIHOST = import.meta.env.VITE_SERVER_HOST;
     let statusColor = '#000';
     switch (status.toLowerCase()) {
@@ -68,10 +79,13 @@ function Project(props: IProjectProps) {
     }
 
     const pauseBot = () => {
+        if (!token) return;
         if (confirm(`Are you sure want to pause this ${name}?`)) {
             sendRequest({
                 url: `${APIHOST}/bot/${id}/deactivate`,
-                method: "GET"
+                method: "GET",
+                accessToken: token,
+                loginMethod: getAuthMethodType()
             }).then((response:any) => {
                 console.log(response);
                 refreshBots();
@@ -80,10 +94,13 @@ function Project(props: IProjectProps) {
     }
 
     const deleteBot = () => {
+        if (!token) return;
         if (confirm(`Are you sure want to delete this ${name}?`)) {
             sendRequest({
                 url: `${APIHOST}/bot/${id}`,
-                method: "DELETE"
+                method: "DELETE",
+                accessToken: token,
+                loginMethod: getAuthMethodType()
             }).then((response:any) => {
                 console.log(response);
                 refreshBots();

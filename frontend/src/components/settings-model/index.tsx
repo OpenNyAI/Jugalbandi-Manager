@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './settings-model.css';
 import { sendRequest } from '@/api';
+import { useAuth } from '@/context/AuthContext';
 
 interface InputConfig {
   value: string | number | boolean;
@@ -22,11 +23,19 @@ interface Props {
 
 const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelType }) => {
   const [inputElements, setInputElements] = useState<Record<string, InputConfig>>({});
+  const { getToken, getAuthMethodType } = useAuth();
+  const [token, setToken] = useState('');
   const APIHOST = import.meta.env.VITE_SERVER_HOST;
 
   useEffect(() => {
     setInputElements(inputs || {});
   }, [inputs]);
+
+  useEffect(() => {
+    getToken().then((token: string) => {
+      setToken(token);
+    });
+  }, []);
 
   const updateValue = (key: string, newValue: string | number | boolean) => {
     setInputElements(prevState => ({
@@ -79,6 +88,8 @@ const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelT
         url: apiEndpoint,
         method: 'POST',
         body: JSON.stringify(data ),
+        accessToken: token,
+        loginMethod: getAuthMethodType(),
         headers: {
             'Content-Type': 'application/json',
         }

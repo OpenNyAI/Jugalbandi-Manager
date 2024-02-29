@@ -5,6 +5,7 @@ import data from '@/mockData.json';
 import Project from '@/components/project/project';
 import { sendRequest } from '@/api';
 import SettingsModal from '@/components/settings-model';
+import { useAuth } from '@/context/AuthContext';
 const APIHOST = import.meta.env.VITE_SERVER_HOST;
 
 interface props {
@@ -12,20 +13,30 @@ interface props {
 }
 
 export const Home:React.FunctionComponent = (props:props) => {
+    const { getToken, getAuthMethodType } = useAuth();
+    const [token, setToken] = React.useState('');
     const [refreshBots, incrementrefreshBots] = React.useState(0);
     const [projects, setProjects] = React.useState([]);
     const [loading, setLoading] = React.useState(false);
     const [isSettingsModelOpen, showModel] = React.useState(false);
     const [modelData, setDataForModel] = React.useState<any>();
     React.useEffect(() => {
+       getToken().then((token:string) => {
+            setToken(token);
+        });
+    },[])
+    React.useEffect(() => {
+        if (!token) return;
         setLoading(true);
         sendRequest({
-            url: `${APIHOST}/bots`
+            url: `${APIHOST}/bots`,
+            accessToken: token,
+            loginMethod: getAuthMethodType()
          }).then((response:any) => {
             setProjects(response);
             setLoading(false);
         });
-    },[refreshBots])
+    },[refreshBots, token])
 
     const closeModal = () => {
         showModel(false);

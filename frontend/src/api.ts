@@ -15,6 +15,7 @@ export const sendRequest = ({
     url='',
     method="GET",
     accessToken=null,
+    loginMethod=null,
     body={},
     headers = {},
   }) => {
@@ -22,6 +23,9 @@ export const sendRequest = ({
       if (accessToken) {
           const bearer = `Bearer ${accessToken}`;
           header.append("Authorization", bearer);
+      }
+      if (loginMethod) {
+          header.append("loginMethod", loginMethod);
       }
       const options:any = {
           method: method,
@@ -54,4 +58,4 @@ export const sendRequest = ({
       }
     });
   };
-  
+   

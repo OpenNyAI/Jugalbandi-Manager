@@ -2,6 +2,7 @@ import React from "react";
 import { useLocation } from "react-router-dom";
 import { sendRequest } from "@/api";
 import AudioPlayer from '@/components/audio-player';
+import { useAuth } from "@/context/AuthContext";
 import moment from 'moment';
 import './chat.css';
 const APIHOST = import.meta.env.VITE_SERVER_HOST;
@@ -14,22 +15,36 @@ export const Chat:React.FunctionComponent = (props: props) => {
   const [selectedSession, setSelectedSession] = React.useState<any>(null);
   const [playingId, setPlayingId] = React.useState<string | null>(null);
   const [sessionMessages, setSessionMessages] = React.useState<any>([]);
+  const { getToken, getAuthMethodType } = useAuth();
+  const [token, setToken] = React.useState('');
   const location = useLocation();
+
   const { from, bot_id } = location.state;
   React.useEffect(() => {
     if (bot_id) {
       sendRequest({
-        url: `${APIHOST}/chats/${bot_id}`
+        url: `${APIHOST}/chats/${bot_id}`,
+        accessToken: token,
+        loginMethod: getAuthMethodType()
       }).then((response:any) => {
         setChatSessions(response);
         loadMessages(response[0]);
       });
     }
   }, [bot_id]);
+
+  React.useEffect(() => {
+    getToken().then((token:string) => {
+      setToken(token);
+    });
+  },[]);
+
   const loadMessages = (session:any) => {
     setSelectedSession(session.id);
     sendRequest({
-      url: `${APIHOST}/chats/${bot_id}/sessions/${session.id}`
+      url: `${APIHOST}/chats/${bot_id}/sessions/${session.id}`,
+      accessToken: token,
+      loginMethod: getAuthMethodType()
     }).then((response:any) => {
       if (response && response.length) {
         setSessionMessages(response[0]);

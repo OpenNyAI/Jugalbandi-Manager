@@ -5,7 +5,7 @@ import json
 import os
 from typing import List
 import uuid
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, APIRouter, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from utils import extract_reference_id
 from confluent_kafka import KafkaException
@@ -27,6 +27,10 @@ from lib.data_models import (
 )
 from lib.jb_logging import Logger
 from lib.models import JBBot
+
+import httpx
+import jwt
+from datetime import datetime, timedelta
 
 from crud import (
     create_turn,
@@ -59,12 +63,77 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+
 kafka_channel_topic = os.getenv("KAFKA_CHANNEL_TOPIC")
 flow_topic = os.getenv("KAFKA_FLOW_TOPIC")
 
 # Connect Kafka Producer automatically using env variables
 # and SASL, if applicable
 producer = KafkaProducer.from_env_vars()
+
+public_keys = {}
+MS_ISSUER = None
+MS_JWKS_URI = None
+last_updated = datetime.min
+
+MS_CLIENT_ID = os.environ.get("MS_CLIENT_ID")
+MS_TENANT_ID = os.environ.get("MS_TENANT_ID")
+GOOGLE_TOKEN_INFO_URL = "https://www.googleapis.com/oauth2/v3/tokeninfo"
+
+async def fetch_ms_public_keys():
+    global MS_ISSUER, MS_JWKS_URI, public_keys, last_updated
+    if datetime.now() - last_updated > timedelta(hours=1):
+        url = f"https://login.microsoftonline.com/{MS_TENANT_ID}/v2.0/.well-known/openid-configuration"
+        async with httpx.AsyncClient() as client:
+            config = await client.get(url)
+            if config.status_code != 200:
+                raise HTTPException(status_code=500, detail=f"Error fetching token config: {config.text}")
+            data = config.json()
+            MS_ISSUER = data["issuer"]
+            MS_JWKS_URI = data["jwks_uri"]
+            ms_jwks = await client.get(MS_JWKS_URI)
+            if ms_jwks.status_code != 200:
+                raise HTTPException(status_code=500, detail=f"Error fetching token config: {ms_jwks.text}")
+            for jwk in ms_jwks.json()["keys"]:
+                public_keys[f'ms_{jwk["kid"]}'] = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(jwk))
+            last_updated = datetime.now()
+async def verify_jwt(Request: Request):
+    token = Request.headers.get("Authorization")
+    login_method = Request.headers.get("Login-Method")
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing Authorization")
+    if login_method == "ms":
+        await fetch_ms_public_keys()
+        unverified_header = jwt.get_unverified_header(token.replace('Bearer ', ''))
+        kid = unverified_header['kid']
+        key = public_keys[f"ms_{kid}"]
+        try:
+            jwt_payload = jwt.decode(
+                token, 
+                key,
+                audience=MS_CLIENT_ID,
+                issuer=MS_ISSUER,
+                algorithms=["RS256"],
+                options={"verify_signature": True}
+                )
+            return jwt_payload
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(status_code=401, detail="Token Expired")
+        except jwt.InvalidTokenError:
+            raise HTTPException(status_code=401, detail="Invalid Token")
+    elif login_method == "google":
+        async with httpx.AsyncClient() as client:
+            token_info = await client.get(f"{GOOGLE_TOKEN_INFO_URL}?id_token={token}")
+            if token_info.status_code != 200:
+                raise HTTPException(status_code=401, detail="Invalid Token")
+            token_info = token_info.json()
+            return token_info
+
+router = APIRouter(
+    dependencies=[Depends(verify_jwt)],
+)
+
 
 
 def produce_message(message: str, topic: str = kafka_channel_topic):
@@ -94,8 +163,8 @@ def read_root():
     return {"Hello": "World"}
 
 
-@app.get("/bots")
-async def get_bots():
+@router.get("/bots")
+async def get_bots(depends=verify_jwt):
     bots = await get_bot_list()
     return bots
 
@@ -339,3 +408,5 @@ async def plugin_webhook(request: Request):
     )
     produce_message(flow_input.model_dump_json(), topic=flow_topic)
     return 200
+
+app.include_router(router)
