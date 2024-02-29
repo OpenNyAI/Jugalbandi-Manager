@@ -1,0 +1,41 @@
+# This workflow will upload a Python Package using Twine when a release is created
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python#publishing-to-package-registries
+
+name: Publish JBManagerBot to Pypi
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.10'
+    - name: Install Poetry
+      uses: snok/install-poetry@v1.3.4
+      with:
+        version: latest  
+    - name: Install dependencies
+      working-directory: ./jb-manager-bot
+      run: poetry install
+    - name: Install twine
+      run: poetry add twine
+    - name: Remove any existing build
+      working-directory: ./jb-manager-bot
+      run: rm -rf dist
+    - name: Build package
+      working-directory: ./jb-manager-bot
+      run: poetry build
+    - name: Publish package
+      working-directory: ./jb-manager-bot
+      run: twine upload dist/*
