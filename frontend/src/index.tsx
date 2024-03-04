@@ -8,6 +8,12 @@ import Router from './router';
 
 const App = () => {
   const { isAuthenticated, logIn, logOut } = useAuth();
+  const queryParams = new URLSearchParams(window.location.search);
+  React.useEffect(() => {
+    if (queryParams.get('code')) {
+      logIn('GITHUB', queryParams.get('code') as string);
+    }
+  }, []);
   return (
     <div className='App'>
       {isAuthenticated ? 
@@ -17,12 +23,21 @@ const App = () => {
         :       
          <div className="login-page">
             <img src="logo-big.svg" alt="logo" />
-            <button type='button' onClick={() => logIn('MS')}>
-              Continue with MS
-            </button>
-            <button type='button' onClick={() => logIn('GOOGLE')}>
-              Continue with Google
-            </button>
+            {import.meta.env.VITE_MS_CLIENT_ID && 
+              <button type='button' onClick={() => logIn('MS')}>
+                Continue with MS
+              </button>
+            }
+            {import.meta.env.VITE_GOOGLE_CLIENT_ID && 
+              <button type='button' onClick={() => logIn('GOOGLE')}>
+                Continue with Google
+              </button>
+            }
+            {import.meta.env.VITE_GITHUB_CLIENT_ID &&
+              <button type='button' onClick={() => logIn('GITHUB')}>
+                Continue with GitHub
+              </button>
+            }
          </div>
       }
     </div>

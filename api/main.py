@@ -13,7 +13,11 @@ from lib.kafka_utils import KafkaProducer
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
 from lib.whatsapp import WhatsappHelper
-from jb_schema import JBBotUpdate, JBBotCode
+from jb_schema import (
+    JBBotUpdate,
+    JBBotCode,
+    GithubAuth
+)
 
 from lib.data_models import (
     BotInput,
@@ -23,7 +27,7 @@ from lib.data_models import (
     FlowInput,
     MessageType,
     MessageData,
-    BotConfig,
+    BotConfig
 )
 from lib.jb_logging import Logger
 from lib.models import JBBot
@@ -79,7 +83,7 @@ last_updated = datetime.min
 
 MS_CLIENT_ID = os.environ.get("MS_CLIENT_ID")
 MS_TENANT_ID = os.environ.get("MS_TENANT_ID")
-GOOGLE_TOKEN_INFO_URL = "https://www.googleapis.com/oauth2/v3/tokeninfo"
+GOOGLE_TOKEN_INFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 
 async def fetch_ms_public_keys():
     global MS_ISSUER, MS_JWKS_URI, public_keys, last_updated
@@ -98,9 +102,10 @@ async def fetch_ms_public_keys():
             for jwk in ms_jwks.json()["keys"]:
                 public_keys[f'ms_{jwk["kid"]}'] = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(jwk))
             last_updated = datetime.now()
+
 async def verify_jwt(Request: Request):
     token = Request.headers.get("Authorization")
-    login_method = Request.headers.get("Login-Method")
+    login_method = Request.headers.get("Loginmethod")
     if not token:
         raise HTTPException(status_code=401, detail="Missing Authorization")
     if login_method == "ms":
@@ -124,11 +129,21 @@ async def verify_jwt(Request: Request):
             raise HTTPException(status_code=401, detail="Invalid Token")
     elif login_method == "google":
         async with httpx.AsyncClient() as client:
-            token_info = await client.get(f"{GOOGLE_TOKEN_INFO_URL}?id_token={token}")
+            token_info = await client.get(f"{GOOGLE_TOKEN_INFO_URL}", headers={"Authorization": token})
             if token_info.status_code != 200:
                 raise HTTPException(status_code=401, detail="Invalid Token")
             token_info = token_info.json()
             return token_info
+    elif login_method == "github":
+        async with httpx.AsyncClient() as client:
+            token_info = await client.get(f"https://api.github.com/user", headers={"Authorization": token})
+            print(token_info.json())
+            if token_info.status_code != 200:
+                raise HTTPException(status_code=401, detail="Invalid Token")
+            token_info = token_info.json()
+            return token_info
+    else:
+        raise HTTPException(status_code=401, detail="Invalid Login Method")
 
 router = APIRouter(
     dependencies=[Depends(verify_jwt)],
@@ -162,9 +177,24 @@ def encrypt_dict(data: dict) -> dict:
 def read_root():
     return {"Hello": "World"}
 
+@app.post("/github-auth")
+async def github_auth(data:GithubAuth):
+    if not data.code:
+        raise HTTPException(status_code=400, detail="No code provided")
+    TOKEN_URL = "https://github.com/login/oauth/access_token"
+    client_id = os.environ.get("GITHUB_CLIENT_ID")
+    client_secret = os.environ.get("GITHUB_CLIENT_SECRET")
+    redirect_uri = os.environ.get("REDIRECT_URI")
+    print(client_id, client_secret, data.code)
+    async with httpx.AsyncClient() as client:
+        token = await client.post(TOKEN_URL, data={"client_id": client_id, "client_secret": client_secret, "code": data.code, "redirect_uri": redirect_uri}, headers={"Accept": "application/json"})
+        print(token.content)
+        if token.status_code != 200:
+            raise HTTPException(status_code=401, detail="Error fetching token")
+        return token.json()
 
 @router.get("/bots")
-async def get_bots(depends=verify_jwt):
+async def get_bots():
     bots = await get_bot_list()
     return bots
 

@@ -47,11 +47,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
     }
 
-    const logIn = async (method: AuthMethodKey) => {
-        setAuthMethod(method);
+    const logIn = async (method: AuthMethodKey, code?: string) => {
         localStorage.setItem('@Auth.method', method);
         const auth = AuthMethod[method];
-        await auth.logIn();
+        await auth.logIn(code);
+        setAuthMethod(method);
     }
 
     const logOut = async () => {

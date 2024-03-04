@@ -87,7 +87,7 @@ const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelT
       await sendRequest({
         url: apiEndpoint,
         method: 'POST',
-        body: JSON.stringify(data ),
+        body: JSON.stringify(data),
         accessToken: token,
         loginMethod: getAuthMethodType(),
         headers: {

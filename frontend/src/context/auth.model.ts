@@ -1,7 +1,7 @@
 import { ReactNode } from 'react';
 import { AuthMS } from './AuthMS';
 import { AuthGoogle } from './AuthGoogle';
-
+import { AuthGitHub } from './AuthGithub';
 
 export interface User {
     id: string;
@@ -14,7 +14,7 @@ export type AuthMethodKey = 'MS' | 'GITHUB' | 'GOOGLE';
 
 export interface AuthContextData {
     user?: User;
-    logIn: (method: AuthMethodKey) => void;
+    logIn: (method: AuthMethodKey, code?:string) => void;
     logOut: () => void;
     isAuthenticated: Boolean;
     getAuthMethodType: () => string;
@@ -24,7 +24,7 @@ export interface AuthContextData {
 export const AuthMethod = {
     MS: new AuthMS(),
     GOOGLE: new AuthGoogle(),
-    GITHUB: new AuthGoogle()
+    GITHUB: new AuthGitHub()
 
 
 }
@@ -35,7 +35,7 @@ export interface AuthProviderProps {
 
 export interface IAuth {
     type: AuthMethodKey;
-    logIn: () => Promise<User | void>;
+    logIn: (code?:string) => Promise<User | void>;
     logOut: () => Promise<void>;
     isAuthenticated: () => Promise<boolean>;
     getToken: () => Promise<string | undefined>;

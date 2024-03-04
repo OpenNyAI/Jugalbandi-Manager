@@ -2,6 +2,9 @@ from typing import Optional, List, Dict
 from pydantic import BaseModel, Field
 
 
+class GithubAuth(BaseModel):
+    code: str
+
 class JBBotUpdate(BaseModel):
     name: Optional[str] = None
     phone_number: Optional[str] = None
