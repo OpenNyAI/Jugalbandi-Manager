@@ -59,6 +59,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             const auth = AuthMethod[authMethod];
             await auth?.logOut();
             localStorage.removeItem('@Auth.method');
+            setIsAuthenticated(false);
         }
     }
 
