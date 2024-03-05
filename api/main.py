@@ -5,7 +5,9 @@ import json
 import os
 from typing import List
 import uuid
-from fastapi import FastAPI, HTTPException, Request, APIRouter, Depends
+from fastapi import FastAPI, HTTPException, Request, APIRouter, Depends, Security
+from fastapi.security.api_key import APIKeyHeader
+from fastapi.openapi.models import APIKey
 from fastapi.middleware.cors import CORSMiddleware
 from utils import extract_reference_id
 from confluent_kafka import KafkaException
@@ -103,9 +105,11 @@ async def fetch_ms_public_keys():
                 public_keys[f'ms_{jwk["kid"]}'] = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(jwk))
             last_updated = datetime.now()
 
-async def verify_jwt(Request: Request):
-    token = Request.headers.get("Authorization")
-    login_method = Request.headers.get("Loginmethod")
+
+api_key_header_auth = APIKeyHeader(name="Authorization", scheme_name="JWT Auth Bearer Token", auto_error=False)
+login_method_header = APIKeyHeader(name="Loginmethod", scheme_name="Login Method", auto_error=False)
+
+async def verify_jwt(token: str = Security(api_key_header_auth), login_method: str = Security(login_method_header)):
     if not token:
         raise HTTPException(status_code=401, detail="Missing Authorization")
     if login_method == "ms":
@@ -199,7 +203,7 @@ async def get_bots():
     return bots
 
 
-@app.patch("/bot/{bot_id}")
+@router.patch("/bot/{bot_id}")
 async def update_bot_data(bot_id: str, update_fields: JBBotUpdate):
     bot = await get_bot_by_id(bot_id)
     if not bot:
@@ -234,7 +238,7 @@ async def install_bot(install_content: JBBotCode):
 
 
 # endpoint to activate bot and link it with a phone number
-@app.post("/bot/{bot_id}/activate")
+@router.post("/bot/{bot_id}/activate")
 async def activate_bot(bot_id:str, request: Request):
     request_body = await request.json()
     phone_number: str = request_body.get("phone_number")
@@ -267,7 +271,7 @@ async def activate_bot(bot_id:str, request: Request):
     await update_bot(bot_id, bot_data)
     return {"status": "success"}
 
-@app.get("/bot/{bot_id}/deactivate")
+@router.get("/bot/{bot_id}/deactivate")
 async def get_bot(bot_id: str):
     bot = await get_bot_by_id(bot_id)
     if not bot:
@@ -278,7 +282,7 @@ async def get_bot(bot_id: str):
     await update_bot(bot_id, bot_data)
     return bot
 
-@app.delete("/bot/{bot_id}")
+@router.delete("/bot/{bot_id}")
 async def delete_bot(bot_id: str):
     bot = await get_bot_by_id(bot_id)
     if not bot:
@@ -287,7 +291,7 @@ async def delete_bot(bot_id: str):
     return {"status": "success"}
 
 # endpoint to add (config)credentials for a bot to connect to things
-@app.post("/bot/{bot_id}/configure")
+@router.post("/bot/{bot_id}/configure")
 async def add_bot_configuraton(bot_id:str, request: Request):
     request_body = await request.json()
     bot: JBBot = await get_bot_by_id(bot_id)
@@ -310,14 +314,14 @@ async def add_bot_configuraton(bot_id:str, request: Request):
 
 
 # get all messages related to a session
-@app.get("/chats/{bot_id}/sessions/{session_id}")
+@router.get("/chats/{bot_id}/sessions/{session_id}")
 async def get_session(bot_id: str, session_id: str):
     sessions = await get_bot_chat_sessions(bot_id, session_id)
     return sessions
 
 
 # get all chats related to a bot
-@app.get("/chats/{bot_id}")
+@router.get("/chats/{bot_id}")
 async def get_chats(bot_id: str, skip: int = 0, limit: int = 100):
     chats = await get_chat_history(bot_id, skip, limit)
     return chats
