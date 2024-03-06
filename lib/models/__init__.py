@@ -44,8 +44,12 @@ class JBBot(Base):
         nullable=False,
         onupdate=func.now(),
     )
+    created_by = Column(String, ForeignKey('jb_admins.id'))
+
+
     users = relationship("JBUser", back_populates="bot")
     sessions = relationship("JBSession", back_populates="bot")
+    creator = relationship("JBAdmin", back_populates="bot")
 
 
 class JBUser(Base):
@@ -62,6 +66,19 @@ class JBUser(Base):
     )
     bot = relationship("JBBot", back_populates="users")
     sessions = relationship("JBSession", back_populates="user")
+
+
+class JBAdmin(Base):
+    __tablename__ = "jb_admins"
+
+    id = Column(String, primary_key=True)
+    name = Column(String)
+    email = Column(String, unique=True)
+    jb_secret = Column(String)
+    created_at = Column(
+        TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
+    )
+    bot = relationship("JBBot", back_populates="creator")
 
 
 class JBSession(Base):

@@ -1,3 +1,4 @@
+    getUser: () => Promise<User | undefined>;
 import { createContext, useContext, useEffect, useState } from 'react';
 import { 
     User,
@@ -14,7 +15,7 @@ export const AuthContext = createContext<AuthContextData>(
 
 export function AuthProvider({ children }: AuthProviderProps) {
     const [user, setUser] = useState<User>();
-    const [authMethod, setAuthMethod] = useState<AuthMethodKey>('MS');
+    const [authMethod, setAuthMethod] = useState<IAuth>();
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
@@ -27,12 +28,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if(storageMethod) {
             const method = storageMethod as AuthMethodKey;
             const auth = AuthMethod[method];
-            setAuthMethod(method);
+            setAuthMethod(auth);
         }
     }
 
     const getAuthMethodType = () => {
-        return authMethod.toString().toLowerCase();
+        return authMethod?.type.toLowerCase() as string;
     }
 
     useEffect(() => {
@@ -41,9 +42,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     async function setAuthenticationStatus() {
         if (authMethod) {
-            const auth = AuthMethod[authMethod];
-            const authenticated = await auth.isAuthenticated();
+            const authenticated = await authMethod.isAuthenticated();
             setIsAuthenticated(authenticated);
+            if (authenticated) {
+                await setUserLogged(authMethod);
+            }
         }
     }
 
@@ -51,13 +54,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         localStorage.setItem('@Auth.method', method);
         const auth = AuthMethod[method];
         await auth.logIn(code);
-        setAuthMethod(method);
+        setAuthMethod(auth);
     }
 
     const logOut = async () => {
         if (authMethod) {
-            const auth = AuthMethod[authMethod];
-            await auth?.logOut();
+            await authMethod?.logOut();
             localStorage.removeItem('@Auth.method');
             setIsAuthenticated(false);
         }
@@ -65,15 +67,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const getToken = async() => {
         if(authMethod) {
-            const auth = AuthMethod[authMethod];
-            return await auth.getToken();
+            return await authMethod.getToken();
         }
         return undefined;
     }
 
+    async function setUserLogged(authMethod:IAuth) {
+        const user = await authMethod.getUser();
+        setUser(user);
+    }
+
+    async function getUser() {
+        if (!user && authMethod) {
+               setUserLogged(authMethod);
+        }
+        return user;
+    }
+
     return (
         <AuthContext.Provider 
-            value={{ user, logIn, logOut, isAuthenticated, getAuthMethodType, getToken }}
+            value={{ user, logIn, logOut, isAuthenticated, getAuthMethodType, getToken, getUser }}
         >
             {children}
         </AuthContext.Provider>

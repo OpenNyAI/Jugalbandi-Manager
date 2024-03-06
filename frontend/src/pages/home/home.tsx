@@ -13,18 +13,20 @@ interface props {
 }
 
 export const Home:React.FunctionComponent = (props:props) => {
-    const { getToken, getAuthMethodType } = useAuth();
+    const { getToken, getAuthMethodType, getUser } = useAuth();
     const [token, setToken] = React.useState('');
     const [refreshBots, incrementrefreshBots] = React.useState(0);
     const [projects, setProjects] = React.useState([]);
     const [loading, setLoading] = React.useState(false);
     const [isSettingsModelOpen, showModel] = React.useState(false);
     const [modelData, setDataForModel] = React.useState<any>();
+    const [jb_secret, setJBSecret] = React.useState('');
     React.useEffect(() => {
        getToken().then((token:string) => {
             setToken(token);
         });
     },[])
+    
     React.useEffect(() => {
         if (!token) return;
         setLoading(true);
@@ -85,6 +87,15 @@ export const Home:React.FunctionComponent = (props:props) => {
             modelType: 'install'
         });
     }
+  const getJBSecret = async () => {
+    const user = await getUser();
+    if (user?.jb_secret) {
+        navigator.clipboard.writeText(user?.jb_secret);
+        alert("Secret Copied")
+    } else {
+        alert("No JB Secret Found")
+    }
+  }
     
   return (
     <div className='home'>
@@ -119,7 +130,7 @@ export const Home:React.FunctionComponent = (props:props) => {
                         {import.meta.env.VITE_SERVER_HOST+"/install"}
                     </div>
                     <div>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <svg onClick={getJBSecret} xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
                             <path d="M11.75 2C9.95507 2 8.5 3.45508 8.5 5.25V23.25C8.5 25.0449 9.95507 26.5 11.75 26.5H23.75C25.5449 26.5 27 25.0449 27 23.25V5.25C27 3.45507 25.5449 2 23.75 2H11.75ZM10.5 5.25C10.5 4.55964 11.0596 4 11.75 4H23.75C24.4404 4 25 4.55964 25 5.25V23.25C25 23.9404 24.4404 24.5 23.75 24.5H11.75C11.0596 24.5 10.5 23.9404 10.5 23.25V5.25ZM7 5.74902C5.82552 6.2388 5 7.39797 5 8.74994V23.4999C5 27.0898 7.91015 29.9999 11.5 29.9999H20.25C21.6021 29.9999 22.7613 29.1743 23.2511 27.9996H20.2786C20.2691 27.9998 20.2596 27.9999 20.25 27.9999H11.5C9.01472 27.9999 7 25.9852 7 23.4999V5.74902Z" fill="#8B8B8B"/>
                         </svg>
                         ***************************

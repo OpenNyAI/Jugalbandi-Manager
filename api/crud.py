@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload
 
 from lib.db_connection import async_session
 
-from lib.models import JBPluginUUID, JBSession, JBTurn, JBUser, JBMessage, JBBot
+from lib.models import JBPluginUUID, JBSession, JBTurn, JBUser, JBMessage, JBBot, JBAdmin
 
 
 async def create_user(
@@ -218,4 +218,21 @@ async def create_bot(data):
             session.add(bot)
             await session.commit()
             return bot
+    return None
+
+async def get_admin_user(id:str):
+    async with async_session() as session:
+        async with session.begin():
+            result = await session.execute(select(JBAdmin).where(JBAdmin.id == id))
+            admin = result.scalars().first()
+            return admin
+    return None
+
+async def create_admin_user(data):
+    async with async_session() as session:
+        async with session.begin():
+            admin = JBAdmin(**data)
+            session.add(admin)
+            await session.commit()
+            return admin
     return None

@@ -56,6 +56,28 @@ export class AuthGitHub implements IAuth {
         return storedState === returnedState;
     }
 
+    public getUser = async () => {
+        const accessToken = localStorage.getItem('github_access_token');
+        const user = await sendRequest({
+            url: `${APIHOST}/github-user`,
+            accessToken,
+            loginMethod: this.type.toLowerCase(),
+        });
+        console.log(user)
+        return sendRequest({
+            url: `${APIHOST}/admin_user`,
+            method: 'POST',
+            accessToken,
+            body: JSON.stringify({
+                ...user
+            }),
+            loginMethod: this.type.toLowerCase(),
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+    }
+
     private async exchangeCodeForToken(code: string): Promise<void> {
         try {
             const response = await sendRequest({

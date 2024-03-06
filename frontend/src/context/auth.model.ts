@@ -5,9 +5,9 @@ import { AuthGitHub } from './AuthGithub';
 
 export interface User {
     id: string;
-    username: string;
-    email: string;
-    photo?:string;
+    name:string;
+    email:string;
+    jb_secret?:string;
 }
 
 export type AuthMethodKey = 'MS' | 'GITHUB' | 'GOOGLE';
@@ -19,6 +19,7 @@ export interface AuthContextData {
     isAuthenticated: Boolean;
     getAuthMethodType: () => string;
     getToken: () => Promise<string | undefined>;
+    getUser: () => Promise<User | undefined>;
 }
 
 export const AuthMethod = {
@@ -39,4 +40,5 @@ export interface IAuth {
     logOut: () => Promise<void>;
     isAuthenticated: () => Promise<boolean>;
     getToken: () => Promise<string | undefined>;
+    getUser: () => Promise<User | undefined>;
 }

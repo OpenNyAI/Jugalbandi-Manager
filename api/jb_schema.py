@@ -49,3 +49,12 @@ class JBBotCode(BaseModel):
 
     class Config:
         from_attributes = True
+
+class JBAdminUser(BaseModel):
+    id:str
+    name:str
+    email: str
+    jb_secret: Optional[str] = None
+
+    class Config:
+        from_attributes = True

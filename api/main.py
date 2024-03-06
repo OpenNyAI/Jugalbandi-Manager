@@ -18,7 +18,8 @@ from lib.whatsapp import WhatsappHelper
 from jb_schema import (
     JBBotUpdate,
     JBBotCode,
-    GithubAuth
+    GithubAuth,
+    JBAdminUser
 )
 
 from lib.data_models import (
@@ -37,6 +38,7 @@ from lib.models import JBBot
 import httpx
 import jwt
 from datetime import datetime, timedelta
+import secrets
 
 from crud import (
     create_turn,
@@ -54,6 +56,8 @@ from crud import (
     get_bot_chat_sessions,
     update_bot,
     create_bot,
+    get_admin_user,
+    create_admin_user
 )
 
 load_dotenv()
@@ -90,7 +94,7 @@ GOOGLE_TOKEN_INFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 async def fetch_ms_public_keys():
     global MS_ISSUER, MS_JWKS_URI, public_keys, last_updated
     if datetime.now() - last_updated > timedelta(hours=1):
-        url = f"https://login.microsoftonline.com/{MS_TENANT_ID}/v2.0/.well-known/openid-configuration"
+        url = f"https://login.microsoftonline.com/{MS_TENANT_ID}/.well-known/openid-configuration"
         async with httpx.AsyncClient() as client:
             config = await client.get(url)
             if config.status_code != 200:
@@ -119,11 +123,11 @@ async def verify_jwt(token: str = Security(api_key_header_auth), login_method: s
         key = public_keys[f"ms_{kid}"]
         try:
             jwt_payload = jwt.decode(
-                token, 
-                key,
-                audience=MS_CLIENT_ID,
+                token.replace('Bearer ', ''),
                 issuer=MS_ISSUER,
-                algorithms=["RS256"],
+                audience=MS_CLIENT_ID,
+                key=key,
+                algorithms=[unverified_header['alg']],
                 options={"verify_signature": True}
                 )
             return jwt_payload
@@ -311,6 +315,28 @@ async def add_bot_configuraton(bot_id:str, request: Request):
         bot_data["config_env"] = config_env
     await update_bot(bot_id, bot_data)
     return {"status": "success"}
+
+@router.get('/github-user')
+async def get_github_user(request: Request):
+    token = request.headers.get("Authorization")
+    async with httpx.AsyncClient() as client:
+        user_info = await client.get("https://api.github.com/user", headers={"Authorization": token})
+        if user_info.status_code != 200:
+            raise HTTPException(status_code=401, detail="Invalid Token")
+        user_info = user_info.json()
+        return  {
+            "id": user_info["node_id"],
+            "name": user_info["name"],
+            "email": user_info["email"] or user_info["login"]
+        }
+
+@router.post("/admin_user")
+async def save_user_if_not_found(admin_user: JBAdminUser):
+    user = await get_admin_user(id=admin_user.id)
+    if user is None:
+        admin_user.jb_secret = secrets.token_urlsafe(32)
+        user = await create_admin_user(admin_user.model_dump())
+    return user
 
 
 # get all messages related to a session
