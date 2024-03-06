@@ -1,5 +1,5 @@
-import os
 import json
+import os
 from pathlib import Path
 
 from jb_manager_bot.parsers.utils import LLMManager
@@ -28,7 +28,8 @@ class OptionParser:
 
         model = "gpt-3.5-turbo"
         if azure_openai_api_key is not None:
-            model = model.replace(".", "")
+            # model = model.replace(".", "")
+            model = "gpt4"
 
         for option in options:
             if "id" not in option and not hasattr(option, "id"):
