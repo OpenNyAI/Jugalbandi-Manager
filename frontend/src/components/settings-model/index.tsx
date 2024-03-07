@@ -23,7 +23,7 @@ interface Props {
 
 const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelType }) => {
   const [inputElements, setInputElements] = useState<Record<string, InputConfig>>({});
-  const { getToken, getAuthMethodType } = useAuth();
+  const { getToken, getAuthMethodType, logOut } = useAuth();
   const [token, setToken] = useState('');
   const APIHOST = import.meta.env.VITE_SERVER_HOST;
 
@@ -90,6 +90,7 @@ const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelT
         body: JSON.stringify(data),
         accessToken: token,
         loginMethod: getAuthMethodType(),
+        onUnauthorized: logOut,
         headers: {
             'Content-Type': 'application/json',
         }

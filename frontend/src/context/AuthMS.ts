@@ -61,7 +61,8 @@ export class AuthMS implements IAuth {
                 body: JSON.stringify(data),
                 headers: {
                     'Content-Type': 'application/json'
-                }
+                },
+                onUnauthorized: this.logOut
             });
         });
         return user;

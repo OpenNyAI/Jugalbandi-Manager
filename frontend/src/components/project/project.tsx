@@ -4,6 +4,7 @@ import React from 'react';
 import moment from 'moment';
 import { sendRequest } from '@/api';
 import { useAuth } from '@/context/AuthContext';
+import { log } from "console";
 
 interface IProjectProps {
     id: string;
@@ -23,7 +24,7 @@ interface IProjectProps {
 
 function Project(props: IProjectProps) {
     const { refreshBots, id, name, credits, status, created_at, modified, showModel, setDataForModel, required_credentials, credentials } = props;
-    const { getAuthMethodType, getToken } = useAuth();
+    const { getAuthMethodType, getToken, logOut } = useAuth();
     const [token, setToken] = React.useState('');
     
     React.useEffect(() => {
@@ -85,7 +86,8 @@ function Project(props: IProjectProps) {
                 url: `${APIHOST}/bot/${id}/deactivate`,
                 method: "GET",
                 accessToken: token,
-                loginMethod: getAuthMethodType()
+                loginMethod: getAuthMethodType(),
+                onUnauthorized: logOut
             }).then((response:any) => {
                 console.log(response);
                 refreshBots();
@@ -100,7 +102,8 @@ function Project(props: IProjectProps) {
                 url: `${APIHOST}/bot/${id}`,
                 method: "DELETE",
                 accessToken: token,
-                loginMethod: getAuthMethodType()
+                loginMethod: getAuthMethodType(),
+                onUnauthorized: logOut
             }).then((response:any) => {
                 console.log(response);
                 refreshBots();

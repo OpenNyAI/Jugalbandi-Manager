@@ -7,13 +7,17 @@ import { BrowserRouter } from "react-router-dom";
 import Router from './router';
 
 const App = () => {
-  const { isAuthenticated, logIn, logOut } = useAuth();
+  const { isAuthenticated, logIn, logOut, isLoading } = useAuth();
   const queryParams = new URLSearchParams(window.location.search);
   React.useEffect(() => {
     if (queryParams.get('code')) {
       logIn('GITHUB', queryParams.get('code') as string);
     }
   }, []);
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
   return (
     <div className='App'>
       {isAuthenticated ? 

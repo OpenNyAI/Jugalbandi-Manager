@@ -13,14 +13,13 @@ interface props {
 }
 
 export const Home:React.FunctionComponent = (props:props) => {
-    const { getToken, getAuthMethodType, getUser } = useAuth();
+    const { getToken, getAuthMethodType, getUser, logOut } = useAuth();
     const [token, setToken] = React.useState('');
     const [refreshBots, incrementrefreshBots] = React.useState(0);
     const [projects, setProjects] = React.useState([]);
-    const [loading, setLoading] = React.useState(false);
     const [isSettingsModelOpen, showModel] = React.useState(false);
     const [modelData, setDataForModel] = React.useState<any>();
-    const [jb_secret, setJBSecret] = React.useState('');
+    
     React.useEffect(() => {
        getToken().then((token:string) => {
             setToken(token);
@@ -33,10 +32,10 @@ export const Home:React.FunctionComponent = (props:props) => {
         sendRequest({
             url: `${APIHOST}/bots`,
             accessToken: token,
-            loginMethod: getAuthMethodType()
+            loginMethod: getAuthMethodType(),
+            onUnauthorized: logOut
          }).then((response:any) => {
             setProjects(response);
-            setLoading(false);
         });
     },[refreshBots, token])
 

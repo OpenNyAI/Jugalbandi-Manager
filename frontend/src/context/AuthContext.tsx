@@ -14,6 +14,7 @@ export const AuthContext = createContext<AuthContextData>(
 );
 
 export function AuthProvider({ children }: AuthProviderProps) {
+    const [isLoading, setIsLoading] = useState(true);
     const [user, setUser] = useState<User>();
     const [authMethod, setAuthMethod] = useState<IAuth>();
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -38,6 +39,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     useEffect(() => {
         setAuthenticationStatus();
+        setIsLoading(false);
     }, [authMethod]);
 
     async function setAuthenticationStatus() {
@@ -86,7 +88,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     return (
         <AuthContext.Provider 
-            value={{ user, logIn, logOut, isAuthenticated, getAuthMethodType, getToken, getUser }}
+            value={{ user, logIn, logOut, isAuthenticated, getAuthMethodType, getToken, getUser, isLoading }}
         >
             {children}
         </AuthContext.Provider>

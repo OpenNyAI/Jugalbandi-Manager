@@ -15,7 +15,7 @@ export const Chat:React.FunctionComponent = (props: props) => {
   const [selectedSession, setSelectedSession] = React.useState<any>(null);
   const [playingId, setPlayingId] = React.useState<string | null>(null);
   const [sessionMessages, setSessionMessages] = React.useState<any>([]);
-  const { getToken, getAuthMethodType } = useAuth();
+  const { getToken, getAuthMethodTypem, logOut } = useAuth();
   const [token, setToken] = React.useState('');
   const location = useLocation();
 
@@ -25,7 +25,8 @@ export const Chat:React.FunctionComponent = (props: props) => {
       sendRequest({
         url: `${APIHOST}/chats/${bot_id}`,
         accessToken: token,
-        loginMethod: getAuthMethodType()
+        loginMethod: getAuthMethodType(),
+        onUnauthorized: logOut
       }).then((response:any) => {
         setChatSessions(response);
         loadMessages(response[0]);
@@ -44,7 +45,8 @@ export const Chat:React.FunctionComponent = (props: props) => {
     sendRequest({
       url: `${APIHOST}/chats/${bot_id}/sessions/${session.id}`,
       accessToken: token,
-      loginMethod: getAuthMethodType()
+      loginMethod: getAuthMethodType(),
+      onUnauthorized: logOut
     }).then((response:any) => {
       if (response && response.length) {
         setSessionMessages(response[0]);

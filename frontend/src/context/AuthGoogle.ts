@@ -45,6 +45,7 @@ export class AuthGoogle implements IAuth {
             method: 'POST',
             accessToken: googleUser.xc?.access_token,
             loginMethod: this.type.toLowerCase(),
+            onUnauthorized: this.logOut,
             body: JSON.stringify(data),
             headers: {
                 'Content-Type': 'application/json'

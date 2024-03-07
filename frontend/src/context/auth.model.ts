@@ -20,6 +20,7 @@ export interface AuthContextData {
     getAuthMethodType: () => string;
     getToken: () => Promise<string | undefined>;
     getUser: () => Promise<User | undefined>;
+    isLoading: boolean;
 }
 
 export const AuthMethod = {

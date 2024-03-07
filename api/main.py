@@ -145,7 +145,6 @@ async def verify_jwt(token: str = Security(api_key_header_auth), login_method: s
     elif login_method == "github":
         async with httpx.AsyncClient() as client:
             token_info = await client.get(f"https://api.github.com/user", headers={"Authorization": token})
-            print(token_info.json())
             if token_info.status_code != 200:
                 raise HTTPException(status_code=401, detail="Invalid Token")
             token_info = token_info.json()
@@ -193,10 +192,8 @@ async def github_auth(data:GithubAuth):
     client_id = os.environ.get("GITHUB_CLIENT_ID")
     client_secret = os.environ.get("GITHUB_CLIENT_SECRET")
     redirect_uri = os.environ.get("REDIRECT_URI")
-    print(client_id, client_secret, data.code)
     async with httpx.AsyncClient() as client:
         token = await client.post(TOKEN_URL, data={"client_id": client_id, "client_secret": client_secret, "code": data.code, "redirect_uri": redirect_uri}, headers={"Accept": "application/json"})
-        print(token.content)
         if token.status_code != 200:
             raise HTTPException(status_code=401, detail="Error fetching token")
         return token.json()

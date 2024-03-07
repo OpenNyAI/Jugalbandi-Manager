@@ -62,6 +62,7 @@ export class AuthGitHub implements IAuth {
             url: `${APIHOST}/github-user`,
             accessToken,
             loginMethod: this.type.toLowerCase(),
+            onUnauthorized: this.logOut
         });
         console.log(user)
         return sendRequest({
@@ -71,6 +72,7 @@ export class AuthGitHub implements IAuth {
             body: JSON.stringify({
                 ...user
             }),
+            onUnauthorized: this.logOut,
             loginMethod: this.type.toLowerCase(),
             headers: {
                 'Content-Type': 'application/json'
@@ -86,11 +88,13 @@ export class AuthGitHub implements IAuth {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                }
+                },
+                onUnauthorized: this.logOut
             });
             if (response.access_token) {
                 this.accessToken = response.access_token;
                 localStorage.setItem('github_access_token', this.accessToken as string);
+                window.location.href = '/';
             }
         } catch (error) {
             
