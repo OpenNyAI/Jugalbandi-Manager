@@ -6,6 +6,7 @@ import os
 from typing import List
 import uuid
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from utils import extract_reference_id
 from confluent_kafka import KafkaException
