@@ -77,7 +77,7 @@ def produce_message(message: str, topic: str = kafka_channel_topic):
 
 def encrypt_text(text: str) -> str:
     # TODO - implement encryption
-    encryption_key = os.getenv("FERNET_KEY")
+    encryption_key = os.getenv("ENCRYPTION_KEY")
     f = Fernet(encryption_key)
     return f.encrypt(text.encode()).decode()
 

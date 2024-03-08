@@ -23,9 +23,7 @@ services:
       - STORAGE_LAWFILES_CONTAINER=${STORAGE_LAWFILES_CONTAINER}
       - STORAGE_AUDIOFILES_CONTAINER=${STORAGE_AUDIOFILES_CONTAINER}
       - WA_API_HOST=${WA_API_HOST}
-      - WABA_NUMBER=${WABA_NUMBER}
-      - WA_API_KEY=${WA_API_KEY}
-      - FERNET_KEY=${FERNET_KEY}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
     depends_on:
       - kafka
       - postgres
@@ -105,7 +103,7 @@ services:
       - STORAGE_ACCOUNT_KEY=${STORAGE_ACCOUNT_KEY}
       - STORAGE_LAWFILES_CONTAINER=${STORAGE_LAWFILES_CONTAINER}
       - STORAGE_AUDIOFILES_CONTAINER=${STORAGE_AUDIOFILES_CONTAINER}
-      - FERNET_KEY=${FERNET_KEY}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
     depends_on:
         - kafka
         - postgres
@@ -182,7 +180,7 @@ services:
       - WA_API_HOST=${WA_API_HOST}
       - WABA_NUMBER=${WABA_NUMBER}
       - WA_API_KEY=${WA_API_KEY}
-      - FERNET_KEY=${FERNET_KEY}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
     depends_on:
         - kafka
         - postgres
