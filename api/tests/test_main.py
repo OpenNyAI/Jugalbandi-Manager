@@ -19,10 +19,75 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), [])
         #non-empty bot list
-        mock_get_bot_list.return_value = [{'id': '123', 'name': 'test'}]
+        sample_bot_list = [
+            {
+                "id": "1234",
+                "name": "My Bot",
+                "phone_number": "9952741113",
+                "status": "active",
+                "dsl": "Some DSL",
+                "code": "Some Code",
+                "requirements": "requirements.txt content",
+                "index_urls": ["http://example.com"],
+                "config_env": {"API_URL": "http://api.example.com"},
+                "required_credentials": ["API_KEY", "API_SECRET"],
+                "credentials": {"API_KEY": "key123", "API_SECRET": "secret123"},
+                "version": "0.0.1",
+                "channels": ["whatsapp", "telegram"],
+                "created_at": "2024-01-01T00:00:00.000Z",
+                "updated_at": "2024-01-02T00:00:00.000Z"
+            }
+        ]
+        mock_get_bot_list.return_value = sample_bot_list
         response = self.client.get('/bots')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), [{'id': '123', 'name': 'test'}])
+        self.assertEqual(response.json(),sample_bot_list)
+    
+    @patch('main.get_bot_by_id')
+    @patch('main.update_bot')
+    @patch('main.encrypt_text')
+    async def test_update_bot_data(self,mock_encrypt_text, mock_update_bot, mock_get_bot_by_id):
+        bot_id = "1234"
+        update_data = {
+            "name": "Updated Bot",
+            "config_env": {"API_URL": "http://api.example.com"}
+        }
+        mock_bot = {
+            "name": "My Bot",
+            "phone_number": "91987654321",
+            "status": "active",
+            "dsl": "Some DSL",
+            "code": "Some Code"
+        }
+        mock_encrypt_text.return_value = "encrypted_text"
+        mock_get_bot_by_id.return_value = mock_bot
+        mock_update_bot.return_value = mock_bot.update(update_data)
+        response = self.client.patch(f'/bot/{bot_id}', json=update_data)
+        print(response)
+        self.assertEqual(response.status_code, 200)
+        mock_get_bot_by_id.assert_called_once_with(bot_id)
+        expected_update_data = update_data.copy()
+        expected_update_data['config_env'] = {"API_URL": "encrypted_text"}
+        mock_update_bot.assert_awaited_with(bot_id, expected_update_data)
+        self.assertEqual(response.json()['name'], update_data['name'])
+    
+    @patch('main.get_bot_by_id')
+    async def test_update_bot_data_not_found(self, mock_get_bot_by_id):
+        bot_id = "nonexistent"
+        update_data = {
+            "name": "Updated Bot"
+        }
+        # Mocking the get_bot_by_id to return None for a nonexistent bot
+        mock_get_bot_by_id.return_value = None
+
+        # Make a patch request to the /bot/{bot_id} endpoint with a nonexistent bot_id
+        response = self.client.patch(f"/bot/{bot_id}", json=update_data)
+
+        # Assert the response status code is 404 (Not Found)
+        assert response.status_code == 404
+
+        # Assert the correct error message is returned
+        assert response.json()["detail"] == "Bot not found"
 
     @patch('main.get_plugin_reference')
     @patch('main.produce_message')

@@ -206,8 +206,10 @@ async def update_bot(bot_id: str, data):
                 .values(data)
             )
             await session.execute(stmt)
+            result = await session.execute(select(JBBot).where(JBBot.id == bot_id))
+            updated_bot = result.scalars().first()
             await session.commit()
-            return bot_id
+            return update_bot
     return None
 
 async def create_bot(data):
