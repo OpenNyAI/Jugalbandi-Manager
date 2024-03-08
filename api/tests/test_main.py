@@ -63,12 +63,14 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         mock_get_bot_by_id.return_value = mock_bot
         mock_update_bot.return_value = mock_bot.update(update_data)
         response = self.client.patch(f'/bot/{bot_id}', json=update_data)
-        print(response)
+        
         self.assertEqual(response.status_code, 200)
+        
         mock_get_bot_by_id.assert_called_once_with(bot_id)
         expected_update_data = update_data.copy()
         expected_update_data['config_env'] = {"API_URL": "encrypted_text"}
         mock_update_bot.assert_awaited_with(bot_id, expected_update_data)
+        
         self.assertEqual(response.json()['name'], update_data['name'])
     
     @patch('main.get_bot_by_id')
@@ -84,10 +86,8 @@ class TestMain(unittest.IsolatedAsyncioTestCase):
         response = self.client.patch(f"/bot/{bot_id}", json=update_data)
 
         # Assert the response status code is 404 (Not Found)
-        assert response.status_code == 404
-
-        # Assert the correct error message is returned
-        assert response.json()["detail"] == "Bot not found"
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.json()["detail"], "Bot not found")
 
     @patch('main.get_plugin_reference')
     @patch('main.produce_message')
