@@ -14,8 +14,6 @@ from lib.data_models import ChannelData, MessageType
 load_dotenv()
 
 wa_api_host = os.getenv("WA_API_HOST")
-wa_api_key = os.getenv("WA_API_KEY")
-wa_bnumber = os.getenv("WABA_NUMBER")
 
 
 class WAMsgType(int, Enum):
@@ -87,11 +85,11 @@ class WhatsappHelper:
 
     # get audio message from user
     @staticmethod
-    def wa_get_user_audio(msg_obj: ChannelData):
+    def wa_get_user_audio(wa_bnumber: str, wa_api_key: str, msg_obj: ChannelData):
         if msg_obj.type == MessageType.AUDIO:
             time_stp = msg_obj.timestamp
             data = msg_obj.audio["id"]
-            b64audio = WhatsappHelper.wa_download_audio(data)
+            b64audio = WhatsappHelper.wa_download_audio(wa_bnumber=wa_bnumber,wa_api_key=wa_api_key,fileid=data)
             return WAMsgInfo(WAMsgType.audio, time_stp, b64audio)
         return {}
 
@@ -114,7 +112,7 @@ class WhatsappHelper:
         return {}
 
     @staticmethod
-    def wa_download_audio(fileid: dict):
+    def wa_download_audio(wa_bnumber: str, wa_api_key: str, fileid: dict):
         url = wa_api_host + "/v1/downloadmedia/" + fileid
         headers = {
             "Content-type": "application/json",
@@ -154,7 +152,7 @@ class WhatsappHelper:
 
     # send text message
     @staticmethod
-    def wa_send_text_message(user_tele: str, text: str) -> str:
+    def wa_send_text_message(wa_bnumber: str, wa_api_key: str, user_tele: str, text: str) -> str:
         url = wa_api_host + "/v1/messages"
         headers = {
             "Content-type": "application/json",
@@ -183,7 +181,7 @@ class WhatsappHelper:
 
     # send audio message
     @staticmethod
-    def wa_send_audio_message(user_tele: str, audio_url: str) -> str:
+    def wa_send_audio_message(wa_bnumber: str, wa_api_key: str, user_tele: str, audio_url: str) -> str:
         url = wa_api_host + "/v1/messages"
         headers = {
             "Content-type": "application/json",
@@ -215,7 +213,10 @@ class WhatsappHelper:
     # send list
 
     @staticmethod
-    def wa_send_image(user_tele: str,
+    def wa_send_image(
+        wa_bnumber: str, 
+        wa_api_key: str, 
+        user_tele: str,
         message: str,
         header: str,
         body: str,
@@ -228,6 +229,8 @@ class WhatsappHelper:
         
         if options:
             return WhatsappHelper.wa_send_interactive_message(
+                wa_bnumber=wa_bnumber,
+                wa_api_key=wa_api_key,
                 user_tele=user_tele,
                 message=message,
                 header=header,
@@ -273,6 +276,8 @@ class WhatsappHelper:
     # send interactive
     @staticmethod
     def wa_send_interactive_message(
+        wa_bnumber: str, 
+        wa_api_key: str, 
         user_tele: str,
         message: str,
         header: str,
@@ -360,6 +365,8 @@ class WhatsappHelper:
 
     @staticmethod
     def wa_send_document(
+        wa_bnumber: str, 
+        wa_api_key: str, 
         user_tele: str,
         document_url: str,
         document_name: str,
@@ -397,7 +404,7 @@ class WhatsappHelper:
 
     @staticmethod
     def wa_send_form(
-        user_tele: str, body: str, footer: str, token: str, flow_id: str, screen_id: str
+        wa_bnumber: str, wa_api_key: str, user_tele: str, body: str, footer: str, token: str, flow_id: str, screen_id: str
     ) -> str:
         url = wa_api_host + "/alpha/whatsappflows"
         headers = {

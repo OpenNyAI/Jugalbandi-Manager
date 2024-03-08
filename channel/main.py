@@ -5,8 +5,10 @@ import os
 import logging
 import traceback
 from dotenv import load_dotenv
+from utils import decrypt_credentials
 from crud import (
     get_user_by_session_id,
+    get_bot_by_session_id,
     set_user_language,
     update_message,
     create_message,
@@ -71,7 +73,10 @@ async def process_incoming_messages(message: ChannelInput):
         recieved_message = WhatsappHelper.wa_get_user_text(bot_input)
         await update_message(msg_id, message_text=recieved_message.content)
     if message_type == MessageType.AUDIO:
-        recieved_message = WhatsappHelper.wa_get_user_audio(bot_input)
+        wa_bnumber, bot_channel_credentials = await get_bot_by_session_id(session_id=session_id)
+        bot_channel_credentials = decrypt_credentials(bot_channel_credentials)
+        wa_api_key = bot_channel_credentials["whatsapp"]
+        recieved_message = WhatsappHelper.wa_get_user_audio(wa_bnumber=wa_bnumber, wa_api_key=wa_api_key, msg_obj=bot_input)
         audio_bytes = base64.b64decode(recieved_message.content)
         audio_file_name = f"{msg_id}.ogg"
         logger.info("audio_file_name: %s", audio_file_name)
@@ -168,8 +173,14 @@ async def send_message_to_user(message: ChannelInput):
     session_id = message.session_id
     bot_output: BotOutput = message.data
     user = await get_user_by_session_id(session_id=session_id)
+    wa_bnumber, bot_channel_credentials = await get_bot_by_session_id(session_id=session_id)
+    bot_channel_credentials = decrypt_credentials(bot_channel_credentials)
+    wa_api_key = bot_channel_credentials["whatsapp"]
+
     if message.dialog == "language":
         channel_id = WhatsappHelper.wa_send_text_message(
+            wa_bnumber=wa_bnumber,
+            wa_api_key=wa_api_key,
             user_tele=user.phone_number,
             text=bot_output.message_data.message_text,
         )
@@ -182,6 +193,8 @@ async def send_message_to_user(message: ChannelInput):
             message_text=bot_output.message_data.message_text,
         )
         channel_id = WhatsappHelper.wa_send_interactive_message(
+            wa_bnumber=wa_bnumber,
+            wa_api_key=wa_api_key,
             user_tele=user.phone_number,
             message="Please select your preferred language",
             header="Language",
@@ -215,7 +228,10 @@ async def send_message_to_user(message: ChannelInput):
         logger.info("Message type: %s", bot_output.message_type)
         if bot_output.message_type == MessageType.TEXT:
             channel_id = WhatsappHelper.wa_send_text_message(
-                user_tele=user.phone_number, text=message_text
+                wa_bnumber=wa_bnumber,
+                wa_api_key=wa_api_key,
+                user_tele=user.phone_number, 
+                text=message_text
             )
             await create_message(
                 turn_id=message.turn_id,
@@ -228,7 +244,10 @@ async def send_message_to_user(message: ChannelInput):
         elif bot_output.message_type == MessageType.AUDIO:
             media_url = bot_output.message_data.media_url
             channel_id = WhatsappHelper.wa_send_audio_message(
-                user_tele=user.phone_number, audio_url=media_url
+                wa_bnumber=wa_bnumber,
+                wa_api_key=wa_api_key,
+                user_tele=user.phone_number, 
+                audio_url=media_url
             )
             await create_message(
                 turn_id=message.turn_id,
@@ -240,6 +259,8 @@ async def send_message_to_user(message: ChannelInput):
             )
         elif bot_output.message_type == MessageType.INTERACTIVE:
             channel_id = WhatsappHelper.wa_send_interactive_message(
+                wa_bnumber=wa_bnumber,
+                wa_api_key=wa_api_key,
                 user_tele=user.phone_number,
                 message=message_text,
                 header=bot_output.header,
@@ -262,6 +283,8 @@ async def send_message_to_user(message: ChannelInput):
             )
         elif bot_output.message_type == MessageType.IMAGE:
             channel_id = WhatsappHelper.wa_send_image(
+                wa_bnumber=wa_bnumber,
+                wa_api_key=wa_api_key,
                 user_tele=user.phone_number,
                 message=message_text,
                 header=bot_output.header,
@@ -285,6 +308,8 @@ async def send_message_to_user(message: ChannelInput):
             )
         elif bot_output.message_type == MessageType.DOCUMENT:
             channel_id = WhatsappHelper.wa_send_document(
+                wa_bnumber=wa_bnumber,
+                wa_api_key=wa_api_key,
                 user_tele=user.phone_number,
                 document_url=bot_output.message_data.media_url,
                 document_name=bot_output.message_data.message_text,
@@ -300,6 +325,8 @@ async def send_message_to_user(message: ChannelInput):
             )
         elif bot_output.message_type == MessageType.FORM:
             channel_id = WhatsappHelper.wa_send_form(
+                wa_bnumber=wa_bnumber,
+                wa_api_key=wa_api_key,
                 user_tele=user.phone_number,
                 flow_id=bot_output.wa_flow_id,
                 screen_id=bot_output.wa_screen_id,

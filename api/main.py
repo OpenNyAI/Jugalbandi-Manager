@@ -3,7 +3,7 @@
 
 import json
 import os
-from typing import List
+from typing import Dict
 import uuid
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -139,9 +139,13 @@ async def install_bot(install_content: JBBotCode):
 async def activate_bot(bot_id:str, request: Request):
     request_body = await request.json()
     phone_number: str = request_body.get("phone_number")
-    channels: List[str] = request_body.get("channels")
-    if channels is None:
-        channels = ["whatsapp"]
+    if not phone_number:
+        raise HTTPException(status_code=400, detail="No phone number provided")
+    channels: Dict[str, str] = request_body.get("channels")
+    if not channels:
+        raise HTTPException(status_code=400, detail="No channels provided")
+    if "whatsapp" not in channels:
+        raise HTTPException(status_code=400, detail="Bot must have a whatsapp channel")
     bot: JBBot = await get_bot_by_id(bot_id)
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
@@ -161,6 +165,7 @@ async def activate_bot(bot_id:str, request: Request):
             status_code=400,
             detail=f"Bot missing required credentials: {', '.join(missing_credentials)}",
         )
+    channels = encrypt_dict(channels)
     bot_data = {}
     bot_data["phone_number"] = phone_number
     bot_data["channels"] = channels
