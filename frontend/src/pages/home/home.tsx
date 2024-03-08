@@ -5,6 +5,7 @@ import data from '@/mockData.json';
 import Project from '@/components/project/project';
 import { sendRequest } from '@/api';
 import SettingsModal from '@/components/settings-model';
+import { title } from 'process';
 const APIHOST = import.meta.env.VITE_SERVER_HOST;
 
 interface props {
@@ -35,6 +36,7 @@ export const Home:React.FunctionComponent = (props:props) => {
     const installBot = () => {
         showModel(true);
         setDataForModel({
+            title: 'Install New Bot',
             inputs: {
                 name: {
                     value: '',
@@ -77,7 +79,7 @@ export const Home:React.FunctionComponent = (props:props) => {
     
   return (
     <div className='home'>
-        <SettingsModal isOpen={isSettingsModelOpen} inputs={modelData?.inputs} onClose={closeModal} modelType={modelData?.modelType} botId={modelData?.botId} />
+        <SettingsModal title={modelData?.title} isOpen={isSettingsModelOpen} inputs={modelData?.inputs} onClose={closeModal} modelType={modelData?.modelType} botId={modelData?.botId} />
         <div className='top-section'>
             <div className='cards-container'>
                 <InfoCard title='Guide' className="guide" />

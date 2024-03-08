@@ -13,7 +13,7 @@ from lib.kafka_utils import KafkaProducer
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
 from lib.whatsapp import WhatsappHelper
-from jb_schema import JBBotUpdate, JBBotCode
+from jb_schema import JBBotUpdate, JBBotCode, JBBotActivate
 
 from lib.data_models import (
     BotInput,
@@ -136,15 +136,14 @@ async def install_bot(install_content: JBBotCode):
 
 # endpoint to activate bot and link it with a phone number
 @app.post("/bot/{bot_id}/activate")
-async def activate_bot(bot_id:str, request: Request):
-    request_body = await request.json()
-    phone_number: str = request_body.get("phone_number")
+async def activate_bot(bot_id:str, request_body: JBBotActivate):
+    phone_number: str = request_body.phone_number
     if not phone_number:
         raise HTTPException(status_code=400, detail="No phone number provided")
-    channels: Dict[str, str] = request_body.get("channels")
+    channels: Dict[str, str] = request_body.channels.model_dump_json()
     if not channels:
         raise HTTPException(status_code=400, detail="No channels provided")
-    if "whatsapp" not in channels:
+    if not 'whatsapp' in channels:
         raise HTTPException(status_code=400, detail="Bot must have a whatsapp channel")
     bot: JBBot = await get_bot_by_id(bot_id)
     if not bot:

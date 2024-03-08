@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import './project.css'
 import moment from 'moment';
 import { sendRequest } from '@/api';
+import { title } from "process";
 
 interface IProjectProps {
     id: string;
@@ -45,6 +46,7 @@ function Project(props: IProjectProps) {
             };
         }
         setDataForModel({
+            title: `Edit ${name} Settings`,
             inputs: config,
             botId: id,
             modelType: "credentials"
@@ -56,10 +58,17 @@ function Project(props: IProjectProps) {
         let config: any = {
             "phone_number": {
                 "value": "",
-                "is_secret": false
+                "is_secret": false,
+                "required": true
+            },
+            "whatsapp": {
+                "value": "",
+                "is_secret": true,
+                "required": true
             }
         }
         setDataForModel({
+            title: `Activate ${name}`,
             inputs: config,
             botId: id,
             modelType: "activate"
