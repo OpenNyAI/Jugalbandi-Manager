@@ -38,7 +38,7 @@ from crud import (
     update_session,
     create_message,
     get_bot_by_id,
-    get_bot_phone_number,
+    get_bot_by_phone_number,
     get_chat_history,
     get_bot_list,
     get_bot_chat_sessions,
@@ -140,7 +140,7 @@ async def activate_bot(bot_id:str, request_body: JBBotActivate):
     phone_number: str = request_body.phone_number
     if not phone_number:
         raise HTTPException(status_code=400, detail="No phone number provided")
-    channels: Dict[str, str] = request_body.channels.model_dump_json()
+    channels: Dict[str, str] = request_body.channels.model_dump()
     if not channels:
         raise HTTPException(status_code=400, detail="No channels provided")
     if not 'whatsapp' in channels:
@@ -150,8 +150,8 @@ async def activate_bot(bot_id:str, request_body: JBBotActivate):
         raise HTTPException(status_code=404, detail="Bot not found")
     if bot.status == "active":
         raise HTTPException(status_code=400, detail="Bot already active")
-    existing_bot = await get_bot_phone_number(phone_number)
-    if existing_bot:
+    existing_bot = await get_bot_by_phone_number(phone_number)
+    if existing_bot and existing_bot.id != bot_id:
         raise HTTPException(
             status_code=400,
             detail=f"Phone number {phone_number} already in use by bot {existing_bot.name}",
@@ -164,6 +164,7 @@ async def activate_bot(bot_id:str, request_body: JBBotActivate):
             status_code=400,
             detail=f"Bot missing required credentials: {', '.join(missing_credentials)}",
         )
+    logger.error(f"{channels} :: {type(channels)}")
     channels = encrypt_dict(channels)
     bot_data = {}
     bot_data["phone_number"] = phone_number
@@ -243,7 +244,8 @@ async def callback(request: Request):
     # TODO - write code to differentiate channel and identify helper to use
 
     bot_number = WhatsappHelper.extract_whatsapp_business_number(data)
-    bot_id = await get_bot_phone_number(bot_number)
+    bot = await get_bot_by_phone_number(bot_number)
+    bot_id = bot.id
     if bot_id is None:
         logger.error(f"Bot not found for number {bot_number}")
         return 404
