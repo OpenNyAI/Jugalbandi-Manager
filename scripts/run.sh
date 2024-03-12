@@ -18,7 +18,8 @@ shift $((OPTIND -1))
 # set -a
 # source ./set_jbhost.sh
 # set +a
-
+export JB_API_SERVER_HOST="http://localhost:8000"
+echo "Setting JB_API_SERVER_HOST: ${JB_API_SERVER_HOST}"
 if grep -qi microsoft /proc/version && grep -q WSL2 /proc/version; then
     JBHOST=$(hostname -I | awk '{print $1}')
     export JBHOST
@@ -32,7 +33,7 @@ else
     echo "Setting Kakfa & Postgres host by docker-compose service name: kafka, postgres"
 fi
 
-docker compose build $@
+docker compose build $@ --build-arg VITE_SERVER_HOST=$JB_API_SERVER_HOST
 
 # Run docker-compose with the specified environment file and services
 docker compose --env-file "$env_file" up $@
