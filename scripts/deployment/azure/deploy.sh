@@ -6,7 +6,7 @@ if [ -z "$rg_name" ]; then
     rg_name=rgjb-manager$random_number
 fi
 
-echo "Resource Group Name : "  $rg_name "\n"
+echo "Resource Group Name : $rg_name"
 
 export RESOURCE_GROUP=$rg_name
 export preferred_region=eastus2
@@ -20,19 +20,20 @@ export azurespeech_account=azurespeech-$random_number
 export azuretranslation_account=azuretranslation-$random_number
 export subscription_id=
 export embeddings_model_name=ada-embeddings-$random_number
+export gpt35_model_name=gpt35-$random_number
 export gpt4_model_name=gpt4-$random_number
 export storage_account_name=jbmanager$random_number
-export storage_account_container_name=container$random_number
 export storage_account_audiofiles_container_name=audiofiles
 export container_app_environment_name=jb-managerenv-$random_number
 export container_app_environment_workload_profile_name=envwp-$random_number
 
 
 # check if variable directRun (if set to false or null, indicates this called by an Azure ARM Template) is set to true skip az login; else login to azure
-if [ $directRun == "true" ]; then
+echo "Direct Run: $directRun"
+if [ "$directRun" = "true" ]; then
     echo "Direct Run"
 else
-    az login --identity
+    az login
 fi
 
 # get subscription id
@@ -122,8 +123,22 @@ fi
 error_message=$(az cognitiveservices account deployment create \
 --name $azureopenai_account \
 --resource-group  $rg_name \
---deployment-name $gpt4_model_name \
+--deployment-name $gpt35_model_name \
 --model-name gpt-35-turbo \
+--model-version 0613 \
+--model-format OpenAI)
+
+# Check if the command was successful
+if [ $? -ne 0 ]; then
+    echo "Error: $error_message"
+    exit 1
+fi
+
+error_message=$(az cognitiveservices account deployment create \
+--name $azureopenai_account \
+--resource-group  $rg_name \
+--deployment-name $gpt4_model_name \
+--model-name gpt-4 \
 --model-version 0613 \
 --model-format OpenAI)
 
@@ -300,7 +315,6 @@ STORAGE_ACCOUNT_KEY=$(az storage account keys list \
 
 export STORAGE_ACCOUNT_URL=https://$storage_account_name.blob.core.windows.net
 export STORAGE_AUDIOFILES_CONTAINER=$storage_account_audiofiles_container_name
-export STORAGE_LAWFILES_CONTAINER=$storage_account_container_name
 
 # setting Container App Environment Variables
 export AZURE_SPEECH_KEY=$azurespeech_key
@@ -313,8 +327,12 @@ export OPENAI_API_KEY=$OPENAI_API_KEY
 export OPENAI_API_TYPE=azure
 export OPENAI_EMBEDDINGS_DEPLOYMENT=$OPENAI_EMBEDDINGS_DEPLOYMENT
 
+export KAFKA_BROKER=$EVENTHUB_NAMESPACE.servicebus.windows.net:9093
+export KAFKA_PRODUCER_USERNAME='$ConnectionString'
+export KAFKA_CONSUMER_USERNAME='$ConnectionString'
 export KAFKA_RAG_TOPIC=rag
 export KAFKA_USE_SASL=true
+
 export POSTGRES_DATABASE_HOST=$POSTGRESQL_SERVER_NAME
 export POSTGRES_DATABASE_NAME=$POSTGRESQL_SERVER_DATABASE_NAME
 export POSTGRES_DATABASE_PASSWORD=$POSTGRESQL_SERVER_ADMIN_PASSWORD
@@ -350,7 +368,7 @@ container_app_fqdn=$(az containerapp create \
 --workload-profile-name "Consumption" \
 --scale-rule-name http-rule \
 --scale-rule-http-concurrency 50 \
---env-vars "POSTGRES_DATABASE_NAME=$POSTGRES_DATABASE_NAME" "POSTGRES_DATABASE_USERNAME=$POSTGRES_DATABASE_USERNAME" "POSTGRES_DATABASE_PASSWORD=$POSTGRES_DATABASE_PASSWORD" "POSTGRES_DATABASE_HOST=$POSTGRES_DATABASE_HOST" "POSTGRES_DATABASE_PORT=$POSTGRES_DATABASE_PORT" "KAFKA_BROKER=$KAFKA_BROKER" "KAFKA_USE_SASL=$KAFKA_USE_SASL" "KAFKA_PRODUCER_USERNAME=$KAFKA_PRODUCER_USERNAME" "KAFKA_PRODUCER_PASSWORD=$KAFKA_PRODUCER_PASSWORD" "KAFKA_CHANNEL_TOPIC=$KAFKA_CHANNEL_TOPIC" "KAFKA_FLOW_TOPIC=$KAFKA_FLOW_TOPIC" "STORAGE_ACCOUNT_URL=$STORAGE_ACCOUNT_URL" "STORAGE_ACCOUNT_KEY=$STORAGE_ACCOUNT_KEY" "STORAGE_LAWFILES_CONTAINER=$STORAGE_LAWFILES_CONTAINER" "STORAGE_AUDIOFILES_CONTAINER=$STORAGE_AUDIOFILES_CONTAINER" "ENCRYPTION_KEY=$ENCRYPTION_KEY" "WA_API_HOST=$WA_API_HOST" \
+--env-vars "POSTGRES_DATABASE_NAME=$POSTGRES_DATABASE_NAME" "POSTGRES_DATABASE_USERNAME=$POSTGRES_DATABASE_USERNAME" "POSTGRES_DATABASE_PASSWORD=$POSTGRES_DATABASE_PASSWORD" "POSTGRES_DATABASE_HOST=$POSTGRES_DATABASE_HOST" "POSTGRES_DATABASE_PORT=$POSTGRES_DATABASE_PORT" "KAFKA_BROKER=$KAFKA_BROKER" "KAFKA_USE_SASL=$KAFKA_USE_SASL" "KAFKA_PRODUCER_USERNAME=$KAFKA_PRODUCER_USERNAME" "KAFKA_PRODUCER_PASSWORD=$KAFKA_PRODUCER_PASSWORD" "KAFKA_CHANNEL_TOPIC=$KAFKA_CHANNEL_TOPIC" "KAFKA_FLOW_TOPIC=$KAFKA_FLOW_TOPIC" "STORAGE_ACCOUNT_URL=$STORAGE_ACCOUNT_URL" "STORAGE_ACCOUNT_KEY=$STORAGE_ACCOUNT_KEY" "STORAGE_AUDIOFILES_CONTAINER=$STORAGE_AUDIOFILES_CONTAINER" "ENCRYPTION_KEY=$ENCRYPTION_KEY" "WA_API_HOST=$WA_API_HOST" \
 --query properties.configuration.ingress.fqdn)
 
 # Check if the command was successful
@@ -407,7 +425,7 @@ container_app_fqdn=$(az containerapp create \
 --min-replicas 1 \
 --max-replicas 1 \
 --workload-profile-name "Consumption" \
---env-vars "POSTGRES_DATABASE_NAME=$POSTGRES_DATABASE_NAME" "POSTGRES_DATABASE_USERNAME=$POSTGRES_DATABASE_USERNAME" "POSTGRES_DATABASE_PASSWORD=$POSTGRES_DATABASE_PASSWORD" "POSTGRES_DATABASE_HOST=$POSTGRES_DATABASE_HOST" "POSTGRES_DATABASE_PORT=$POSTGRES_DATABASE_PORT" "KAFKA_BROKER=$KAFKA_BROKER" "KAFKA_USE_SASL=$KAFKA_USE_SASL" "KAFKA_PRODUCER_USERNAME=$KAFKA_PRODUCER_USERNAME" "KAFKA_PRODUCER_PASSWORD=$KAFKA_PRODUCER_PASSWORD" "KAFKA_LANGUAGE_TOPIC=$KAFKA_LANGUAGE_TOPIC" "KAFKA_FLOW_TOPIC=$KAFKA_FLOW_TOPIC" "KAFKA_CHANNEL_TOPIC=$KAFKA_CHANNEL_TOPIC" "KAFKA_CONSUMER_USERNAME=$KAFKA_CONSUMER_USERNAME" "KAFKA_CONSUMER_PASSWORD=$KAFKA_CONSUMER_PASSWORD" "STORAGE_ACCOUNT_URL=$STORAGE_ACCOUNT_URL" "STORAGE_ACCOUNT_KEY=$STORAGE_ACCOUNT_KEY" "STORAGE_LAWFILES_CONTAINER=$STORAGE_LAWFILES_CONTAINER" "STORAGE_AUDIOFILES_CONTAINER=$STORAGE_AUDIOFILES_CONTAINER" "ENCRYPTION_KEY=$ENCRYPTION_KEY" "WA_API_HOST=$WA_API_HOST")
+--env-vars "POSTGRES_DATABASE_NAME=$POSTGRES_DATABASE_NAME" "POSTGRES_DATABASE_USERNAME=$POSTGRES_DATABASE_USERNAME" "POSTGRES_DATABASE_PASSWORD=$POSTGRES_DATABASE_PASSWORD" "POSTGRES_DATABASE_HOST=$POSTGRES_DATABASE_HOST" "POSTGRES_DATABASE_PORT=$POSTGRES_DATABASE_PORT" "KAFKA_BROKER=$KAFKA_BROKER" "KAFKA_USE_SASL=$KAFKA_USE_SASL" "KAFKA_PRODUCER_USERNAME=$KAFKA_PRODUCER_USERNAME" "KAFKA_PRODUCER_PASSWORD=$KAFKA_PRODUCER_PASSWORD" "KAFKA_LANGUAGE_TOPIC=$KAFKA_LANGUAGE_TOPIC" "KAFKA_FLOW_TOPIC=$KAFKA_FLOW_TOPIC" "KAFKA_CHANNEL_TOPIC=$KAFKA_CHANNEL_TOPIC" "KAFKA_CONSUMER_USERNAME=$KAFKA_CONSUMER_USERNAME" "KAFKA_CONSUMER_PASSWORD=$KAFKA_CONSUMER_PASSWORD" "STORAGE_ACCOUNT_URL=$STORAGE_ACCOUNT_URL" "STORAGE_ACCOUNT_KEY=$STORAGE_ACCOUNT_KEY" "STORAGE_AUDIOFILES_CONTAINER=$STORAGE_AUDIOFILES_CONTAINER" "ENCRYPTION_KEY=$ENCRYPTION_KEY" "WA_API_HOST=$WA_API_HOST")
 
 # Check if the command was successful
 if [ $? -ne 0 ]; then
