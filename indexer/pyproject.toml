@@ -21,6 +21,7 @@ docx2txt = "^0.8"
 fitz = "^0.0.1.dev2"
 aiofiles = "^23.2.1"
 confluent-kafka = "^2.3.0"
+pymupdf = "^1.23.26"
 
 
 [build-system]
