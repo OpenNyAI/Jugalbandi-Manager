@@ -179,7 +179,9 @@ async def get_bot(bot_id: str):
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
     bot_data = {
-        "status": "inactive"
+        "status": "inactive",
+        "phone_number": None,
+        "channels": None
     }
     await update_bot(bot_id, bot_data)
     return bot
@@ -189,7 +191,12 @@ async def delete_bot(bot_id: str):
     bot = await get_bot_by_id(bot_id)
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
-    await update_bot(bot_id, {"status": "deleted"})
+    bot_data = {
+        "status": "deleted",
+        "phone_number": None,
+        "channels": None
+    }
+    await update_bot(bot_id, bot_data)
     return {"status": "success"}
 
 # endpoint to add (config)credentials for a bot to connect to things

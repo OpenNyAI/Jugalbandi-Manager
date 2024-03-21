@@ -203,7 +203,7 @@ async def update_bot(bot_id: str, data):
             stmt = (
                 update(JBBot)
                 .where(JBBot.id == bot_id)
-                .values(data)
+                .values(**data)
             )
             await session.execute(stmt)
             await session.commit()
