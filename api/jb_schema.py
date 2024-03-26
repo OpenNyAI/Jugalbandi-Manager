@@ -23,12 +23,13 @@ class JBBotConfig(BaseModel):
     class Config:
         from_attributes = True
 
+class JBBotChannels(BaseModel):
+    whatsapp: str
 
 # add activate bot endpoint
 class JBBotActivate(BaseModel):
-    bot_id: str
     phone_number: str
-    channels: Optional[List[str]] = ["whatsapp"]
+    channels: JBBotChannels
 
     class Config:
         from_attributes = True

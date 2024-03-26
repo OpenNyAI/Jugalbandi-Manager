@@ -4,7 +4,7 @@ from sqlalchemy import desc, join, select, update
 
 from lib.db_connection import async_session
 
-from lib.models import JBSession, JBUser, JBMessage
+from lib.models import JBSession, JBUser, JBMessage, JBBot
 
 
 async def get_user_by_session_id(session_id: str):
@@ -19,6 +19,20 @@ async def get_user_by_session_id(session_id: str):
                 result = await session.execute(query)
                 user = result.scalars().first()
                 return user
+    return None
+
+async def get_bot_by_session_id(session_id: str):
+    # TODO: have to make it as single query
+    query = select(JBSession).where(JBSession.id == session_id)
+    async with async_session() as session:
+        async with session.begin():
+            result = await session.execute(query)
+            s = result.scalars().first()
+            if s is not None:
+                query = select(JBBot).where(JBBot.id == s.bot_id)
+                result = await session.execute(query)
+                bot = result.scalars().first()
+                return bot.phone_number, bot.channels
     return None
 
 

@@ -3,7 +3,7 @@
 
 import json
 import os
-from typing import List
+from typing import Dict
 import uuid
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,7 +13,7 @@ from lib.kafka_utils import KafkaProducer
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
 from lib.whatsapp import WhatsappHelper
-from jb_schema import JBBotUpdate, JBBotCode
+from jb_schema import JBBotUpdate, JBBotCode, JBBotActivate
 
 from lib.data_models import (
     BotInput,
@@ -38,7 +38,7 @@ from crud import (
     update_session,
     create_message,
     get_bot_by_id,
-    get_bot_phone_number,
+    get_bot_by_phone_number,
     get_chat_history,
     get_bot_list,
     get_bot_chat_sessions,
@@ -77,7 +77,7 @@ def produce_message(message: str, topic: str = kafka_channel_topic):
 
 def encrypt_text(text: str) -> str:
     # TODO - implement encryption
-    encryption_key = os.getenv("FERNET_KEY")
+    encryption_key = os.getenv("ENCRYPTION_KEY")
     f = Fernet(encryption_key)
     return f.encrypt(text.encode()).decode()
 
@@ -136,19 +136,22 @@ async def install_bot(install_content: JBBotCode):
 
 # endpoint to activate bot and link it with a phone number
 @app.post("/bot/{bot_id}/activate")
-async def activate_bot(bot_id:str, request: Request):
-    request_body = await request.json()
-    phone_number: str = request_body.get("phone_number")
-    channels: List[str] = request_body.get("channels")
-    if channels is None:
-        channels = ["whatsapp"]
+async def activate_bot(bot_id:str, request_body: JBBotActivate):
+    phone_number: str = request_body.phone_number
+    if not phone_number:
+        raise HTTPException(status_code=400, detail="No phone number provided")
+    channels: Dict[str, str] = request_body.channels.model_dump()
+    if not channels:
+        raise HTTPException(status_code=400, detail="No channels provided")
+    if not 'whatsapp' in channels:
+        raise HTTPException(status_code=400, detail="Bot must have a whatsapp channel")
     bot: JBBot = await get_bot_by_id(bot_id)
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
     if bot.status == "active":
         raise HTTPException(status_code=400, detail="Bot already active")
-    existing_bot = await get_bot_phone_number(phone_number)
-    if existing_bot:
+    existing_bot = await get_bot_by_phone_number(phone_number)
+    if existing_bot and existing_bot.id != bot_id:
         raise HTTPException(
             status_code=400,
             detail=f"Phone number {phone_number} already in use by bot {existing_bot.name}",
@@ -161,6 +164,8 @@ async def activate_bot(bot_id:str, request: Request):
             status_code=400,
             detail=f"Bot missing required credentials: {', '.join(missing_credentials)}",
         )
+    logger.error(f"{channels} :: {type(channels)}")
+    channels = encrypt_dict(channels)
     bot_data = {}
     bot_data["phone_number"] = phone_number
     bot_data["channels"] = channels
@@ -174,7 +179,9 @@ async def get_bot(bot_id: str):
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
     bot_data = {
-        "status": "inactive"
+        "status": "inactive",
+        "phone_number": None,
+        "channels": None
     }
     await update_bot(bot_id, bot_data)
     return bot
@@ -184,7 +191,12 @@ async def delete_bot(bot_id: str):
     bot = await get_bot_by_id(bot_id)
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
-    await update_bot(bot_id, {"status": "deleted"})
+    bot_data = {
+        "status": "deleted",
+        "phone_number": None,
+        "channels": None
+    }
+    await update_bot(bot_id, bot_data)
     return {"status": "success"}
 
 # endpoint to add (config)credentials for a bot to connect to things
@@ -239,7 +251,8 @@ async def callback(request: Request):
     # TODO - write code to differentiate channel and identify helper to use
 
     bot_number = WhatsappHelper.extract_whatsapp_business_number(data)
-    bot_id = await get_bot_phone_number(bot_number)
+    bot = await get_bot_by_phone_number(bot_number)
+    bot_id = bot.id
     if bot_id is None:
         logger.error(f"Bot not found for number {bot_number}")
         return 404

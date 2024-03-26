@@ -135,13 +135,13 @@ async def get_bot_by_id(bot_id: str):
             return bot
     return None
 
-async def get_bot_phone_number(phone_number):
+async def get_bot_by_phone_number(phone_number):
     query = select(JBBot).where(JBBot.phone_number == phone_number and JBBot.status == 'active')
     async with async_session() as session:
         async with session.begin():
             result = await session.execute(query)
             bot = result.scalars().first()
-            return bot.id if bot else None
+            return bot if bot else None
     return None
 
 
@@ -203,7 +203,7 @@ async def update_bot(bot_id: str, data):
             stmt = (
                 update(JBBot)
                 .where(JBBot.id == bot_id)
-                .values(data)
+                .values(**data)
             )
             await session.execute(stmt)
             await session.commit()

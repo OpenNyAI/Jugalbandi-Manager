@@ -11,6 +11,7 @@ interface InputConfig {
 }
 
 interface Props {
+  title?: string;
   isOpen: boolean;
   onClose: () => void;
   inputs: Record<string, InputConfig>;
@@ -20,7 +21,7 @@ interface Props {
   botId?: string;
 }
 
-const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelType }) => {
+const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelType, title }) => {
   const [inputElements, setInputElements] = useState<Record<string, InputConfig>>({});
   const APIHOST = import.meta.env.VITE_SERVER_HOST;
 
@@ -59,7 +60,17 @@ const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelT
         data['credentials'] = { ...credentials };
     } else if (modelType === 'activate') {
         apiEndpoint = `${APIHOST}/bot/${botId}/activate`;
+        if (inputElements['phone_number'].required === true && !inputElements['phone_number'].value.toString().trim()) {
+            alert('Phone number is required');
+            return;
+        }
+        if (inputElements['whatsapp'].required === true && !inputElements['whatsapp'].value.toString().trim()) {
+            alert('Whatsapp Key is required');
+            return;
+        }
         data['phone_number'] = inputElements['phone_number'].value;
+        data['channels'] = {};
+        data['channels']['whatsapp'] = inputElements['whatsapp'].value;
     } else if (modelType === 'install') {
         apiEndpoint = `${APIHOST}/bot/install`;
         for (let key in inputElements) {
@@ -84,8 +95,8 @@ const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelT
         }
       })
         onClose();
-    } catch (error) {
-        alert("Error from server. Please try again.")
+    } catch (error: any) {
+        alert(`Error from server "${error?.body?.detail}". Please try again.`)
         console.error('Error saving settings:', error);
     }
   };
@@ -97,7 +108,7 @@ const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelT
       <div className="modal-overlay" onClick={onClose} />
       <div className="modal-container">
         <div className="modal-header">
-          <h2>Settings</h2>
+          <h2>{title ? title : 'Settings'}</h2>
           <button className="close-button" onClick={onClose}>×</button>
         </div>
         <div className="modal-body">

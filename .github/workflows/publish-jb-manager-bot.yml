@@ -26,6 +26,7 @@ jobs:
       with:
         version: latest  
     - name: Install twine
+      working-directory: ./jb-manager-bot
       run: poetry add twine
     - name: Remove any existing build
       working-directory: ./jb-manager-bot

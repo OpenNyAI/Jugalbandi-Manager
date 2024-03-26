@@ -89,7 +89,7 @@ async def get_bot_by_id(bot_id: str) -> JBBot | None:
 async def get_all_bots():
     async with async_session() as session:
         async with session.begin():
-            result = await session.execute(select(JBBot))
+            result = await session.execute(select(JBBot).where(JBBot.status != 'deleted'))
             s = result.scalars().all()
             return s
 

@@ -32,7 +32,7 @@ class JBBot(Base):
     required_credentials = Column(ARRAY(String)) # ["API_KEY", "API_SECRET"]
     credentials = Column(JSON) # {"API_KEY and other secrets"}
     version = Column(String, nullable=False) # 0.0.1
-    channels = Column(ARRAY(String)) # w, tele
+    channels = Column(JSON) # w, tele
     created_at = Column(
         TIMESTAMP(timezone=True), 
         server_default=func.now(), 
