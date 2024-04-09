@@ -10,5 +10,8 @@ We have repackaged the code into an event-driven architecture to make it scalabl
 ## Deep Dive
 To deep dive into the architecture and various components, look [here](DeepDive.md)
 
+## Local Setup
+Please look at the [Setup Notes](Setup.md) for local system setup.
+
 ## Developer Notes (moved)
 Please look at the updated [Developer Notes](Developer.md).
