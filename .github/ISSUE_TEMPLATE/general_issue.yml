@@ -33,8 +33,8 @@ body:
     attributes:
       label: Additional Information
       description: |
-        - Commit/Branch: <!-- Specify the commit/branch where you found the issue -->
-        - Operating System: <!-- Specify the OS (e.g., Windows 10, Ubuntu 20.04) -->
-        - Related Issues: <!-- Link to any related issues here (e.g., #1) -->
+        - Commit/Branch <!-- Specify the commit/branch where you found the issue -->
+        - Operating System <!-- Specify the OS (e.g., Windows 10, Ubuntu 20.04) -->
+        - Related Issues <!-- Link to any related issues here (e.g., #1) -->
         - Any other relevant information.
       placeholder: Any additional details
