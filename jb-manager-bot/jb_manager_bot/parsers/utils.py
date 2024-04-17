@@ -1,4 +1,5 @@
 import json
+from typing import List
 from openai import OpenAI, AzureOpenAI
 
 
@@ -119,3 +120,35 @@ class LLMManager:
                 },
             },
         }
+
+    @classmethod
+    def generate_embeddings(
+        cls,
+        inputs: List[str],
+        model: str,
+        openai_api_key=None,
+        azure_openai_api_key=None,
+        azure_openai_api_version=None,
+        azure_endpoint=None,
+        **kwargs
+    ):
+        """Use the OpenAI Embeddings API to generate embeddings for the given inputs."""
+        client = cls.get_client(
+            openai_api_key=openai_api_key,
+            azure_openai_api_key=azure_openai_api_key,
+            azure_openai_api_version=azure_openai_api_version,
+            azure_endpoint=azure_endpoint,
+        )
+        args = {
+            k: v
+            for k, v in kwargs.items()
+            if k
+            in [
+                "encoding_format",
+                "dimensions",
+            ]
+        }
+        response = client.embeddings.create(model=model, input=inputs, **args)
+        embeddings = [emb.embedding for emb in response.data]
+
+        return embeddings
