@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from whatsapp import WhatsappHelper
+from lib.whatsapp_helper import WhatsappHelper
 
 
 class TestWA(TestCase):
