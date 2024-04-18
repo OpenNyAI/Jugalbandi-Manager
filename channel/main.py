@@ -164,10 +164,8 @@ async def send_message_to_user(message: ChannelInput):
     channel_helper = channel_map[channel.type]
 
     if message.dialog == "language":
-        channel_id = channel_helper.wa_send_text_message(
-            channel=channel,
-            user_tele=user.phone_number,
-            text=bot_output.message_data.message_text,
+        channel_id = channel_helper.send_message(
+            channel=channel, user=user, bot_output=bot_output
         )
         await create_message(
             turn_id=message.turn_id,
@@ -177,16 +175,12 @@ async def send_message_to_user(message: ChannelInput):
             is_user_sent=False,
             message_text=bot_output.message_data.message_text,
         )
-        channel_id = channel_helper.wa_send_interactive_message(
-            channel=channel,
-            user_tele=user.phone_number,
-            message="Please select your preferred language",
-            header="Language",
-            body="Choose a Language",
-            footer="भाषा चुनें",
-            menu_selector="चुनें / Select",
-            menu_title="भाषाएँ / Languages",
-            options=[
+        bot_output = BotOutput(
+            message_type=MessageType.INTERACTIVE,
+            message_data=MessageData(
+                message_text="Please select your preferred language"
+            ),
+            options_list=[
                 {"id": "lang_hindi", "title": "हिन्दी"},
                 {"id": "lang_english", "title": "English"},
                 {"id": "lang_bengali", "title": "বাংলা"},
@@ -198,6 +192,15 @@ async def send_message_to_user(message: ChannelInput):
                 {"id": "lang_kannada", "title": "ಕನ್ನಡ"},
                 {"id": "lang_odia", "title": "ଓଡ଼ିଆ"},
             ],
+            header="Language",
+            footer="भाषा चुनें",
+            menu_selector="चुनें / Select",
+            menu_title="भाषाएँ / Languages"
+        )
+        channel_id = channel_helper.send_message(
+            channel=channel,
+            user=user,
+            bot_output=bot_output
         )
         await create_message(
             turn_id=message.turn_id,
@@ -209,7 +212,7 @@ async def send_message_to_user(message: ChannelInput):
         )
     else:
         channel_id = channel_helper.send_message(
-            channel=channel, user=user, bot_ouput=bot_output
+            channel=channel, user=user, bot_output=bot_output
         )
         message_text = bot_output.message_data.message_text
         logger.info("Message type: %s", bot_output.message_type)

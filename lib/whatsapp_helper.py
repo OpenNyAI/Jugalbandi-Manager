@@ -86,10 +86,10 @@ class WhatsappHelper(RestChannelHandler):
 
     @classmethod
     def send_message(
-        cls, channel: JBChannel, user: JBUser, bot_ouput: BotOutput, **kwargs
+        cls, channel: JBChannel, user: JBUser, bot_output: BotOutput, **kwargs
     ):
-        url = cls.generate_url(bot_output=bot_ouput, channel=channel, user=user)
-        data = cls.parse_bot_output(bot_output=bot_ouput, channel=channel, user=user)
+        url = cls.generate_url(bot_output=bot_output, channel=channel, user=user)
+        data = cls.parse_bot_output(bot_output=bot_output, channel=channel, user=user)
         headers = cls.generate_header(channel=channel)
         try:
             r = requests.post(url, data=json.dumps(data), headers=headers)
@@ -212,6 +212,7 @@ class WhatsappHelper(RestChannelHandler):
 
     @classmethod
     def parse_interactive_message(
+        cls,
         channel: JBChannel,
         user: JBUser,
         message: str,
