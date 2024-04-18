@@ -1,22 +1,26 @@
 import asyncio
 import base64
 import json
-import os
 import logging
+import os
 import traceback
-from dotenv import load_dotenv
-from lib.utils import decrypt_credentials
+
 from crud import (
-    get_user_by_session_id,
+    create_message,
     get_channel_by_session_id,
+    get_user_by_session_id,
     set_user_language,
     update_message,
-    create_message,
 )
+from dotenv import load_dotenv
+
+from lib.azure_storage import AzureStorage
+from lib.channel_handler import ChannelHandler
+from lib.custom_channel_helper import CustomChannelHelper
 from lib.data_models import (
     BotInput,
-    ChannelData,
     BotOutput,
+    ChannelData,
     ChannelInput,
     ChannelIntent,
     FlowInput,
@@ -26,12 +30,8 @@ from lib.data_models import (
     MessageType,
 )
 from lib.kafka_utils import KafkaConsumer, KafkaProducer
-from lib.azure_storage import AzureStorage
 from lib.model import Language
-from lib.utils import decrypt_credentials
-from lib.channel_handler import ChannelHandler
 from lib.whatsapp_helper import WhatsappHelper
-from lib.custom_channel_helper import CustomChannelHelper
 
 load_dotenv()
 
@@ -60,7 +60,7 @@ logger.info("Connected to kafka topic: %s", channel_topic)
 logger.info("Connecting to kafka topic: %s", language_topic)
 producer = KafkaProducer.from_env_vars()
 logger.info("Connected to kafka topic: %s %s", language_topic, flow_topic)
-channel_map = {"Whatsapp": WhatsappHelper, "custom": CustomChannelHelper}
+channel_map = {"whatsapp": WhatsappHelper, "custom": CustomChannelHelper}
 
 
 async def process_incoming_messages(message: ChannelInput):
@@ -208,17 +208,19 @@ async def send_message_to_user(message: ChannelInput):
             message_text="Please select your preferred language",
         )
     else:
-        channel_id = channel_helper.send_message(channel=channel, user=user, bot_ouput=bot_output)
+        channel_id = channel_helper.send_message(
+            channel=channel, user=user, bot_ouput=bot_output
+        )
         message_text = bot_output.message_data.message_text
         logger.info("Message type: %s", bot_output.message_type)
         await create_message(
-                turn_id=message.turn_id,
-                message_type=bot_output.message_type,
-                channel=channel.type,
-                channel_id=channel_id,
-                is_user_sent=False,
-                message_text=message_text,
-            )
+            turn_id=message.turn_id,
+            message_type=bot_output.message_type.value,
+            channel=channel.type,
+            channel_id=channel_id,
+            is_user_sent=False,
+            message_text=message_text,
+        )
     logger.info("Message sent")
 
 

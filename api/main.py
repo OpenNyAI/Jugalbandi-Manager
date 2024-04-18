@@ -17,6 +17,7 @@ from crud import (
     get_bot_by_phone_number,
     get_bot_chat_sessions,
     get_bot_list,
+    get_channel_by_bot_id,
     get_chat_history,
     get_plugin_reference,
     get_user_by_number,
@@ -28,10 +29,11 @@ from cryptography.fernet import Fernet
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from utils import extract_reference_id
 from jb_schema import JBBotActivate, JBBotCode, JBBotUpdate
-from lib.custom_channel_helper import CustomChannelHelper
+from utils import extract_reference_id
+
 from lib.channel_handler import ChannelHandler
+from lib.custom_channel_helper import CustomChannelHelper
 from lib.data_models import (
     BotConfig,
     BotInput,
@@ -42,8 +44,8 @@ from lib.data_models import (
     MessageData,
     MessageType,
 )
-from lib.kafka_utils import KafkaProducer
 from lib.jb_logging import Logger
+from lib.kafka_utils import KafkaProducer
 from lib.models import JBBot
 from lib.whatsapp_helper import WhatsappHelper
 
@@ -62,7 +64,7 @@ app.add_middleware(
 
 kafka_channel_topic = os.getenv("KAFKA_CHANNEL_TOPIC")
 flow_topic = os.getenv("KAFKA_FLOW_TOPIC")
-channel_map = {"Whatsapp": WhatsappHelper, "custom": CustomChannelHelper}
+channel_map = {"whatsapp": WhatsappHelper, "custom": CustomChannelHelper}
 
 # Connect Kafka Producer automatically using env variables
 # and SASL, if applicable
@@ -253,6 +255,7 @@ async def callback(request: Request):
 
     app_id = chosen_channel.extract_app_id(data)
     bot_id = await get_bot_by_channel_app_id(app_id)
+    channel_id = await get_channel_by_bot_id(bot_id, channel.get_channel_name())
     if bot_id is None:
         logger.error(f"Bot not found for number {app_id}")
         return 404
@@ -277,13 +280,15 @@ async def callback(request: Request):
         if create_new_session:
             # create session
             logger.info("Creating session")
-            session = await create_session(user.id, bot_id)
+            session = await create_session(user.id, bot_id, channel_id)
         else:
-            session = await get_user_session(bot_id, user.id, 24 * 60 * 60 * 1000)
+            session = await get_user_session(
+                bot_id, user.id, channel_id, 24 * 60 * 60 * 1000
+            )
             if session is None:
                 # create session
                 logger.info("Creating session")
-                session = await create_session(user.id, bot_id)
+                session = await create_session(user.id, bot_id, channel_id)
             else:
                 await update_session(session.id)
 

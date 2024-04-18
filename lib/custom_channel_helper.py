@@ -87,7 +87,7 @@ class CustomChannelHelper(RestChannelHandler):
     ):
         url = cls.generate_url(bot_output=bot_ouput, channel=channel, user=user)
         data = cls.parse_bot_output(bot_output=bot_ouput, channel=channel, user=user)
-        headers = cls.generate_header(bot_output=bot_ouput, channel=channel, user=user)
+        headers = cls.generate_header(channel=channel)
         try:
             r = requests.post(url, data=json.dumps(data), headers=headers)
             json_output = r.json()
@@ -122,9 +122,7 @@ class CustomChannelHelper(RestChannelHandler):
         message_text = bot_output.message_data.message_text
         message_type = bot_output.message_type
         if message_type == MessageType.TEXT:
-            data = cls.parse_text_message(
-                channel=channel, user=user, message=message_text
-            )
+            data = cls.parse_text_message(channel=channel, user=user, text=message_text)
         elif message_type == MessageType.AUDIO:
             media_url = bot_output.message_data.media_url
             data = cls.parse_audio_message(

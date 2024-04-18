@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import desc, select, update
+from sqlalchemy import desc, select, update, and_
 from sqlalchemy.orm import joinedload
 
 from lib.db_connection import async_session
@@ -47,21 +47,21 @@ async def get_user_by_number(number: str, bot_id: str) -> JBUser:
     return None
 
 
-async def create_session(pid: str, bot_id: str):
+async def create_session(pid: str, bot_id: str, channel_id: str):
     session_id = str(uuid.uuid4())
     async with async_session() as session:
         async with session.begin():
-            s = JBSession(id=session_id, pid=pid, bot_id=bot_id)
+            s = JBSession(id=session_id, pid=pid, bot_id=bot_id, channel_id=channel_id)
             session.add(s)
             await session.commit()
             return s
     return None
 
 
-async def get_user_session(bot_id: str, pid: str, timeout: int):
+async def get_user_session(bot_id: str, pid: str, channel_id: str, timeout: int):
     query = (
         select(JBSession)
-        .where(JBSession.pid == pid and JBSession.bot_id == bot_id)
+        .where(and_(JBSession.pid == pid, JBSession.bot_id == bot_id, JBSession.channel_id == channel_id))
         .order_by(desc(JBSession.created_at))
     )
     async with async_session() as session:
@@ -240,4 +240,16 @@ async def get_bot_by_channel_app_id(app_id):
             result = await session.execute(query)
             bot_id = result.scalars().first()
             return bot_id
+    return None
+
+
+async def get_channel_by_bot_id(bot_id, channel_name):
+    query = select(JBChannel.id).where(
+        and_(JBChannel.bot_id == bot_id, JBChannel.name == channel_name)
+    )
+    async with async_session() as session:
+        async with session.begin():
+            result = await session.execute(query)
+            channel_id = result.scalars().first()
+            return channel_id
     return None
