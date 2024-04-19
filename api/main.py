@@ -4,47 +4,50 @@
 import json
 import os
 from typing import Dict
-import uuid
+
+from confluent_kafka import KafkaException
+from crud import (
+    create_bot,
+    create_message,
+    create_session,
+    create_turn,
+    create_user,
+    get_bot_by_channel_app_id,
+    get_bot_by_id,
+    get_bot_by_phone_number,
+    get_bot_chat_sessions,
+    get_bot_list,
+    get_channel_by_bot_id,
+    get_chat_history,
+    get_plugin_reference,
+    get_user_by_number,
+    get_user_session,
+    update_bot,
+    update_session,
+)
+from cryptography.fernet import Fernet
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from jb_schema import JBBotActivate, JBBotCode, JBBotUpdate
 from utils import extract_reference_id
-from confluent_kafka import KafkaException
-from lib.kafka_utils import KafkaProducer
-from dotenv import load_dotenv
-from cryptography.fernet import Fernet
-from lib.whatsapp import WhatsappHelper
-from jb_schema import JBBotUpdate, JBBotCode, JBBotActivate
 
+from lib.channel_handler import ChannelHandler
+from lib.custom_channel_helper import CustomChannelHelper
 from lib.data_models import (
+    BotConfig,
     BotInput,
     ChannelData,
     ChannelInput,
     ChannelIntent,
     FlowInput,
-    MessageType,
     MessageData,
-    BotConfig,
+    MessageType,
 )
 from lib.jb_logging import Logger
+from lib.kafka_utils import KafkaProducer
 from lib.models import JBBot
-
-from crud import (
-    create_turn,
-    create_user,
-    get_plugin_reference,
-    get_user_by_number,
-    get_user_session,
-    create_session,
-    update_session,
-    create_message,
-    get_bot_by_id,
-    get_bot_by_phone_number,
-    get_chat_history,
-    get_bot_list,
-    get_bot_chat_sessions,
-    update_bot,
-    create_bot,
-)
+from lib.whatsapp_helper import WhatsappHelper
 
 load_dotenv()
 
@@ -61,6 +64,7 @@ app.add_middleware(
 
 kafka_channel_topic = os.getenv("KAFKA_CHANNEL_TOPIC")
 flow_topic = os.getenv("KAFKA_FLOW_TOPIC")
+channel_map = {"whatsapp": WhatsappHelper, "custom": CustomChannelHelper}
 
 # Connect Kafka Producer automatically using env variables
 # and SASL, if applicable
@@ -136,14 +140,14 @@ async def install_bot(install_content: JBBotCode):
 
 # endpoint to activate bot and link it with a phone number
 @app.post("/bot/{bot_id}/activate")
-async def activate_bot(bot_id:str, request_body: JBBotActivate):
+async def activate_bot(bot_id: str, request_body: JBBotActivate):
     phone_number: str = request_body.phone_number
     if not phone_number:
         raise HTTPException(status_code=400, detail="No phone number provided")
     channels: Dict[str, str] = request_body.channels.model_dump()
     if not channels:
         raise HTTPException(status_code=400, detail="No channels provided")
-    if not 'whatsapp' in channels:
+    if not "whatsapp" in channels:
         raise HTTPException(status_code=400, detail="Bot must have a whatsapp channel")
     bot: JBBot = await get_bot_by_id(bot_id)
     if not bot:
@@ -158,7 +162,9 @@ async def activate_bot(bot_id:str, request_body: JBBotActivate):
         )
     required_credentials = bot.required_credentials
     current_credentials = bot.credentials if bot.credentials else {}
-    missing_credentials = [name for name in required_credentials if name not in current_credentials]
+    missing_credentials = [
+        name for name in required_credentials if name not in current_credentials
+    ]
     if missing_credentials:
         raise HTTPException(
             status_code=400,
@@ -173,35 +179,30 @@ async def activate_bot(bot_id:str, request_body: JBBotActivate):
     await update_bot(bot_id, bot_data)
     return {"status": "success"}
 
+
 @app.get("/bot/{bot_id}/deactivate")
 async def get_bot(bot_id: str):
     bot = await get_bot_by_id(bot_id)
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
-    bot_data = {
-        "status": "inactive",
-        "phone_number": None,
-        "channels": None
-    }
+    bot_data = {"status": "inactive", "phone_number": None, "channels": None}
     await update_bot(bot_id, bot_data)
     return bot
+
 
 @app.delete("/bot/{bot_id}")
 async def delete_bot(bot_id: str):
     bot = await get_bot_by_id(bot_id)
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
-    bot_data = {
-        "status": "deleted",
-        "phone_number": None,
-        "channels": None
-    }
+    bot_data = {"status": "deleted", "phone_number": None, "channels": None}
     await update_bot(bot_id, bot_data)
     return {"status": "success"}
 
+
 # endpoint to add (config)credentials for a bot to connect to things
 @app.post("/bot/{bot_id}/configure")
-async def add_bot_configuraton(bot_id:str, request: Request):
+async def add_bot_configuraton(bot_id: str, request: Request):
     request_body = await request.json()
     bot: JBBot = await get_bot_by_id(bot_id)
     if not bot:
@@ -231,7 +232,7 @@ async def get_session(bot_id: str, session_id: str):
 
 # get all chats related to a bot
 @app.get("/chats/{bot_id}")
-async def get_chats(bot_id: str, skip: int = 0, limit: int = 100):
+async def get_chats_from_bot_id(bot_id: str, skip: int = 0, limit: int = 100):
     chats = await get_chat_history(bot_id, skip, limit)
     return chats
 
@@ -247,21 +248,22 @@ async def callback(request: Request):
     # if whatsapp parse with whatsapp library
     # if telegram parse with telegram library:
     data = await request.json()
+    for channel in channel_map.values():
+        if channel.is_valid_channel(data):
+            chosen_channel: ChannelHandler = channel
+            break
 
-    # TODO - write code to differentiate channel and identify helper to use
-
-    bot_number = WhatsappHelper.extract_whatsapp_business_number(data)
-    bot = await get_bot_by_phone_number(bot_number)
-    bot_id = bot.id
+    app_id = chosen_channel.extract_app_id(data)
+    bot_id = await get_bot_by_channel_app_id(app_id)
+    channel_id = await get_channel_by_bot_id(bot_id, channel.get_channel_name())
     if bot_id is None:
-        logger.error(f"Bot not found for number {bot_number}")
+        logger.error(f"Bot not found for number {app_id}")
         return 404
 
-    for message in WhatsappHelper.process_messsage(data):
+    for message in chosen_channel.process_messsage(data):
         contact_number = message["from"]
         contact_name = message["name"]  # Set to Dummy at the moment
         user = await get_user_by_number(contact_number, bot_id)
-        turn_id = str(uuid.uuid4())
 
         if user is None:
             # register user
@@ -278,13 +280,15 @@ async def callback(request: Request):
         if create_new_session:
             # create session
             logger.info("Creating session")
-            session = await create_session(user.id, bot_id)
+            session = await create_session(user.id, bot_id, channel_id)
         else:
-            session = await get_user_session(bot_id, user.id, 24 * 60 * 60 * 1000)
+            session = await get_user_session(
+                bot_id, user.id, channel_id, 24 * 60 * 60 * 1000
+            )
             if session is None:
                 # create session
                 logger.info("Creating session")
-                session = await create_session(user.id, bot_id)
+                session = await create_session(user.id, bot_id, channel_id)
             else:
                 await update_session(session.id)
 
@@ -300,12 +304,12 @@ async def callback(request: Request):
             session_id=session.id,
             bot_id=bot_id,
             turn_type=message_type,
-            channel="WA",
+            channel=chosen_channel.get_channel_name(),
         )
         msg_id = await create_message(
             turn_id=turn_id,
             message_type=message_type,
-            channel="WA",
+            channel=chosen_channel.get_channel_name(),
             channel_id=message["id"],
             is_user_sent=True,
         )

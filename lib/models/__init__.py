@@ -8,7 +8,6 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
-    create_engine,
 )
 from sqlalchemy.dialects.postgresql import JSON, JSONB, UUID
 from sqlalchemy.orm import declarative_base, relationship
@@ -20,27 +19,25 @@ Base = declarative_base()
 class JBBot(Base):
     __tablename__ = "jb_bot"
 
-    id = Column(String, primary_key=True) # "1234"
-    name = Column(String) # "My Bot"
-    phone_number = Column(String, unique=True) # +2348123456789
-    status = Column(String, nullable=False) # active or inactive
+    id = Column(String, primary_key=True)  # "1234"
+    name = Column(String)  # "My Bot"
+    phone_number = Column(String, unique=True)  # +2348123456789
+    status = Column(String, nullable=False)  # active or inactive
     dsl = Column(String)
     code = Column(String)
     requirements = Column(String)
     index_urls = Column(ARRAY(String))
-    config_env = Column(JSON) # variables to pass to the bot environment
-    required_credentials = Column(ARRAY(String)) # ["API_KEY", "API_SECRET"]
-    credentials = Column(JSON) # {"API_KEY and other secrets"}
-    version = Column(String, nullable=False) # 0.0.1
-    channels = Column(JSON) # w, tele
+    config_env = Column(JSON)  # variables to pass to the bot environment
+    required_credentials = Column(ARRAY(String))  # ["API_KEY", "API_SECRET"]
+    credentials = Column(JSON)  # {"API_KEY and other secrets"}
+    version = Column(String, nullable=False)  # 0.0.1
+    channels = Column(ARRAY(String))
     created_at = Column(
-        TIMESTAMP(timezone=True), 
-        server_default=func.now(), 
-        nullable=False
+        TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
     )
     updated_at = Column(
-        TIMESTAMP(timezone=True), 
-        server_default=func.now(), 
+        TIMESTAMP(timezone=True),
+        server_default=func.now(),
         nullable=False,
         onupdate=func.now(),
     )
@@ -48,13 +45,26 @@ class JBBot(Base):
     sessions = relationship("JBSession", back_populates="bot")
 
 
+class JBChannel(Base):
+    __tablename__ = "jb_channel"
+
+    id = Column(String, primary_key=True)
+    bot_id = Column(String, ForeignKey("jb_bot.id"))
+    name = Column(String)
+    type = Column(String)
+    key = Column(String)
+    app_id = Column(String)
+    url = Column(String)
+
+
 class JBUser(Base):
     __tablename__ = "jb_users"
 
     id = Column(String, primary_key=True)
-    bot_id = Column(String, ForeignKey('jb_bot.id'))
+    bot_id = Column(String, ForeignKey("jb_bot.id"))
     first_name = Column(String)
     last_name = Column(String)
+    # TODO: make phone_number as a generic field name (It may also include email)
     phone_number = Column(String)
     language_preference = Column(String, default="en")
     created_at = Column(
@@ -68,8 +78,9 @@ class JBSession(Base):
     __tablename__ = "jb_session"
 
     id = Column(String, primary_key=True)
-    pid = Column(String, ForeignKey('jb_users.id'))
-    bot_id = Column(String, ForeignKey('jb_bot.id'))
+    pid = Column(String, ForeignKey("jb_users.id"))
+    bot_id = Column(String, ForeignKey("jb_bot.id"))
+    channel_id = Column(String, ForeignKey("jb_channel.id"))
     created_at = Column(
         TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
     )
@@ -83,12 +94,13 @@ class JBSession(Base):
     bot = relationship("JBBot", back_populates="sessions")
     turns = relationship("JBTurn", back_populates="session")
 
+
 class JBTurn(Base):
     __tablename__ = "jb_turn"
 
     id = Column(String, primary_key=True)
-    session_id = Column(String, ForeignKey('jb_session.id'))
-    bot_id = Column(String, ForeignKey('jb_bot.id'))
+    session_id = Column(String, ForeignKey("jb_session.id"))
+    bot_id = Column(String, ForeignKey("jb_bot.id"))
     turn_type = Column(String)
     channel = Column(String)
 
@@ -98,11 +110,12 @@ class JBTurn(Base):
     def __repr__(self):
         return f"<JBTurn(id={self.id}, session_id={self.session_id}, bot_id={self.bot_id}, turn_type={self.turn_type}, channel={self.channel})>"
 
+
 class JBMessage(Base):
     __tablename__ = "jb_message"
 
     id = Column(String, primary_key=True)
-    turn_id = Column(String, ForeignKey('jb_turn.id'))
+    turn_id = Column(String, ForeignKey("jb_turn.id"))
     message_type = Column(String)
     media_url = Column(String)
     message_text = Column(String)
@@ -114,6 +127,7 @@ class JBMessage(Base):
 
     def __repr__(self):
         return f"<JBMessage(id={self.id}, turn_id={self.turn_id}, message_type={self.message_type}, media_url={self.media_url}, message_text={self.message_text}, channel={self.channel}, channel_id={self.channel_id}, is_user_sent={self.is_user_sent})>"
+
 
 class JBDocumentStoreLog(Base):
     __tablename__ = "jb_document_store_log"
@@ -258,7 +272,6 @@ class JBPluginUUID(Base):
         nullable=False,
         onupdate=func.now(),
     )
-
 
 
 # class LangchainPgCollection(Base):

@@ -1,10 +1,10 @@
-from datetime import datetime
 import uuid
+from datetime import datetime
+
 from sqlalchemy import desc, join, select, update
 
 from lib.db_connection import async_session
-
-from lib.models import JBSession, JBUser, JBMessage, JBBot
+from lib.models import JBBot, JBChannel, JBMessage, JBSession, JBUser
 
 
 async def get_user_by_session_id(session_id: str):
@@ -21,6 +21,7 @@ async def get_user_by_session_id(session_id: str):
                 return user
     return None
 
+
 async def get_bot_by_session_id(session_id: str):
     # TODO: have to make it as single query
     query = select(JBSession).where(JBSession.id == session_id)
@@ -33,6 +34,21 @@ async def get_bot_by_session_id(session_id: str):
                 result = await session.execute(query)
                 bot = result.scalars().first()
                 return bot.phone_number, bot.channels
+    return None
+
+
+async def get_channel_by_session_id(session_id: str):
+    # TODO: have to make it as single query
+    query = select(JBSession).where(JBSession.id == session_id)
+    async with async_session() as session:
+        async with session.begin():
+            result = await session.execute(query)
+            s = result.scalars().first()
+            if s is not None:
+                query = select(JBChannel).where(JBChannel.id == s.channel_id)
+                result = await session.execute(query)
+                channel = result.scalars().first()
+                return channel
     return None
 
 
