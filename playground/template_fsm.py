@@ -79,6 +79,7 @@ class HousingAppFSM(AbstractFSM):
         "select_language",
         "ask_house_preferences",  # send the message -> Please provide your house preferences
         "input_ask_house_preferences",  # wait for input
+        "generate_chunks",
         "process_ask_house_preferences",  # process the user input
         "ask_house_preference_again",  # send the message -> Couldn't understand; Goto input_ask_house_preferences 
         "ask_move_in_date",
@@ -203,6 +204,11 @@ class HousingAppFSM(AbstractFSM):
         },
         {
             "source": "input_ask_house_preferences",
+            "dest": "generate_chunks",
+            "trigger": "next",
+        },
+        {
+            "source": "generate_chunks",
             "dest": "process_ask_house_preferences",
             "trigger": "next",
         },
@@ -373,8 +379,23 @@ class HousingAppFSM(AbstractFSM):
         self.status = Status.WAIT_FOR_ME
         self.status = Status.WAIT_FOR_USER_INPUT
 
+    def on_enter_generate_chunks(self):
+        self.status = Status.WAIT_FOR_ME
+        self.variables["query"]=self.current_input
+        self.send_message(
+            FSMOutput(
+                message_data=MessageData(body=self.variables["query"]),
+                dest="rag"
+            )
+        )
+        self.status = Status.WAIT_FOR_CALLBACK
+
     def on_enter_process_ask_house_preferences(self):
         self.status = Status.WAIT_FOR_ME
+        chunks = self.current_input
+        chunks = json.loads(chunks)["chunks"]
+        knowledge = "\n".join([row["chunk"] for row in chunks])
+
         result = LLMManager.llm(
             messages=[
                     LLMManager.sm(
