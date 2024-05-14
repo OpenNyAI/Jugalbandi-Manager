@@ -1,5 +1,3 @@
-Note: This repository is rapidly evolving. While we try our best to avoid it, there could be some breaking changes.
-
 # JB Manager
 Jugalbandi v2 that supports both information and actions. Now an NGO, Government Department or Social Enterprise user can build with the Jugalbandi Studio and with one-click deploy their bot and make it available to their beneficiaries.
 
