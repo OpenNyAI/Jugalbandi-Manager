@@ -7,13 +7,13 @@ from typing import Dict
 import uuid
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from utils import extract_reference_id
+from .utils import extract_reference_id
 from confluent_kafka import KafkaException
 from lib.kafka_utils import KafkaProducer
 from dotenv import load_dotenv
 from cryptography.fernet import Fernet
 from lib.whatsapp import WhatsappHelper
-from jb_schema import JBBotUpdate, JBBotCode, JBBotActivate
+from .jb_schema import JBBotUpdate, JBBotCode, JBBotActivate
 
 from lib.data_models import (
     BotInput,
@@ -28,7 +28,7 @@ from lib.data_models import (
 from lib.jb_logging import Logger
 from lib.models import JBBot
 
-from crud import (
+from .crud import (
     create_turn,
     create_user,
     get_plugin_reference,
