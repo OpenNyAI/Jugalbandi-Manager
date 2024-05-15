@@ -26,4 +26,4 @@ COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 COPY ./channel .
 COPY ./lib ./lib
 
-CMD ["python", "main.py"]
+CMD ["python", "-m", "channel"]

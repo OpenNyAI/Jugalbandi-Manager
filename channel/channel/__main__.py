@@ -5,8 +5,8 @@ import os
 import logging
 import traceback
 from dotenv import load_dotenv
-from utils import decrypt_credentials
-from crud import (
+from .utils import decrypt_credentials
+from .crud import (
     get_user_by_session_id,
     get_bot_by_session_id,
     set_user_language,
