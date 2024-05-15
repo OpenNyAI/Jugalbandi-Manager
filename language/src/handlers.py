@@ -4,7 +4,7 @@ Handlers for Language Input and Output
 
 import logging
 import uuid
-from extension import speech_processor, storage, translator
+from .extension import speech_processor, storage, translator
 from lib.audio_converter import convert_to_wav_with_ffmpeg
 from lib.data_models import (
     BotOutput,
