@@ -34,7 +34,6 @@ db_port = os.getenv("POSTGRES_DATABASE_PORT")
 
 # Construct the SQLAlchemy connection URL using URL class
 db_url = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
-print(f"DB URL: {db_url}")
 config.set_main_option('sqlalchemy.url', db_url)
 
 
