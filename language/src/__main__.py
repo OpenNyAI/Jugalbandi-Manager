@@ -5,21 +5,19 @@ import os
 import logging
 import traceback
 from typing import List
+from dotenv import load_dotenv
 
-from crud import (
+from .crud import (
     get_turn_information,
     get_user_preferred_language,
 )
-from extension import speech_processor, translator
-from dotenv import load_dotenv
-from handlers import handle_input, handle_output
+from .handlers import handle_input, handle_output
 
 from lib.data_models import (
     ChannelInput,
     FlowInput,
     LanguageInput,
     LanguageIntent,
-    MessageType,
 )
 from lib.kafka_utils import KafkaConsumer, KafkaProducer
 from lib.model import Language
