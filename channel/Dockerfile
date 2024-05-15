@@ -23,7 +23,7 @@ WORKDIR /app
 
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
-COPY ./channel .
+COPY ./channel/src ./channel
 COPY ./lib ./lib
 
 CMD ["python", "-m", "channel"]
