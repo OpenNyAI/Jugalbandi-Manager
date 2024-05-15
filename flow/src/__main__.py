@@ -9,8 +9,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 
-import crud
-from extensions import save_file
+from . import crud
+from .extensions import save_file
 from lib.kafka_utils import KafkaConsumer, KafkaProducer
 from lib.data_models import (
     BotOutput,
@@ -61,7 +61,7 @@ async def install_or_update_bot(bot_config: BotConfig):
     )
     index_urls = bot_config.index_urls if bot_config.index_urls else []
 
-    bots_parent_directory = Path(__file__).parent
+    bots_parent_directory = Path(__file__).parent.parent
     bots_root_directory = Path(os.path.join(bots_parent_directory, "bots"))
     bot_dir = Path(os.path.join(bots_root_directory, bot_id))
 
@@ -296,7 +296,7 @@ async def flow_loop():
             credentials = bot_details.credentials
             credentials = {} if credentials is None else credentials
 
-            path = Path(__file__).parent / "bots" / bot_id
+            path = Path(__file__).parent.parent / "bots" / bot_id
 
             ## need to pass state json and msg_text to the bot
             fsm_runner_input = {
