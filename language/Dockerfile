@@ -27,7 +27,7 @@ RUN apt-get update \
     && apt-get install -y ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
-COPY ./language .
+COPY ./language/src ./language
 COPY ./lib lib
 
-CMD ["python", "-u", "-m", "main"]
+CMD ["python", "-u", "-m", "language"]
