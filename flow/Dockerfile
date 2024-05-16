@@ -23,7 +23,8 @@ WORKDIR /app
 
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
-COPY ./flow .
+COPY ./flow/src ./flow
+COPY ./flow/template ./template
 COPY ./lib ./lib
 
-CMD ["python", "main.py"]
+CMD ["python", "-m", "flow"]
