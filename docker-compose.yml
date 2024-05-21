@@ -1,9 +1,5 @@
-version: '3'
 services:
   api:
-    build: 
-      context: .
-      dockerfile: ./api/Dockerfile
     ports:
       - "8000:8000"
     environment:
@@ -43,9 +39,6 @@ services:
         - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
         - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=PLAINTEXT
   language:
-    build:
-      context: .  # Root directory of the project      
-      dockerfile: ./language/Dockerfile
     environment:
       - POSTGRES_DATABASE_NAME=${POSTGRES_DATABASE_NAME}
       - POSTGRES_DATABASE_USERNAME=${POSTGRES_DATABASE_USERNAME}
@@ -75,9 +68,6 @@ services:
         - kafka
         - postgres
   flow:
-    build:
-      context: .  # Root directory of the project      
-      dockerfile: ./flow/Dockerfile
     environment:
       - POSTGRES_DATABASE_NAME=${POSTGRES_DATABASE_NAME}
       - POSTGRES_DATABASE_USERNAME=${POSTGRES_DATABASE_USERNAME}
@@ -102,9 +92,6 @@ services:
         - kafka
         - postgres
   indexer:
-    build:
-      context: .  # Root directory of the project      
-      dockerfile: ./indexer/Dockerfile
     environment:
       - KAFKA_BROKER=${KAFKA_BROKER}
       - KAFKA_USE_SASL=${KAFKA_USE_SASL}
@@ -123,9 +110,6 @@ services:
       - kafka
       - postgres
   retriever:
-    build:
-      context: .  # Root directory of the project      
-      dockerfile: ./retriever/Dockerfile
     environment:
       - KAFKA_BROKER=${KAFKA_BROKER} 
       - KAFKA_USE_SASL=${KAFKA_USE_SASL}
@@ -149,9 +133,6 @@ services:
       - kafka
       - postgres
   channel:
-    build:
-      context: .  # Root directory of the project      
-      dockerfile: ./channel/Dockerfile
     environment:
       - POSTGRES_DATABASE_NAME=${POSTGRES_DATABASE_NAME}
       - POSTGRES_DATABASE_USERNAME=${POSTGRES_DATABASE_USERNAME}
@@ -176,9 +157,6 @@ services:
         - kafka
         - postgres
   frontend:
-    build:
-      context: .  # Root directory of the project      
-      dockerfile: ./frontend/Dockerfile
     ports:
       - "4173:4173"
     environment:
