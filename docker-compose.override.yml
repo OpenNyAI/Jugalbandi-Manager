@@ -1,0 +1,29 @@
+services:
+  api:
+    build: 
+      context: .
+      dockerfile: ./api/Dockerfile
+  language:
+    build:
+      context: .  # Root directory of the project      
+      dockerfile: ./language/Dockerfile
+  flow:
+    build:
+      context: .  # Root directory of the project      
+      dockerfile: ./flow/Dockerfile
+  indexer:
+    build:
+      context: .  # Root directory of the project      
+      dockerfile: ./indexer/Dockerfile
+  retriever:
+    build:
+      context: .  # Root directory of the project      
+      dockerfile: ./retriever/Dockerfile
+  channel:
+    build:
+      context: .  # Root directory of the project      
+      dockerfile: ./channel/Dockerfile
+  frontend:
+    build:
+      context: .  # Root directory of the project      
+      dockerfile: ./frontend/Dockerfile
