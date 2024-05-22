@@ -16,14 +16,15 @@ jobs:
         ref: ${{ github.event.pull_request.merge_commit_sha }}
         fetch-depth: '0'
 
-    - name: Bump version and push tag
-      id: tag_version
-      uses: anothrNick/github-tag-action@1.64.0 
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # if you don't want to set write permissions use a PAT token
-        WITH_V: false
-        DEFAULT_BUMP: patch
-        RELEASE_BRANCHES: main
+    # - name: Bump version and push tag
+    #   id: tag_version
+    #   uses: anothrNick/github-tag-action@1.64.0 
+    #   env:
+    #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # if you don't want to set write permissions use a PAT token
+    #     WITH_V: false
+    #     DEFAULT_BUMP: patch
+    #     RELEASE_BRANCHES: main
+    
     - name: Log in to Docker Hub
       uses: docker/login-action@v1
       with:
@@ -36,40 +37,53 @@ jobs:
         context: .
         file: flow/Dockerfile
         push: true
-        tags: opennyaiin/jugalbandi-manager:flow-${{ steps.tag_version.outputs.new_tag }}
+        tags: |
+           opennyaiin/jugalbandi-manager:flow-latest
+           opennyaiin/jugalbandi-manager:flow-${{ github.ref_name }}
+           
     - name: Build and push Docker language image
       uses: docker/build-push-action@v5
       with:
         context: .
         file: language/Dockerfile
         push: true
-        tags: opennyaiin/jugalbandi-manager:language-${{ steps.tag_version.outputs.new_tag }}
+        tags: |
+            opennyaiin/jugalbandi-manager:language-latest
+            opennyaiin/jugalbandi-manager:language-${{ github.ref_name }}
     - name: Build and push Docker channel image
       uses: docker/build-push-action@v5
       with:
         context: .
         file: channel/Dockerfile
         push: true
-        tags: opennyaiin/jugalbandi-manager:channel-${{ steps.tag_version.outputs.new_tag }}
+        tags: |
+          opennyaiin/jugalbandi-manager:channel-latest
+          opennyaiin/jugalbandi-manager:channel-${{ github.ref_name }}
     - name: Build and push Docker api image
       uses: docker/build-push-action@v5
       with:
         context: .
         file: api/Dockerfile
         push: true
-        tags: opennyaiin/jugalbandi-manager:api-${{ steps.tag_version.outputs.new_tag }}
+        tags: |
+          opennyaiin/jugalbandi-manager:api-latest
+          opennyaiin/jugalbandi-manager:api-${{ github.ref_name }}
     - name: Build and push Docker retriever image
       uses: docker/build-push-action@v5
       with:
         context: .
         file: retriever/Dockerfile
         push: true
-        tags: opennyaiin/jugalbandi-manager:retriever-${{ steps.tag_version.outputs.new_tag }}
+        tags: |
+          opennyaiin/jugalbandi-manager:retriever-latest
+          opennyaiin/jugalbandi-manager:retriever-${{ github.ref_name }}
     - name: Build and push Docker frontend image
       uses: docker/build-push-action@v5
       with:
         context: .
         file: frontend/Dockerfile
         push: true
-        tags: opennyaiin/jugalbandi-manager:frontend-${{ steps.tag_version.outputs.new_tag }}
+        tags: |
+          opennyaiin/jugalbandi-manager:frontend-latest
+          opennyaiin/jugalbandi-manager:frontend-${{ github.ref_name }}
         
