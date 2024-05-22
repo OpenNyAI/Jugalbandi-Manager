@@ -24,7 +24,7 @@ It's important that we test the data contracts (input / output JSONs) for our se
 ./scripts/read-message.sh topic
 ```
 
-![](assets/local-terminal.png)
+![](docs/assets/local-terminal.png)
 
 ## Setting up Local DB
 

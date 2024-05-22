@@ -3,7 +3,7 @@ Jugalbandi v2 that supports both information and actions. Now an NGO, Government
 
 We have repackaged the code into an event-driven architecture to make it scalable and also composable to meet varying needs.
 
-![](assets/jb-manager.png)
+![](docs/assets/jb-manager.png)
 
 ## Deep Dive
 To deep dive into the architecture and various components, look [here](DeepDive.md)
