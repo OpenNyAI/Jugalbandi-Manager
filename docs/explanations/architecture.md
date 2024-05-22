@@ -9,10 +9,10 @@ This document explains the inner workings of the JB Manager.
 
 All the services are generic i.e. they are designed for multiple bots or use cases. The only customization that exists lies in the tiny bot code (finite state machine code) which is published by the Studio.
 
-![](../../assets/jb-architecture.png)
+![](../assets/jb-architecture.png)
 
 Language Flow
-![](../../assets/language%20flow.png)
+![](../assets/language%20flow.png)
 
 
 ## DB Structure
