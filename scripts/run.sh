@@ -4,9 +4,19 @@
 env_file=".env-dev"
 
 # Process command-line arguments
-while getopts 'e:' flag; do
+while getopts 'e:-:' flag; do
   case "${flag}" in
     e) env_file="${OPTARG}" ;;
+    -) case "${OPTARG}" in
+            stage)
+                stage=true
+                ;;
+            *)
+                echo "Unknown option --${OPTARG}" >&2
+                exit 1
+                ;;
+        esac
+        ;;
     *) echo "Usage: $0 [-e env_file] [service1 service2 ...]"
        exit 1 ;;
   esac
@@ -33,7 +43,22 @@ else
     echo "Setting Kakfa & Postgres host by docker-compose service name: kafka, postgres"
 fi
 
-docker compose build $@ --build-arg VITE_SERVER_HOST=$JB_API_SERVER_HOST
-
-# Run docker-compose with the specified environment file and services
-docker compose --env-file "$env_file" up $@
+if [ -n "$stage" ]; then
+  for arg in "$@"
+  do
+    if [[ "$arg" == "frontend" ]]; then
+        # Build the frontend with the specified environment file
+        docker compose build $@ --build-arg VITE_SERVER_HOST=$JB_API_SERVER_HOST
+        break
+    fi
+  done
+  # Run docker-compose with the specified environment file and services
+  echo "Running docker-compose with existing images"
+  docker compose --env-file "$env_file" -f "docker-compose.yml" -f docker-compose.stage.yml up $@
+else
+  echo "Building and running docker-compose"
+  # Build the services with the specified environment file
+  docker compose build $@ --build-arg VITE_SERVER_HOST=$JB_API_SERVER_HOST
+  # Run docker-compose with the specified environment file and services
+  docker compose --env-file "$env_file" up $@
+fi

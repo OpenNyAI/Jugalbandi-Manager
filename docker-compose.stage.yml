@@ -1,0 +1,19 @@
+services:
+  api:
+    image: opennyaiin/jugalbandi-manager:api-1.0.0
+  language:
+    image: opennyaiin/jugalbandi-manager:language-1.0.0
+  flow:
+    image: opennyaiin/jugalbandi-manager:flow-1.0.0
+  indexer:
+    build:
+      context: .  # Root directory of the project      
+      dockerfile: ./indexer/Dockerfile
+  retriever:
+    image: opennyaiin/jugalbandi-manager:retriever-1.0.0
+  channel:
+    image: opennyaiin/jugalbandi-manager:channel-1.0.0
+  frontend:
+    build:
+      context: .  # Root directory of the project      
+      dockerfile: ./frontend/Dockerfile
