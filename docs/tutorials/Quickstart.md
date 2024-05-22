@@ -55,8 +55,29 @@ $ bash scripts/run.sh --stage api channel language flow frontend
     3. **Requirements  [Optional if no specialised pacakge is used in code]** is the required packages name with their versions as we put them usually in requirements.txt or pyproject.toml dependencies. For the above example, we don't have any external dependencies.
     4. **index_urls [Optional]** is for custom and private packages links to download them from (This is for the case you use a library that your team has developed and internally published).
     5. **version [Mandatory]** - version of the bot. Put `1.0.0`.
-    6. **required_credentials [Mandatory]** - 
+    6. **required_credentials [Mandatory]** - Credentials required by the bot to access various services. Here the FSM depends on `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_API_VERSION` and `AZURE_OPENAI_API_ENDPOINT`, so put these keys in this section.
+    7. Click on `Install` button
     
-3. * Once the bot is created, click on the **settings (⚙) icon** to enter the given credentials values and click save to save the credentials values.
-4. Then click on the **play (▶️) icon** to activate the bot by providing the whatsapp bot number and whatsapp api key.
-5. Once the above steps are completed, the bot status will be changed from **inactive to active.**
+3. * Once the bot is created, click on the **settings (⚙) icon** to enter the given credentials values and click save to save the credentials values. For this example, put the values of `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_API_VERSION` and `AZURE_OPENAI_API_ENDPOINT`.
+4. Then click on the **play (▶️) icon** to activate the bot by providing the whatsapp business phone number in `phone number` and whatsapp api key in the `whatsapp` field.
+5. Once the above steps are completed, the bot status will be changed from **inactive** to **active**.
+6. Start ngrok on your system 
+```bash
+$ ngrok http 8000
+```
+7. Copy the tunnel url from the ngrok shell.
+8. Add this url as the callback URL for Whatsapp service provider. Your callback url will look like this `<Tunnel URL>/callback`. Use the shell script to add the callback URL.
+```bash
+#!/bin/bash
+
+WEBHOOK_URL=$1
+
+BODY='{"webhook_url": "'$WEBHOOK_URL'"}'
+echo $BODY
+
+curl -k "$WA_API_HOST/v1/setwebhooks" \
+--header "wanumber: $WABA_NUMBER" \
+--header "apikey: $WA_API_KEY" \
+--header 'Content-Type: application/json' \
+--data-raw "$BODY"
+```
