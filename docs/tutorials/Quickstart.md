@@ -67,6 +67,7 @@ $ ngrok http 8000
 ```
 7. Copy the tunnel url from the ngrok shell.
 8. Add this url as the callback URL for Whatsapp service provider. Your callback url will look like this `<Tunnel URL>/callback`. Use the shell script to add the callback URL.
+
 ```bash
 #!/bin/bash
 
