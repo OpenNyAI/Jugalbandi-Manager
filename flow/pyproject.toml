@@ -22,7 +22,7 @@ pydantic = "^2.5.3"
 azure-storage-blob = "^12.19.0"
 azure-identity = "^1.15.0"
 aiofiles = "^23.2.1"
-aiohttp = "^3.9.1"
+aiohttp = "^3.9.4"
 psycopg2-binary = "^2.9.9"
 
 [tool.poetry.group.dev.dependencies]
