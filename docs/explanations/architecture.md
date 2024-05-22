@@ -1,15 +1,18 @@
-# Deep Dive
+---
+layout: default
+title: JB Manager Architecture
+---
 
-This document explains the inner workings of the JB Manager. It also provides the gaps in the current implementation.
+This document explains the inner workings of the JB Manager. 
 
 ## Architecture
 
 All the services are generic i.e. they are designed for multiple bots or use cases. The only customization that exists lies in the tiny bot code (finite state machine code) which is published by the Studio.
 
-![](docs/assets/jb-architecture.png)
+![](assets/jb-architecture.png)
 
 Language Flow
-![](docs/assets/language%20flow.png)
+![](assets/language%20flow.png)
 
 
 ## DB Structure
@@ -57,13 +60,6 @@ Provides APIs to interact with JB Manager. Here are the top buckets of APIs:
 4. Creates `turn_id` for the new conversation
 5. Create `msg_id`
 
-Later:
-  - [ ] Indexer Job & Status
-    - Upload files and start a job in the indexer
-    - Update the status of the Job
-  - [ ] Install new bot
-- [ ] - Support multiple bots
-
 ### Channel
 
 Responsible for both input and output communication with the channel (WhatsApp / Telegram). It needs to handle channel specific API calls and rendering of UI messages (e.g. WhatsApp Flow, List & Buttons)
@@ -105,8 +101,6 @@ For outbound messages, Language service will look at the message type from the F
    1. Translate the text, header, footer
    2. Translate the labels for buttons
 
-- [ ] Cache the generated respones based on hash of input and language_code
-
 ### Flow
 
 1. Retrieve session from DB based on session_id. This provides it memory of the current state (stage of the workflow), variables.
@@ -120,33 +114,10 @@ For outbound messages, Language service will look at the message type from the F
       4. Dialogues -- it uses keywords `language` to trigger Channel service into sending a standardized dialogue.
 3. On complete (or logical pause in the workflow e.g. user input or plugin input), save the state and variables.
   
-
-- [ ] Merge Session & FSM State table 
-- [ ] Enable going back to the previous state
-- [ ] Allow queries at any state
-- [ ] Address slow response times
-- [ ] Enhance conversational aspects
-    - Example: Select Slot: (Number, Time, Name)
-
 ### Retrieval
 
 This fetches data from the Vector DB (PG Vector / Postgres) based on query and metadata if any. The metadata is used to create filter query to restrict the similarity search even further.
 
-- [ ] Rejig the query
-- [ ] Reranking logic
-
 ### Indexer 
 
 This service receives input files (urls from Azure) and pre-processes them and indexes them into the Vector DB.
-
-We need to make this generic
-- [ ] Stop words
-- [ ] Chunking logic
-- [ ] Metadata fields
-
-## Code Enhancements
-
-- [ ] Relationship between models - foreign keys
-- [ ] Implement a reset feature to clear conversation history
-- [ ] Improve state management to reduce confusion (Current State)
-- [ ] Utilize conversation history for better responses and follow-ups
