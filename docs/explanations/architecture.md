@@ -27,7 +27,7 @@ A user needs to be registered for the bot. Phone Number & Bot ID make the user u
 
 **Session**
 
-We maintain session for 24 hours. After that a fresh conversation starts.
+This table stores the state (stage in the workflow) and variables for every user. We maintain session for 24 hours. After that a fresh conversation starts.
 
 **Turn**
 
@@ -36,10 +36,6 @@ Every message received from the user creates a new turn in the conversation. Aga
 **Message**
 
 Every message received or sent is logged to the DB.
-
-**FSM State**
-
-This table currently stores the state (stage in the workflow) and variables. This needs to be merged with session table.
 
 ## Services
 
