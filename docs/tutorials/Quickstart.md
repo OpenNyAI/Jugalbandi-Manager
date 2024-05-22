@@ -6,7 +6,7 @@ title: Quickstart
 ## Prerequisite 
 1. Docker - Ensure that your system has docker engine installed and running. For installation, please refer to [docker engine installation instruction](https://docs.docker.com/engine/install/).
 2. Docker Compose - Ensure docker compose is enabled along with docker engine. Please refer to [docker compose installation instruction](https://docs.docker.com/compose/install/).
-3. NGROK
+3. NGROK - NGROK is required to tunnel the Whatsapp callback URL to your local system. Please refer to [NGROK Quickstart Guide](https://ngrok.com/docs/getting-started/) for installation.
 
 
 ## Running JB Manager
