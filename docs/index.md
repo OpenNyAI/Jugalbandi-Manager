@@ -10,4 +10,4 @@ The documentation is organized as follows:
 1. [Tutorials](tutorials/)
 2. [How to guides](how-tos/)
 3. [References](references/)
-4. [Explanations](references/)
+4. [Explanations](explanations/)
