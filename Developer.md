@@ -41,7 +41,7 @@ $ ./scripts/run.sh <one or more service names that you are testing>
     $ ./scripts/read-message.sh <topic_name>
 
 
-![](assets/local-terminal.png)
+![](docs/assets/local-terminal.png)
 
 
 
