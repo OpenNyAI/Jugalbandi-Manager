@@ -14,8 +14,6 @@ db_password = os.getenv("POSTGRES_DATABASE_PASSWORD")
 db_host = os.getenv("POSTGRES_DATABASE_HOST") # localhost for local upload of data
 db_port = os.getenv("POSTGRES_DATABASE_PORT")
 
-print(db_name, db_user, db_password, db_host, db_port)
-
 # Construct the SQLAlchemy connection URL using URL class
 DATABASE_URL = f"postgresql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
 
