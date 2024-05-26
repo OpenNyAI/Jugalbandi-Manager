@@ -4,7 +4,12 @@
 from abc import ABC
 from typing import Any, Dict, List, Set
 from transitions import Machine
-
+from jb_manager_bot.data_models import (
+    FSMOutput,
+    MessageData,
+    MessageType,
+    OptionsListType,
+)
 from jb_manager_bot.data_models import Status
 
 
@@ -232,3 +237,142 @@ class AbstractFSM(ABC):
             fsm.reset()
 
         return fsm._save_state()
+
+    def _add_state(self, state_name):
+        self.states.append(state_name)
+
+    def create_on_enter_input(self, fn_name):
+        def dynamic_fn(self):
+            self.status = Status.WAIT_FOR_ME
+            self.status = Status.WAIT_FOR_USER_INPUT
+
+        dynamic_fn.__name__ = fn_name
+        setattr(self.__class__, fn_name, dynamic_fn)
+
+    def create_on_enter_display(
+        self,
+        fn_name,
+        message,
+        options=None,
+        menu_selector=None,
+        menu_title=None,
+        media_url=None,
+        dest="language",
+    ):
+        if options:
+            type = MessageType.INTERACTIVE
+            options = [
+                OptionsListType(id=str(i + 1), title=option)
+                for i, option in enumerate(options)
+            ]
+        elif media_url:
+            type = MessageType.IMAGE
+        else:
+            type = MessageType.TEXT
+
+        def dynamic_fn(self):
+            self.status = Status.WAIT_FOR_ME
+            self.send_message(
+                FSMOutput(
+                    message_data=MessageData(body=message),
+                    options_list=options,
+                    type=type,
+                    dest=dest,
+                    menu_selector=menu_selector,
+                    menu_title=menu_title,
+                    media_url=media_url,
+                )
+            )
+            self.status = Status.MOVE_FORWARD
+
+        dynamic_fn.__name__ = fn_name
+        setattr(self.__class__, fn_name, dynamic_fn)
+
+    def _add_display_state(self, state_name):
+        if not state_name.endswith("_display"):
+            state_name = f"{state_name}_display"
+        self.states.append(state_name)
+
+    def _add_input_states(self, state_name):
+        self.states.extend(
+            [
+                f"{state_name}_display",
+                f"{state_name}_input",
+                f"{state_name}_logic",
+                f"{state_name}_fail_display",
+            ]
+        )
+
+    def _add_transition(self, source, destination, trigger="next", conditions=None):
+        if conditions:
+            self.transitions.append(
+                {
+                    "source": source,
+                    "dest": destination,
+                    "trigger": trigger,
+                    "conditions": conditions,
+                }
+            )
+        else:
+            self.transitions.append(
+                {"source": source, "dest": destination, "trigger": trigger}
+            )
+
+    def create_display_state(
+        self,
+        source,
+        dest,
+        message,
+        options=None,
+        menu_selector=None,
+        menu_title=None,
+        media_url=None,
+        dest_channel="language",
+        format_variables=None,
+    ):
+        # if format_variables:
+        #     write_variables = {k: self.__class__.variables[k] for k in format_variables}
+        #     message = message.format(write_variables)
+        self._add_display_state(source)
+        self._add_transition(source, dest)
+        self.create_on_enter_display(
+            f"on_enter_{source}",
+            message,
+            options,
+            menu_selector,
+            menu_title,
+            media_url,
+            dest_channel,
+        )
+
+    def create_input_states(
+        self,
+        name,
+        message,
+        success_dest,
+        is_valid=None,
+        options=None,
+        menu_selector=None,
+        menu_title=None,
+        media_url=None,
+        fail_message=None,
+    ):
+        self._add_input_states(name)
+        self._add_transition(f"{name}_display", f"{name}_input")
+        self._add_transition(f"{name}_input", f"{name}_logic")
+        self._add_transition(f"{name}_logic", success_dest, conditions=is_valid)
+        self._add_transition(f"{name}_logic", f"{name}_fail_display")
+        self._add_transition(f"{name}_fail_display", f"{name}_display")
+
+        self.create_on_enter_display(
+            f"on_enter_{name}_display",
+            message,
+            options,
+            menu_selector,
+            menu_title,
+            media_url,
+        )
+
+        self.create_on_enter_input(f"on_enter_{name}_input")
+
+        self.create_on_enter_display(f"on_enter_{name}_fail_display", fail_message)
