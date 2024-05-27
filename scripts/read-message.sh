@@ -3,4 +3,12 @@
 topic=$1
 message=$2
 
-docker exec -i jb-manager-kafka-1 kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic $topic
+# Get the container ID for the service
+CONTAINER_ID=$(./scripts/get-container-id.sh kafka)
+
+# Check for error
+if [ $? -ne 0 ]; then
+    exit 1
+fi
+
+docker exec -i $CONTAINER_ID kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic $topic
