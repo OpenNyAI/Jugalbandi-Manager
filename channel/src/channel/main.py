@@ -72,7 +72,7 @@ async def process_incoming_messages(message: ChannelInput):
     if message_type == MessageType.TEXT:
         recieved_message = WhatsappHelper.wa_get_user_text(bot_input)
         await update_message(msg_id, message_text=recieved_message.content)
-    if message_type == MessageType.AUDIO:
+    elif message_type == MessageType.AUDIO:
         wa_bnumber, bot_channel_credentials = await get_bot_by_session_id(session_id=session_id)
         bot_channel_credentials = decrypt_credentials(bot_channel_credentials)
         wa_api_key = bot_channel_credentials["whatsapp"]
@@ -84,12 +84,15 @@ async def process_incoming_messages(message: ChannelInput):
         storage_url = await storage.make_public(audio_file_name)
         recieved_message.content = storage_url
         await update_message(msg_id, media_url=storage_url)
-    if message_type == MessageType.INTERACTIVE:
+    elif message_type == MessageType.INTERACTIVE:
         recieved_message = WhatsappHelper.wa_get_interactive_reply(bot_input)
         logger.info("Got an interactive block")
-    if message_type == MessageType.FORM:
+    elif message_type == MessageType.FORM:
         recieved_message = WhatsappHelper.wa_get_form_reply(bot_input)
         logger.info("Got a form block")
+    else:
+        logger.error("Invalid message type %s", message_type)
+        return # ignore the message
 
     logger.info("Got a message: %s", recieved_message)
     if recieved_message:
