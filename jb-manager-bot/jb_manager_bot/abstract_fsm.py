@@ -257,7 +257,7 @@ class AbstractFSM(ABC):
         menu_selector=None,
         menu_title=None,
         media_url=None,
-        dest="language",
+        dest_channel="out",
     ):
         if options:
             type = MessageType.INTERACTIVE
@@ -277,7 +277,7 @@ class AbstractFSM(ABC):
                     message_data=MessageData(body=message),
                     options_list=options,
                     type=type,
-                    dest=dest,
+                    dest=dest_channel,
                     menu_selector=menu_selector,
                     menu_title=menu_title,
                     media_url=media_url,
@@ -327,7 +327,7 @@ class AbstractFSM(ABC):
         menu_selector=None,
         menu_title=None,
         media_url=None,
-        dest_channel="language",
+        dest_channel="out",
         format_variables=None,
     ):
         # if format_variables:
