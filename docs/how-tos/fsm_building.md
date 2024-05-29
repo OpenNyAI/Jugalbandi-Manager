@@ -55,7 +55,7 @@ class BotCode(AbstractFSM):
         ...
         self.status = Status.MOVE_FORWARD
 ```
-### Status
+## Status
 Each bot running on JBManager can have 4 different status which controls the flow of the bot. The various status are described below:
 1. `WAIT_FOR_ME` -  It should be used on the top of each state definition representing processing logic of a state is currently executing and should wait for processing to finish before making transition to any other state.
 2. `MOVE_FORWARD` - It represents that current processing is finished and the FSM is ready to transition to next state.
@@ -65,107 +65,6 @@ Each bot running on JBManager can have 4 different status which controls the flo
 6. `END` - It represents the end of the bot flow. It should be added at the last state of the bot flow.
 
 **NOTE:** `WAIT_FOR_ME` should only be used at start of the state definition. `MOVE_FORWARD`, `WAIT_FOR_USER_INPUT`, `WAIT_FOR_CALLBACK` and `END` should be used at the end of state definition. `WaIT_FOR_PLUGIN` should never be used in any custom FSM. 
-
-### Variables
-To retain information across the states, use `variables` dictionary defined in the `AbstractFSM`, with variable name as key in string format and value for the variable data. 
-
-```python
-class BotCode(AbstractFSM):
-    states = [
-        ...
-        "new_state_name",
-        ...
-    ]
-
-    def on_enter_new_state_name(self):
-        self.status = Status.WAIT_FOR_ME
-        ...
-        # State processing logic
-        
-        self.variables["my_variable"] = 10 # Here we are setting my_variable value to 10
-        your_variable = self.variables("your_variable") # Here we are accessing your_variable set in any previous state
-        
-        # State processing logic
-        ...
-        self.status = Status.MOVE_FORWARD
-```
-**NOTE:** Add only json serializable keys and values to the `variables` dictionary.
-
-### User Input
-To access input by user inside a state, use the instance variable `current_input` defined in the `AbstractFSM` class. This variable contains the value of current user input in `str` data type format.
-
-**Note:** Variable `current_input` will contain the value of user input within the scope of state which comes next to input state i.e state ends with `WAIT_FOR_USER_INPUT` status. It contains `None` in any other state. 
-
-```python
-class BotCode(AbstractFSM):
-    states = [
-        ...
-        "user_input_processing_state",
-        ...
-    ]
-
-    def on_enter_user_input_processing_state(self):
-        self.status = Status.WAIT_FOR_ME
-        ...
-        user_input = self.current_input
-        # user input processing logic
-        ...
-        self.status = Status.MOVE_FORWARD
-```
-
-### Webhook Input
-To access input by an 3rd party webhook api inside a state, use the instance variable `current_callback` defined in the `AbstractFSM` class. This variable contains the value of current webhook data in `str` data type format (You might need to parse it to json).
-
-**Note:** Variable `current_callback` will contain the value of webhook data within the scope of state which comes next to callback state i.e state ends with `WAIT_FOR_CALLBACK` status. It contains `None` in any other state. 
-
-```python
-class BotCode(AbstractFSM):
-    states = [
-        ...
-        "webhook_processing_state",
-        ...
-    ]
-
-    def on_enter_webhook_processing_state(self):
-        self.status = Status.WAIT_FOR_ME
-        ...
-        webhook_data = self.current_callback
-        webhook_data = json.loads(webhook_data)
-        # webhook processing logic
-        ...
-        self.status = Status.MOVE_FORWARD
-```
-
-### Sending Message to User
-To send a message back to user from the bot, use `send_message` method defined in the `AbstractFSM` class. `send_message` method takes `FSMOutput` object as an arguement. Populate the object of `FSMOutput` class according to the message you want to send to user.
-
-```python
-class BotCode(AbstractFSM):
-    states = [
-        ...
-        "greet_user",
-        ...
-    ]
-
-    def on_enter_greet_user(self):
-        self.status = Status.WAIT_FOR_ME
-        self.send_message(
-            FSMOutput(
-                message_data=MessageData(
-                    body="Hello! How are you?" # Message Text
-                ),
-                type=MessageType.TEXT, # Text Message
-                dest="out", # Destination of the message
-            )
-        )
-        self.status = Status.MOVE_FORWARD
-```
-
-For more details, see FSMOutput documentation.
-#### Possible destinations
-1. `out` - The message will follow translation(if applicable) and converted to speech and sent it to user.
-2. `channel` - There are some messages which don't require translation and should be interpreted as a special message. Those could be either flags for language selection or metadata for the forms which will be displayed to user.
-3. `rag` - The message will go to RAG component of JBManager instead of user.  
 
 ## Transitions
 The switch from one state to another state is managed by defining `transition` in Bot class. After completing the current state, the bot will switch to the state as defined by the transition. 
@@ -273,3 +172,104 @@ class BotCode(AbstractFSM):
 ```
 In the above example, after finishing the `first_state`, bot will call the conditions associated with `first_state` as source. Whichever condition returns `True`, bot will take that transition and switch to appropriate state defined in the `dest` of the transition. If multiple conditions are satisfied, bot will take the transition which is defined first in the `transitions` list. 
 For more details on the working of transitions, see [transitions documentation](https://github.com/pytransitions/transitions).
+
+## Variables
+To retain information across the states, use `variables` dictionary defined in the `AbstractFSM`, with variable name as key in string format and value for the variable data. 
+
+```python
+class BotCode(AbstractFSM):
+    states = [
+        ...
+        "new_state_name",
+        ...
+    ]
+
+    def on_enter_new_state_name(self):
+        self.status = Status.WAIT_FOR_ME
+        ...
+        # State processing logic
+        
+        self.variables["my_variable"] = 10 # Here we are setting my_variable value to 10
+        your_variable = self.variables("your_variable") # Here we are accessing your_variable set in any previous state
+        
+        # State processing logic
+        ...
+        self.status = Status.MOVE_FORWARD
+```
+**NOTE:** Add only json serializable keys and values to the `variables` dictionary.
+
+## User Input
+To access input by user inside a state, use the instance variable `current_input` defined in the `AbstractFSM` class. This variable contains the value of current user input in `str` data type format.
+
+**Note:** Variable `current_input` will contain the value of user input within the scope of state which comes next to input state i.e state ends with `WAIT_FOR_USER_INPUT` status. It contains `None` in any other state. 
+
+```python
+class BotCode(AbstractFSM):
+    states = [
+        ...
+        "user_input_processing_state",
+        ...
+    ]
+
+    def on_enter_user_input_processing_state(self):
+        self.status = Status.WAIT_FOR_ME
+        ...
+        user_input = self.current_input
+        # user input processing logic
+        ...
+        self.status = Status.MOVE_FORWARD
+```
+
+## Webhook Input
+To access input by an 3rd party webhook api inside a state, use the instance variable `current_callback` defined in the `AbstractFSM` class. This variable contains the value of current webhook data in `str` data type format (You might need to parse it to json).
+
+**Note:** Variable `current_callback` will contain the value of webhook data within the scope of state which comes next to callback state i.e state ends with `WAIT_FOR_CALLBACK` status. It contains `None` in any other state. 
+
+```python
+class BotCode(AbstractFSM):
+    states = [
+        ...
+        "webhook_processing_state",
+        ...
+    ]
+
+    def on_enter_webhook_processing_state(self):
+        self.status = Status.WAIT_FOR_ME
+        ...
+        webhook_data = self.current_callback
+        webhook_data = json.loads(webhook_data)
+        # webhook processing logic
+        ...
+        self.status = Status.MOVE_FORWARD
+```
+
+## Sending Message to User
+To send a message back to user from the bot, use `send_message` method defined in the `AbstractFSM` class. `send_message` method takes `FSMOutput` object as an arguement. Populate the object of `FSMOutput` class according to the message you want to send to user.
+
+```python
+class BotCode(AbstractFSM):
+    states = [
+        ...
+        "greet_user",
+        ...
+    ]
+
+    def on_enter_greet_user(self):
+        self.status = Status.WAIT_FOR_ME
+        self.send_message(
+            FSMOutput(
+                message_data=MessageData(
+                    body="Hello! How are you?" # Message Text
+                ),
+                type=MessageType.TEXT, # Text Message
+                dest="out", # Destination of the message
+            )
+        )
+        self.status = Status.MOVE_FORWARD
+```
+
+For more details, see FSMOutput documentation.
+#### Possible destinations
+1. `out` - The message will follow translation(if applicable) and converted to speech and sent it to user.
+2. `channel` - There are some messages which don't require translation and should be interpreted as a special message. Those could be either flags for language selection or metadata for the forms which will be displayed to user.
+3. `rag` - The message will go to RAG component of JBManager instead of user.  
