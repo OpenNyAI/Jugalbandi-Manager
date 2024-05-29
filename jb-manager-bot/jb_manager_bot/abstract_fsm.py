@@ -13,6 +13,7 @@ from jb_manager_bot.data_models import (
 from jb_manager_bot.data_models import Status
 from jb_manager_bot.parsers import Parser
 
+
 class AbstractFSM(ABC):
     """Abstraction of the FSM class.
     Each use case will have its own FSM class.
@@ -237,7 +238,7 @@ class AbstractFSM(ABC):
             fsm.reset()
 
         return fsm._save_state()
-    
+
     def create_select_lanaugage(self, state_name, destination, last_state="zero"):
         self._add_state(state_name)
 
@@ -262,7 +263,7 @@ class AbstractFSM(ABC):
 
     def _add_state(self, state_name):
         self.states.append(state_name)
-    
+
     def _add_display_state(self, state_name):
         if not state_name.endswith("_display"):
             state_name = f"{state_name}_display"
@@ -282,8 +283,6 @@ class AbstractFSM(ABC):
         )
 
     def _add_transition(self, source, destination, trigger="next", conditions=None):
-        # if conditions is callable:
-        #     self.conditions.add(conditions.__name__)
 
         if conditions:
             self.transitions.append(
@@ -347,7 +346,6 @@ class AbstractFSM(ABC):
 
         dynamic_fn.__name__ = fn_name
         setattr(self.__class__, fn_name, dynamic_fn)
-    
 
     def create_display_state(
         self,
@@ -393,13 +391,13 @@ class AbstractFSM(ABC):
         write_var=None,
         validation_expression=None,
     ):
-        
+
         self._add_input_states(name)
         self._add_transition(f"{name}_display", f"{name}_input")
         self._add_transition(f"{name}_input", f"{name}_logic")
         self._add_transition(f"{name}_logic", success_dest, conditions=is_valid)
         self._add_transition(f"{name}_logic", fail_dest)
-        
+
         self.create_on_enter_display(
             f"on_enter_{name}_display",
             message,
@@ -411,39 +409,22 @@ class AbstractFSM(ABC):
         )
 
         self.create_on_enter_input(f"on_enter_{name}_input")
-        self._create_on_enter_input_state_method(f"{name}_logic", write_var, options, message, validation_expression)
-    
-    def create_logic_state(
-        self,
-        state_name,
-        success_dest,
-        fail_dest=None,
-        on_enter: callable = None,
-        conditions: callable = None,
+        self._create_on_enter_input_state_method(
+            f"{name}_logic", write_var, options, message, validation_expression
+        )
+
+    def _create_on_enter_input_state_method(
+        self, state_name, write_var, options, message, validation
     ):
-
-        self._add_state(state_name)
-        if conditions:
-            condition_name = conditions.__name__
-            self._add_transition(state_name, success_dest, conditions=condition_name)
-        else:
-            self._add_transition(state_name, success_dest)
-
-        if fail_dest:
-            self._add_transition(state_name, fail_dest)
-        if conditions:
-            self._add_method(condition_name, conditions)
-        if on_enter:
-            self._add_method(f"on_enter_{state_name}", on_enter)
-
-    def _create_on_enter_input_state_method(self, state_name, write_var, options, message, validation):
         if options:
             task = f"The user provides a response to the {message}."
-            options = [OptionsListType(id=str(i + 1), title=option) for i, option in enumerate(options)]
+            options = [
+                OptionsListType(id=str(i + 1), title=option)
+                for i, option in enumerate(options)
+            ]
         else:
             task = f"This is the question being asked to the user: {message}. This is validation that the variable need to pass {validation}. Format and modify the user input into the format requied and if you could not be decide return None. Based on the user's input, return the output in json format: {{'result': <input>}}"
 
-            
         def dynamic_fn(self):
             self.status = Status.WAIT_FOR_ME
             result = Parser.parse_user_input(
@@ -455,7 +436,7 @@ class AbstractFSM(ABC):
                 azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
                 openai_api_key=self.credentials["OPENAI_API_KEY"],
             )
-            if options :
+            if options:
                 result = result["id"]
             else:
                 result = result["result"]
@@ -467,24 +448,22 @@ class AbstractFSM(ABC):
         dynamic_fn.__name__ = f"on_enter_{state_name}"
         setattr(self.__class__, f"on_enter_{state_name}", dynamic_fn)
 
-
     def create_state_with_empty_on_enter(self, state_name):
         self._add_state(state_name)
-        
+
         def dynamic_fn(self):
             self.status = Status.WAIT_FOR_ME
             self.status = Status.MOVE_FORWARD
-        dynamic_fn.__name__ = f"on_enter_{state_name}" 
-        setattr(self.__class__, f"on_enter_{state_name}", dynamic_fn)     
 
-    
+        dynamic_fn.__name__ = f"on_enter_{state_name}"
+        setattr(self.__class__, f"on_enter_{state_name}", dynamic_fn)
+
     def create_branching_task(self, source, transitions):
-        
+        self.create_state_with_empty_on_enter(source)
+
         for transition in transitions:
             condition = transition["condition"]
             if condition is callable:
                 condition = condition.__name__
             dest = transition["dest"]
             self._add_transition(source, dest, conditions=condition)
-
-
