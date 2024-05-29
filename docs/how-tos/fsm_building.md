@@ -3,7 +3,8 @@ layout: default
 title: Write Your Own Bot
 ---
 
-Bots in JBManager follow a finite state machine paradigm, using the `transitions` library.
+Bots in JBManager follow a finite state machine paradigm, using the `transitions` library. It is recommended to refer [transitions documentation](https://github.com/pytransitions/transitions?tab=readme-ov-file#quickstart) to understand the basic concepts of states, transitions & conditions.
+
 Each Bot is represented by a python class which is a child class of `AbstractFSM` class present in jb-manager-bot module.
 
 ```python
