@@ -1,8 +1,5 @@
 
-
-<div align="center">
 [![Join us on Discord](https://img.shields.io/badge/Join%20us%20on%20Discord-7289DA?logo=discord&logoColor=white&color=7289DA)](https://discord.gg/grg4nqUPNe)
-</div>
 
 
 # Jugalbandi Manager
