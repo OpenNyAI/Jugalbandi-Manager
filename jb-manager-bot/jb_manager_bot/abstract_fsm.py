@@ -13,7 +13,6 @@ from jb_manager_bot.data_models import (
 from jb_manager_bot.data_models import Status
 from jb_manager_bot.parsers import Parser
 
-
 class AbstractFSM(ABC):
     """Abstraction of the FSM class.
     Each use case will have its own FSM class.
@@ -238,7 +237,7 @@ class AbstractFSM(ABC):
             fsm.reset()
 
         return fsm._save_state()
-
+    
     def create_select_lanaugage(self, state_name, destination, last_state="zero"):
         self._add_state(state_name)
 
@@ -263,7 +262,7 @@ class AbstractFSM(ABC):
 
     def _add_state(self, state_name):
         self.states.append(state_name)
-
+    
     def _add_display_state(self, state_name):
         if not state_name.endswith("_display"):
             state_name = f"{state_name}_display"
@@ -298,7 +297,7 @@ class AbstractFSM(ABC):
                 {"source": source, "dest": destination, "trigger": trigger}
             )
 
-    def create_on_enter_input(self, fn_name):
+    def _create_on_enter_input(self, fn_name):
         def dynamic_fn(self):
             self.status = Status.WAIT_FOR_ME
             self.status = Status.WAIT_FOR_USER_INPUT
@@ -306,7 +305,7 @@ class AbstractFSM(ABC):
         dynamic_fn.__name__ = fn_name
         setattr(self.__class__, fn_name, dynamic_fn)
 
-    def create_on_enter_display(
+    def _create_on_enter_display(
         self,
         fn_name,
         message,
@@ -327,7 +326,7 @@ class AbstractFSM(ABC):
             type = MessageType.IMAGE
         else:
             type = MessageType.TEXT
-
+        
         def dynamic_fn(self):
             self.status = Status.WAIT_FOR_ME
             self.send_message(
@@ -347,7 +346,53 @@ class AbstractFSM(ABC):
         dynamic_fn.__name__ = fn_name
         setattr(self.__class__, fn_name, dynamic_fn)
 
-    def create_display_state(
+    def _create_plugin_error_code_method(self, name, error_code):
+            def dynamic_fn(self):
+                return self.variables["error_code"] == error_code
+            dynamic_fn.__name__ = name
+            setattr(self.__class__, name, dynamic_fn)
+
+    def _create_on_enter_input_logic_method(self, state_name, write_var, options, message, validation):
+        if options:
+            task = f"The user provides a response to the {message}."
+            options = [OptionsListType(id=str(i + 1), title=option) for i, option in enumerate(options)]
+        else:
+            task = f"This is the question being asked to the user: {message}. This is validation that the variable need to pass {validation}. Format and modify the user input into the format requied and if you could not be decide return None. Based on the user's input, return the output in json format: {{'result': <input>}}"
+
+            
+        def dynamic_fn(self):
+            self.status = Status.WAIT_FOR_ME
+            result = Parser.parse_user_input(
+                task,
+                options,
+                self.current_input,
+                azure_endpoint=self.credentials["AZURE_OPENAI_API_ENDPOINT"],
+                azure_openai_api_key=self.credentials["AZURE_OPENAI_API_KEY"],
+                azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
+                openai_api_key=self.credentials["OPENAI_API_KEY"],
+            )
+            if options :
+                result = result["id"]
+            else:
+                result = result["result"]
+            self.variables[write_var] = result
+            print(f"Read Variable {write_var}", self.variables.get(write_var))
+
+            self.status = Status.MOVE_FORWARD
+
+        dynamic_fn.__name__ = f"on_enter_{state_name}"
+        setattr(self.__class__, f"on_enter_{state_name}", dynamic_fn)   
+    
+    def _create_state_with_empty_on_enter(self, state_name):
+        self._add_state(state_name)
+        
+        def dynamic_fn(self):
+            self.status = Status.WAIT_FOR_ME
+            self.status = Status.MOVE_FORWARD
+        dynamic_fn.__name__ = f"on_enter_{state_name}" 
+        setattr(self.__class__, f"on_enter_{state_name}", dynamic_fn)     
+
+    def create_display_task(
         self,
         source,
         dest,
@@ -365,7 +410,7 @@ class AbstractFSM(ABC):
         #     message = message.format(write_variables)
         self._add_display_state(source)
         self._add_transition(source, dest)
-        self.create_on_enter_display(
+        self._create_on_enter_display(
             f"on_enter_{source}",
             message,
             options,
@@ -391,14 +436,14 @@ class AbstractFSM(ABC):
         write_var=None,
         validation_expression=None,
     ):
-
+        
         self._add_input_states(name)
         self._add_transition(f"{name}_display", f"{name}_input")
         self._add_transition(f"{name}_input", f"{name}_logic")
         self._add_transition(f"{name}_logic", success_dest, conditions=is_valid)
         self._add_transition(f"{name}_logic", fail_dest)
-
-        self.create_on_enter_display(
+        
+        self._create_on_enter_display(
             f"on_enter_{name}_display",
             message,
             options,
@@ -408,62 +453,47 @@ class AbstractFSM(ABC):
             media_url,
         )
 
-        self.create_on_enter_input(f"on_enter_{name}_input")
-        self._create_on_enter_input_state_method(
-            f"{name}_logic", write_var, options, message, validation_expression
-        )
-
-    def _create_on_enter_input_state_method(
-        self, state_name, write_var, options, message, validation
-    ):
-        if options:
-            task = f"The user provides a response to the {message}."
-            options = [
-                OptionsListType(id=str(i + 1), title=option)
-                for i, option in enumerate(options)
-            ]
-        else:
-            task = f"This is the question being asked to the user: {message}. This is validation that the variable need to pass {validation}. Format and modify the user input into the format requied and if you could not be decide return None. Based on the user's input, return the output in json format: {{'result': <input>}}"
-
-        def dynamic_fn(self):
-            self.status = Status.WAIT_FOR_ME
-            result = Parser.parse_user_input(
-                task,
-                options,
-                self.current_input,
-                azure_endpoint=self.credentials["AZURE_OPENAI_API_ENDPOINT"],
-                azure_openai_api_key=self.credentials["AZURE_OPENAI_API_KEY"],
-                azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
-                openai_api_key=self.credentials["OPENAI_API_KEY"],
-            )
-            if options:
-                result = result["id"]
-            else:
-                result = result["result"]
-            self.variables[write_var] = result
-            print(f"Read Variable {write_var}", self.variables.get(write_var))
-
-            self.status = Status.MOVE_FORWARD
-
-        dynamic_fn.__name__ = f"on_enter_{state_name}"
-        setattr(self.__class__, f"on_enter_{state_name}", dynamic_fn)
-
-    def create_state_with_empty_on_enter(self, state_name):
-        self._add_state(state_name)
-
-        def dynamic_fn(self):
-            self.status = Status.WAIT_FOR_ME
-            self.status = Status.MOVE_FORWARD
-
-        dynamic_fn.__name__ = f"on_enter_{state_name}"
-        setattr(self.__class__, f"on_enter_{state_name}", dynamic_fn)
-
+        self._create_on_enter_input(f"on_enter_{name}_input")
+        self._create_on_enter_input_logic_method(f"{name}_logic", write_var, options, message, validation_expression)
+    
     def create_branching_task(self, source, transitions):
-        self.create_state_with_empty_on_enter(source)
-
+        self._create_state_with_empty_on_enter(source)
+        
         for transition in transitions:
             condition = transition["condition"]
             if condition is callable:
                 condition = condition.__name__
             dest = transition["dest"]
             self._add_transition(source, dest, conditions=condition)
+
+    def create_plugin_task(self, source, message, plugin_fn, input_variables:Dict, output_variables:Dict, transitions:List[Dict]):
+        self._add_state(source)
+        def dynamic_fn(self):
+            self.status = Status.WAIT_FOR_ME
+            if message:
+                self.send_message(
+                    FSMOutput(
+                        message_data=MessageData(body=message),
+                        type=MessageType.TEXT,
+                        dest="out",
+                    )
+                )
+             
+            plugin_input = {key: self.variables[value] for key, value in input_variables.items()}
+            plugin_output = plugin_fn(**plugin_input)
+
+            for key, value in output_variables.items():
+                self.variables[value] = plugin_output[key]
+
+            self.status = Status.MOVE_FORWARD
+        
+        dynamic_fn.__name__ = f"on_enter_{source}"
+        setattr(self.__class__, f"on_enter_{source}", dynamic_fn)
+
+        for transition in transitions:
+            condition = transition["condition"]
+            condition_fn_name = f"is_error_code_{condition}"
+            self._create_plugin_error_code_method(condition_fn_name, condition)
+            dest = transition["dest"]
+            self._add_transition(source, dest, conditions=condition_fn_name)
+        
