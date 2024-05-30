@@ -12,6 +12,7 @@ from jb_manager_bot.data_models import (
 )
 from jb_manager_bot.data_models import Status
 from jb_manager_bot.parsers import Parser
+import re
 
 class AbstractFSM(ABC):
     """Abstraction of the FSM class.
@@ -373,6 +374,8 @@ class AbstractFSM(ABC):
             )
             if options :
                 result = result["id"]
+                if result.isdigit():
+                    result = options[int(result) - 1].title
             else:
                 result = result["result"]
             self.variables[write_var] = result
@@ -440,7 +443,6 @@ class AbstractFSM(ABC):
         self._add_input_states(name)
         self._add_transition(f"{name}_display", f"{name}_input")
         self._add_transition(f"{name}_input", f"{name}_logic")
-        self._add_transition(f"{name}_logic", success_dest, conditions=is_valid)
         self._add_transition(f"{name}_logic", fail_dest)
         
         self._create_on_enter_display(
@@ -455,14 +457,16 @@ class AbstractFSM(ABC):
 
         self._create_on_enter_input(f"on_enter_{name}_input")
         self._create_on_enter_input_logic_method(f"{name}_logic", write_var, options, message, validation_expression)
-    
+        self._create_is_valid_method(f"is_valid_{write_var}", validation_expression, write_var)
+        self._add_transition(f"{name}_logic", success_dest, conditions=f"is_valid_{write_var}")
+
+
     def create_branching_task(self, source, transitions):
         self._create_state_with_empty_on_enter(source)
         
         for transition in transitions:
             condition = transition["condition"]
-            if condition is callable:
-                condition = condition.__name__
+
             dest = transition["dest"]
             self._add_transition(source, dest, conditions=condition)
 
@@ -496,4 +500,21 @@ class AbstractFSM(ABC):
             self._create_plugin_error_code_method(condition_fn_name, condition)
             dest = transition["dest"]
             self._add_transition(source, dest, conditions=condition_fn_name)
+    
+    def _create_is_valid_method(self, fn_name, expression, variable):
+        def dynamic_fn(self):
+            variable_name = variable
+            condition = expression.replace(variable_name, f"{variable_name}")
+            lambda_func = eval(f"lambda {variable_name}: {condition}")
+            value = self.variables.get(variable_name)
+            return lambda_func(value)
         
+        dynamic_fn.__name__ = f"{fn_name}"
+        setattr(self.__class__, dynamic_fn.__name__, dynamic_fn)
+
+
+
+    # def _create_lambda_function(expression, variable):
+    #     condition = expression.replace(variable, f"{variable}")
+    #     lambda_func = eval(f"lambda {variable}: {condition}")
+    #     return lambda_func
