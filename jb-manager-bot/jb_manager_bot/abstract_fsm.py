@@ -13,6 +13,7 @@ from jb_manager_bot.data_models import (
 from jb_manager_bot.data_models import Status
 from jb_manager_bot.parsers import Parser
 import re
+from datetime import datetime
 
 class AbstractFSM(ABC):
     """Abstraction of the FSM class.
@@ -466,7 +467,10 @@ class AbstractFSM(ABC):
         
         for transition in transitions:
             condition = transition["condition"]
-
+            if "expression" in transition:
+                expression = transition["expression"]
+                var = transition["variable"]
+                self._create_is_valid_method(f"{condition}", expression, var)
             dest = transition["dest"]
             self._add_transition(source, dest, conditions=condition)
 
@@ -513,8 +517,3 @@ class AbstractFSM(ABC):
         setattr(self.__class__, dynamic_fn.__name__, dynamic_fn)
 
 
-
-    # def _create_lambda_function(expression, variable):
-    #     condition = expression.replace(variable, f"{variable}")
-    #     lambda_func = eval(f"lambda {variable}: {condition}")
-    #     return lambda_func
