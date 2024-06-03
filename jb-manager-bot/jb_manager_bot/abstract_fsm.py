@@ -3,17 +3,23 @@
 
 from abc import ABC
 from typing import Any, Dict, List, Set
+from openai import BaseModel
 from transitions import Machine
 from jb_manager_bot.data_models import (
     FSMOutput,
     MessageData,
     MessageType,
     OptionsListType,
+    Status,
 )
-from jb_manager_bot.data_models import Status
 from jb_manager_bot.parsers import Parser
 import re
 from datetime import datetime
+
+
+class Variables(BaseModel):
+    pass
+
 
 class AbstractFSM(ABC):
     """Abstraction of the FSM class.
@@ -25,6 +31,7 @@ class AbstractFSM(ABC):
     transitions: List[Dict[str, str]] = []
     conditions: Set[str] = set()
     output_variables: Set[str] = set()
+    variable_names = Variables
     RUN_TOKEN = "RUNNING"
 
     def __init__(self, send_message: callable):
@@ -34,9 +41,12 @@ class AbstractFSM(ABC):
         self.send_message = send_message
         self.state = None
         self.status = Status.MOVE_FORWARD
-        self.variables = {}
+
         self.outputs = {}
         self.plugins = self.plugins if hasattr(self, "plugins") else {}
+        self.variables = (
+            self.variables if hasattr(self, "variables") else self.variable_names()
+        )
         transitions = list(
             sorted(
                 self.transitions,
@@ -58,7 +68,9 @@ class AbstractFSM(ABC):
     def initialise(self, **kwargs):
         """Method to initialise the FSM config."""
         for key, value in kwargs.items():
-            self.variables[key] = value
+            setattr(
+                self.variables, key, value
+            )  # Use setattr to set Pydantic model attributes
 
     @property
     def current_input(self):
@@ -126,7 +138,7 @@ class AbstractFSM(ABC):
         fsm_state = {
             "state": self.state,
             "status": self.status.value,
-            "variables": self.variables,
+            "variables": self.variables.dict(),  # Convert Pydantic model to dict
         }
         plugin_states = {
             plugin: plugin_obj._save_state()
@@ -137,7 +149,9 @@ class AbstractFSM(ABC):
     def _restore_state(self, state, status, variables, plugin_states):
         self.state = state
         self.status = Status(status)
-        self.variables = variables
+        self.variables = self.variable_names(
+            **variables
+        )  # Initialize Pydantic model with dict
         for plugin, plugin_state in plugin_states.items():
             state = plugin_state["main"]["state"]
             status = Status(plugin_state["main"]["status"])
@@ -149,7 +163,7 @@ class AbstractFSM(ABC):
         """Reset the FSM."""
         self.state = "zero"
         self.status = Status.MOVE_FORWARD
-        self.variables = {}
+        self.variables = self.variable_names()  # Reset Pydantic model
         self.outputs = {}
         for plugin in self.plugins.values():
             plugin.reset()
@@ -158,7 +172,9 @@ class AbstractFSM(ABC):
     def set_outputs(self):
         """Set the outputs of the FSM."""
         for key in self.output_variables:
-            self.outputs[key] = self.variables.get(key, None)
+            self.outputs[key] = getattr(
+                self.variables, key, None
+            )  # Use getattr to access Pydantic model attributes
 
     def on_enter_end(self):
         """Exit the FSM."""
@@ -239,8 +255,8 @@ class AbstractFSM(ABC):
             fsm.reset()
 
         return fsm._save_state()
-    
-    def create_select_lanaugage(self, state_name, destination, last_state="zero"):
+
+    def create_select_language(self, state_name, destination, last_state="zero"):
         self._add_state(state_name)
 
         def on_enter_select_language(self):
@@ -264,7 +280,7 @@ class AbstractFSM(ABC):
 
     def _add_state(self, state_name):
         self.states.append(state_name)
-    
+
     def _add_display_state(self, state_name):
         if not state_name.endswith("_display"):
             state_name = f"{state_name}_display"
@@ -298,19 +314,33 @@ class AbstractFSM(ABC):
             self.transitions.append(
                 {"source": source, "dest": destination, "trigger": trigger}
             )
-    def _on_enter_empty(self):
+
+    def _on_enter_empty_input(self):
         self.status = Status.WAIT_FOR_ME
         self.status = Status.WAIT_FOR_USER_INPUT
 
+    def _on_enter_empty_branching(self):
+        self.status = Status.WAIT_FOR_ME
+        self.status = Status.MOVE_FORWARD
+
     def _create_on_enter_input(self, fn_name):
         def dynamic_fn(self):
-            return self._on_enter_empty()
+            return self._on_enter_empty_input()
 
         dynamic_fn.__name__ = fn_name
-        setattr(self.__class__, fn_name, dynamic_fn)        
-    
-    def _on_enter_display(self, message, options=None, dialog=None, menu_selector=None, menu_title=None, media_url=None, dest_channel="out",):
-            
+        setattr(self.__class__, fn_name, dynamic_fn)
+
+    def _on_enter_display(
+        self,
+        message,
+        options=None,
+        dialog=None,
+        menu_selector=None,
+        menu_title=None,
+        media_url=None,
+        dest_channel="out",
+    ):
+
         self.status = Status.WAIT_FOR_ME
         if options:
             type = MessageType.INTERACTIVE
@@ -324,17 +354,17 @@ class AbstractFSM(ABC):
             type = MessageType.TEXT
 
         self.send_message(
-                FSMOutput(
-                    message_data=MessageData(body=message),
-                    options_list=options,
-                    type=type,
-                    dest=dest_channel,
-                    dialog=dialog,
-                    menu_selector=menu_selector,
-                    menu_title=menu_title,
-                    media_url=media_url,
-                )
+            FSMOutput(
+                message_data=MessageData(body=message),
+                options_list=options,
+                type=type,
+                dest=dest_channel,
+                dialog=dialog,
+                menu_selector=menu_selector,
+                menu_title=menu_title,
+                media_url=media_url,
             )
+        )
         self.status = Status.MOVE_FORWARD
 
     def _create_on_enter_display(
@@ -348,7 +378,7 @@ class AbstractFSM(ABC):
         media_url=None,
         dest_channel="out",
     ):
-        
+
         def dynamic_fn(self):
             self._on_enter_display(
                 message,
@@ -359,52 +389,58 @@ class AbstractFSM(ABC):
                 media_url,
                 dest_channel,
             )
-            
 
         dynamic_fn.__name__ = fn_name
         setattr(self.__class__, fn_name, dynamic_fn)
-    
-    def _on_enter_input_logic(self, write_var, options=None, message=None, validation=None):
+
+    def _on_enter_input_logic(
+        self, write_var, options=None, message=None, validation=None
+    ):
         self.status = Status.WAIT_FOR_ME
         if options:
             task = f"The user provides a response to the {message}."
-            options = [OptionsListType(id=str(i + 1), title=option) for i, option in enumerate(options)]
+            options = [
+                OptionsListType(id=str(i + 1), title=option)
+                for i, option in enumerate(options)
+            ]
         else:
             task = f"This is the question being asked to the user: {message}. This is validation that the variable need to pass {validation}. Format and modify the user input into the format requied and if you could not be decide return None. Based on the user's input, return the output in json format: {{'result': <input>}}"
         result = Parser.parse_user_input(
-                task,
-                options,
-                self.current_input,
-                azure_endpoint=self.credentials["AZURE_OPENAI_API_ENDPOINT"],
-                azure_openai_api_key=self.credentials["AZURE_OPENAI_API_KEY"],
-                azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
-                openai_api_key=self.credentials["OPENAI_API_KEY"],
-            )
-        if options :
+            task,
+            options,
+            self.current_input,
+            azure_endpoint=self.credentials["AZURE_OPENAI_API_ENDPOINT"],
+            azure_openai_api_key=self.credentials["AZURE_OPENAI_API_KEY"],
+            azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
+            openai_api_key=self.credentials["OPENAI_API_KEY"],
+        )
+        if options:
             result = result["id"]
             if result.isdigit():
                 result = options[int(result) - 1].title
         else:
             result = result["result"]
-        self.variables[write_var] = result
-        
+        setattr(self.variables, write_var, result)
         self.status = Status.MOVE_FORWARD
 
-
-    def _create_on_enter_input_logic_method(self, state_name, write_var, options, message, validation):
+    def _create_on_enter_input_logic_method(
+        self, state_name, write_var, options, message, validation
+    ):
         def dynamic_fn(self):
             self._on_enter_input_logic(write_var, options, message, validation)
+
         dynamic_fn.__name__ = f"on_enter_{state_name}"
-        setattr(self.__class__, f"on_enter_{state_name}", dynamic_fn)   
-    
+        setattr(self.__class__, f"on_enter_{state_name}", dynamic_fn)
+
     def _create_state_with_empty_on_enter(self, state_name):
         self._add_state(state_name)
-        
+
         def dynamic_fn(self):
             self.status = Status.WAIT_FOR_ME
             self.status = Status.MOVE_FORWARD
-        dynamic_fn.__name__ = f"on_enter_{state_name}" 
-        setattr(self.__class__, f"on_enter_{state_name}", dynamic_fn)     
+
+        dynamic_fn.__name__ = f"on_enter_{state_name}"
+        setattr(self.__class__, f"on_enter_{state_name}", dynamic_fn)
 
     def create_display_task(
         self,
@@ -450,12 +486,12 @@ class AbstractFSM(ABC):
         write_var=None,
         validation_expression=None,
     ):
-        
+
         self._add_input_states(name)
         self._add_transition(f"{name}_display", f"{name}_input")
         self._add_transition(f"{name}_input", f"{name}_logic")
         self._add_transition(f"{name}_logic", fail_dest)
-        
+
         self._create_on_enter_display(
             f"on_enter_{name}_display",
             message,
@@ -467,14 +503,19 @@ class AbstractFSM(ABC):
         )
 
         self._create_on_enter_input(f"on_enter_{name}_input")
-        self._create_on_enter_input_logic_method(f"{name}_logic", write_var, options, message, validation_expression)
-        self._create_is_valid_method(f"is_valid_{write_var}", validation_expression, write_var)
-        self._add_transition(f"{name}_logic", success_dest, conditions=f"is_valid_{write_var}")
-
+        self._create_on_enter_input_logic_method(
+            f"{name}_logic", write_var, options, message, validation_expression
+        )
+        self._create_is_valid_method(
+            f"is_valid_{write_var}", validation_expression, write_var
+        )
+        self._add_transition(
+            f"{name}_logic", success_dest, conditions=f"is_valid_{write_var}"
+        )
 
     def create_branching_task(self, source, transitions):
         self._create_state_with_empty_on_enter(source)
-        
+
         for transition in transitions:
             condition = transition["condition"]
             if "expression" in transition:
@@ -483,33 +524,43 @@ class AbstractFSM(ABC):
                 self._create_is_valid_method(f"{condition}", expression, var)
             dest = transition["dest"]
             self._add_transition(source, dest, conditions=condition)
-    
-    
+
     def _on_enter_plugin(self, plugin, input_variables, output_variables, message=None):
         self.status = Status.WAIT_FOR_ME
         if message:
-                self.send_message(
-                    FSMOutput(
-                        message_data=MessageData(body=message),
-                        type=MessageType.TEXT,
-                        dest="out",
-                    )
+            self.send_message(
+                FSMOutput(
+                    message_data=MessageData(body=message),
+                    type=MessageType.TEXT,
+                    dest="out",
                 )
-        
-        plugin_input = {key: self.variables[value] for key, value in input_variables.items()}
+            )
+
+        plugin_input = {
+            key: getattr(self.variables, value)
+            for key, value in input_variables.items()
+        }
         plugin_output = plugin(**plugin_input)
 
         for key, value in output_variables.items():
-            self.variables[value] = plugin_output[key]
+            setattr(self.variables, value, plugin_output[key])
 
         self.status = Status.MOVE_FORWARD
 
-        
-    def create_plugin_task(self, source, message, plugin_fn, input_variables:Dict, output_variables:Dict, transitions:List[Dict]):
+    def create_plugin_task(
+        self,
+        source,
+        message,
+        plugin_fn,
+        input_variables: Dict,
+        output_variables: Dict,
+        transitions: List[Dict],
+    ):
         self._add_state(source)
+
         def dynamic_fn(self):
             self._on_enter_plugin(plugin_fn, input_variables, output_variables, message)
-        
+
         dynamic_fn.__name__ = f"on_enter_{source}"
         setattr(self.__class__, f"on_enter_{source}", dynamic_fn)
 
@@ -519,28 +570,27 @@ class AbstractFSM(ABC):
             self._create_plugin_error_code_method(condition_fn_name, condition)
             dest = transition["dest"]
             self._add_transition(source, dest, conditions=condition_fn_name)
-    
+
     def _create_is_valid_method(self, fn_name, expression, variable):
         def dynamic_fn(self):
             variable_name = variable
             condition = expression.replace(variable_name, f"{variable_name}")
             lambda_func = eval(f"lambda {variable_name}: {condition}")
             return self._validate_method(variable_name, lambda_func)
-        
+
         dynamic_fn.__name__ = f"{fn_name}"
         setattr(self.__class__, dynamic_fn.__name__, dynamic_fn)
 
     def _validate_method(self, variable_name, lambda_func):
-        value = self.variables.get(variable_name)
+        value = getattr(self.variables, variable_name)
         return lambda_func(value)
-    
+
     def _plugin_error_code_validation(self, error_code):
-            return self.variables["error_code"] == error_code
-    
+        return self.variables.error_code == error_code
+
     def _create_plugin_error_code_method(self, name, error_code):
         def dynamic_fn(self):
             return self._plugin_error_code_validation(error_code)
+
         dynamic_fn.__name__ = name
         setattr(self.__class__, name, dynamic_fn)
-    
-
