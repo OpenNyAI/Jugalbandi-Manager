@@ -11,15 +11,18 @@ title: Quickstart
 5. **Translation and Speech API** - JBManager uses speech processing API to handle audio and translation API to handle user input in various languages. Please refer to Translation and Speech API [setup guide](../references/speech-and-translation.md) for more details.
 6. **Whatsapp Interface** - This quickstart will focus on setup your own through whatsapp as channel. Please refer to [channel setup guide](../references/whatsapp.md) for more details.
 
-
 ## Running JB Manager
 1. Clone and Change the directory to the project root.
+```bash
+$ git clone git@github.com:OpenNyAI/Jugalbandi-Manager.git
+$ cd Jugalbandi-Manager
+```
 2. Copy the contents of `.env-dev.template` file to `.env-dev` in the same directory.
 ```bash
 $ cp .env-dev.template .env-dev
 ```
-1. Update the values missing fields in the `.env-dev` file.
-2. Generate an Encryption key using the following command 
+3. Update the values missing fields in the `.env-dev` file.
+4. Generate an Encryption key using the following command 
 ```bash
 $ dd if=/dev/urandom bs=32 count=1 2>/dev/null | openssl base64
 ``` 
@@ -58,7 +61,7 @@ The detailed information about the fields are given below:
     1. **Name [Mandatory]** is the name of the bot. It should be the name of class for your bot code mentioned below. For this example, use `CarWashDealerFSM`.
     2. **Code [Mandatory]** is the fsm.py file python code. Copy the contents of [python file](car_wash.py) and paste it.
     3. **version [Mandatory]** - version of the bot. Put `1.0.0`.
-    4. **required_credentials [Mandatory]** - Credentials required by the bot to access various external services. Here the FSM depends on `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_API_VERSION` and `AZURE_OPENAI_API_ENDPOINT`, so put these keys in this section seperated by comma.
+    4. **required_credentials [Mandatory]** - Credentials required by the bot to access various external services. Here the FSM depends on `AZURE_OPENAI_API_KEY`,`AZURE_OPENAI_API_VERSION`,`AZURE_OPENAI_API_ENDPOINT` so put these keys in this section seperated by comma.
     5. Click on `Install` button.
     
 3. Once the bot is created, click on the **settings (⚙) icon** to enter the given credentials values and click save to save the credentials values. For this example, put the values of `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_API_VERSION` and `AZURE_OPENAI_API_ENDPOINT`. 

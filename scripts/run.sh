@@ -48,7 +48,7 @@ if [ -n "$stage" ]; then
   do
     if [[ "$arg" == "frontend" ]]; then
         # Build the frontend with the specified environment file
-        docker compose build $@ --build-arg VITE_SERVER_HOST=$JB_API_SERVER_HOST
+        docker compose build "$arg" --build-arg VITE_SERVER_HOST=$JB_API_SERVER_HOST
         break
     fi
   done
