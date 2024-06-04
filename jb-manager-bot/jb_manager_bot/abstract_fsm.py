@@ -47,6 +47,7 @@ class AbstractFSM(ABC):
         self.variables = (
             self.variables if hasattr(self, "variables") else self.variable_names()
         )
+        self.temp_variables = {}
         transitions = list(
             sorted(
                 self.transitions,
@@ -420,7 +421,10 @@ class AbstractFSM(ABC):
                 result = options[int(result) - 1].title
         else:
             result = result["result"]
-        setattr(self.variables, write_var, result)
+        try:
+            setattr(self.variables, write_var, result)
+        except Exception as e:
+            setattr(self.variables, write_var, None)
         self.status = Status.MOVE_FORWARD
 
     def _create_on_enter_input_logic_method(
@@ -545,6 +549,8 @@ class AbstractFSM(ABC):
         for key, value in output_variables.items():
             setattr(self.variables, value, plugin_output[key])
 
+        self.temp_variables["error_code"] = plugin_output["error_code"]
+
         self.status = Status.MOVE_FORWARD
 
     def create_plugin_task(
@@ -586,7 +592,7 @@ class AbstractFSM(ABC):
         return lambda_func(value)
 
     def _plugin_error_code_validation(self, error_code):
-        return self.variables.error_code == error_code
+        return self.temp_variables["error_code"] == error_code
 
     def _create_plugin_error_code_method(self, name, error_code):
         def dynamic_fn(self):
@@ -594,3 +600,20 @@ class AbstractFSM(ABC):
 
         dynamic_fn.__name__ = name
         setattr(self.__class__, name, dynamic_fn)
+
+    def _on_enter_assign(self, variable_name, lambda_func):
+        value = getattr(self.variables, variable_name)
+        setattr(self.variables, variable_name, lambda_func(value))
+
+    def create_assign_task(self, source, dest, fn_name, expression, variable):
+        self._add_display_state(source)
+        self._add_transition(source, dest)
+
+        def dynamic_fn(self):
+            variable_name = variable
+            condition = expression.replace(variable_name, f"{variable_name}")
+            lambda_func = eval(f"lambda {variable_name}: {condition}")
+            setattr(self.variables, variable_name, lambda_func)
+
+        dynamic_fn.__name__ = f"{fn_name}"
+        setattr(self.__class__, dynamic_fn.__name__, dynamic_fn)
