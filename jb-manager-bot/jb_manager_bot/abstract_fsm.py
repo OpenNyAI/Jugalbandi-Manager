@@ -13,8 +13,6 @@ from jb_manager_bot.data_models import (
     Status,
 )
 from jb_manager_bot.parsers import Parser
-import re
-from datetime import datetime
 
 
 class Variables(BaseModel):
@@ -257,26 +255,25 @@ class AbstractFSM(ABC):
 
         return fsm._save_state()
 
+    def _on_enter_select_language(self):
+        self.status = Status.WAIT_FOR_ME
+        self.send_message(
+            FSMOutput(
+                message_data=MessageData(
+                    body="Please select your preferred language.\nबंधु से संपर्क करने के लिए धन्यवाद!\nकृपया अपनी भाषा चुनें।"
+                ),
+                type=MessageType.TEXT,
+                dialog="language",
+                dest="channel",
+            )
+        )
+        self.status = Status.WAIT_FOR_USER_INPUT
+
     def create_select_language(self, state_name, destination, last_state="zero"):
         self._add_state(state_name)
-
-        def on_enter_select_language(self):
-            self.status = Status.WAIT_FOR_ME
-            self.send_message(
-                FSMOutput(
-                    message_data=MessageData(
-                        body="Please select your preferred language.\nबंधु से संपर्क करने के लिए धन्यवाद!\nकृपया अपनी भाषा चुनें।"
-                    ),
-                    type=MessageType.TEXT,
-                    dialog="language",
-                    dest="channel",
-                )
-            )
-            self.status = Status.WAIT_FOR_USER_INPUT
-
         self._add_transition(last_state, state_name)
-        on_enter_select_language.__name__ = f"on_enter_{state_name}"
-        setattr(self.__class__, f"on_enter_{state_name}", on_enter_select_language)
+        self.on_enter_select_language.__name__ = f"on_enter_{state_name}"
+        setattr(self.__class__, f"on_enter_{state_name}", self.on_enter_select_language)
         self._add_transition(state_name, destination)
 
     def _add_state(self, state_name):

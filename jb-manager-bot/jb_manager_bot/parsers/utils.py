@@ -73,8 +73,6 @@ class LLMManager:
             azure_openai_api_version=azure_openai_api_version,
             azure_endpoint=azure_endpoint,
         )
-        if kwargs.get("debug", False):
-            print(kwargs["messages"])
         completions = client.chat.completions.create(**args)
 
         if args.get("stream", False):
