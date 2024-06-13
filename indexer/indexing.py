@@ -18,7 +18,6 @@ from langchain_community.vectorstores.pgvector import PGVector
 from lib.document_collection import (DocumentCollection, DocumentFormat,
                                      DocumentSourceFile)
 from lib.kafka_utils import KafkaConsumer
-from lib.storage import LocalStorage
 
 
 load_dotenv()

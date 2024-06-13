@@ -94,7 +94,7 @@ async def handle_output(
             fid = str(uuid.uuid4())
             filename = f"{fid}.mp3"
             await storage.write_file(filename, audio_content, "audio/mpeg")
-            media_output_url = await storage.make_public(filename)
+            media_output_url = await storage.public_url(filename)
         except Exception as e:
             logger.error("Error in text to speech: %s", e)
         return [
@@ -179,7 +179,7 @@ async def handle_output(
             fid = str(uuid.uuid4())
             filename = f"{fid}.mp3"
             await storage.write_file(filename, audio_content, "audio/mpeg")
-            audio_url = await storage.make_public(filename)
+            audio_url = await storage.public_url(filename)
             channel_inputs.append(
                 ChannelInput(
                     source="language",

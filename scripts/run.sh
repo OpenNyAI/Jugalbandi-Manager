@@ -25,6 +25,7 @@ done
 # Remove processed options from the arguments list
 shift $((OPTIND -1))
 
+mkdir -p media
 # set -a
 # source ./set_jbhost.sh
 # set +a
