@@ -21,4 +21,4 @@ jobs:
         run: poetry install --with test
       - name: Test with pytest
         working-directory: ./lib
-        run: pytest tests/file_storage/
+        run: poetry run pytest tests/file_storage/
