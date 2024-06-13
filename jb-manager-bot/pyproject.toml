@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "jb-manager-bot"
-version = "0.1.5"
+version = "0.1.8"
 description = "Bot for JugalBandi Manager"
 authors = ["Shrey Pandey <shreypandey1509@gmail.com>", "Sameer Segal <sameersegal@gmail.com>", "Atharv Kirtikar <atharv.kirtikar@gmail.com>"]
 readme = "README.md"
