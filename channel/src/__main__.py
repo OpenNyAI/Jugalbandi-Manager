@@ -26,9 +26,9 @@ from lib.data_models import (
     MessageType,
 )
 from lib.kafka_utils import KafkaConsumer, KafkaProducer
-from lib.azure_storage import AzureStorage
 from lib.model import Language
 from lib.whatsapp import WhatsappHelper, WAMsgType
+from lib.file_storage import StorageHandler
 
 load_dotenv()
 
@@ -36,13 +36,7 @@ logging.basicConfig()
 logger = logging.getLogger("channel")
 logger.setLevel(logging.INFO)
 
-azure_creds = {
-    "account_url": os.getenv("STORAGE_ACCOUNT_URL"),
-    "account_key": os.getenv("STORAGE_ACCOUNT_KEY"),
-    "container_name": os.getenv("STORAGE_AUDIOFILES_CONTAINER"),
-    "base_path": "input/",
-}
-storage = AzureStorage(**azure_creds)
+storage = StorageHandler.get_instance()
 
 channel_topic = os.getenv("KAFKA_CHANNEL_TOPIC")
 language_topic = os.getenv("KAFKA_LANGUAGE_TOPIC")
@@ -81,7 +75,7 @@ async def process_incoming_messages(message: ChannelInput):
         audio_file_name = f"{msg_id}.ogg"
         logger.info("audio_file_name: %s", audio_file_name)
         await storage.write_file(audio_file_name, audio_bytes, "audio/ogg")
-        storage_url = await storage.make_public(audio_file_name)
+        storage_url = await storage.public_url(audio_file_name)
         recieved_message.content = storage_url
         await update_message(msg_id, media_url=storage_url)
     if message_type == MessageType.INTERACTIVE:
@@ -354,7 +348,7 @@ async def start_channel():
             msg = json.loads(msg)
             logger.info("Input received: %s", msg)
             input_data = ChannelInput(**msg)
-            logger.info("Input received in object form: %s", input_data)
+            logger.info("Input received in object form: %s", input_data.model_dump(exclude_none=True))
             if input_data.intent == ChannelIntent.BOT_IN:
                 await process_incoming_messages(input_data)
             elif input_data.intent == ChannelIntent.BOT_OUT:
