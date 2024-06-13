@@ -1,16 +1,16 @@
 import os
 import logging
 from typing import Union, Optional
-from lib.file_storage.storage import Storage
+from ..storage import Storage
 
 logger = logging.getLogger(__name__)
 
 class LocalStorage(Storage):
-    public_url_prefix = os.getenv("PUBLIC_URL_PREFIX")
     tmp_folder = "/mnt/jb_files"
 
     def __init__(self):
-        logger.info("Initializing Azure Storage")
+        self.public_url_prefix = os.getenv("PUBLIC_URL_PREFIX")
+        logger.info("Initializing Local Storage")
         if not self.public_url_prefix:
             logger.error("PUBLIC_URL_PREFIX not set")
             raise ValueError("PUBLIC_URL_PREFIX not set")

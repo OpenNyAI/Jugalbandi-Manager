@@ -4,7 +4,7 @@ from datetime import datetime, timedelta, timezone
 import logging
 from azure.storage.blob.aio import BlobServiceClient
 from azure.storage.blob import generate_blob_sas, BlobSasPermissions, ContentSettings
-from lib.file_storage.storage import Storage
+from ..storage import Storage
 
 logger = logging.getLogger('storage')
 
