@@ -18,7 +18,7 @@ jobs:
           version: latest
       - name: Install dependencies
         working-directory: ./lib
-        run: poetry install --group=test
+        run: poetry install --with test
       - name: Test with pytest
         working-directory: ./lib
         run: pytest tests/file_storage/
