@@ -1,12 +1,13 @@
 import os
 import sys
 import pytest
-import asyncio
 from unittest.mock import patch, mock_open
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..")))
 from file_storage import LocalStorage 
 
 class TestLocalStorage:
+    tmp_folder = "/tmp/jb_files"
+    LocalStorage.tmp_folder = tmp_folder
 
     @patch('file_storage.local.local_storage.os.makedirs')
     @patch('file_storage.local.local_storage.os.getenv')
@@ -15,7 +16,7 @@ class TestLocalStorage:
         mock_getenv.return_value = "http://example.com"
         storage = LocalStorage()
         assert storage.public_url_prefix == "http://example.com"
-        mock_makedirs.assert_called_once_with("/mnt/jb_files", exist_ok=True)
+        mock_makedirs.assert_called_once_with(self.tmp_folder, exist_ok=True)
 
         # Test without PUBLIC_URL_PREFIX set
         mock_getenv.return_value = None
@@ -29,7 +30,7 @@ class TestLocalStorage:
         mock_getenv.return_value = "http://example.com"
         storage = LocalStorage()
         await storage.write_file("test.txt", "content")
-        mock_open.assert_called_once_with("/mnt/jb_files/test.txt", mode="w")
+        mock_open.assert_called_once_with(f"{self.tmp_folder}/test.txt", mode="w")
         mock_open().write.assert_called_once_with("content")
 
     @patch('file_storage.local.local_storage.open', new_callable=mock_open)
@@ -39,7 +40,7 @@ class TestLocalStorage:
         mock_getenv.return_value = "http://example.com"
         storage = LocalStorage()
         await storage.write_file("test.bin", b'content')
-        mock_open.assert_called_once_with("/mnt/jb_files/test.bin", mode="wb")
+        mock_open.assert_called_once_with(f"{self.tmp_folder}/test.bin", mode="wb")
         mock_open().write.assert_called_once_with(b'content')
 
     @patch('file_storage.local.local_storage.os.getenv')
@@ -56,7 +57,7 @@ class TestLocalStorage:
         mock_getenv.return_value = "http://example.com"
         storage = LocalStorage()
         file_path = await storage._download_file_to_temp_storage("test.txt")
-        assert file_path == "/mnt/jb_files/test.txt"
+        assert file_path == f"{self.tmp_folder}/test.txt"
 
     @patch('file_storage.local.local_storage.os.getenv')
     @pytest.mark.asyncio
