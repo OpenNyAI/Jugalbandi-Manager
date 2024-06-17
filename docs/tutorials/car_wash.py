@@ -1,14 +1,14 @@
 import re
 from pydantic import BaseModel
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Type
 from jb_manager_bot import (
     AbstractFSM,
+    FSMOutput,
     Status,
 )
 
 
-# demo function for plugin call
-def availability_plugin(selected_service, appointment_date, appointment_time):
+def availability_plugin(SELECTED_SERVICE, APPOINTMENT_DATE, APPOINTMENT_TIME):
     return {
         "error_code": 200,
         "booking_status": "confirmed",
@@ -21,11 +21,7 @@ import re
 from typing import Literal, Optional, Dict
 
 
-class CarWashDealerFSM(BaseModel):
-    """
-    This is the FSM class for the Car Wash Dealer project.
-    """
-
+class CarWashVariables(BaseModel):
     selected_service: Optional[str] = None
     appointment_date: Optional[str] = None
     appointment_time: Optional[str] = None
@@ -432,9 +428,9 @@ class NeoCarWashFSM(AbstractFSM):
         self._on_enter_plugin(
             plugin=availability_plugin,
             input_variables={
-                "selected_service": "selected_service",
-                "appointment_date": "appointment_date",
-                "appointment_time": "appointment_time",
+                "SELECTED_SERVICE": "selected_service",
+                "APPOINTMENT_DATE": "appointment_date",
+                "APPOINTMENT_TIME": "appointment_time",
             },
             output_variables={
                 "booking_status": "booking_status",
@@ -532,6 +528,9 @@ class NeoCarWashFSM(AbstractFSM):
         validation = lambda x: x != "confirmed"
         return self._validate_method(variable_name, validation)
 
+    def is_error_code_200(self):
+        return self._plugin_error_code_validation(200)
+
     def is_further_assistance_valid(self):
         variable = "further_assistance"
         expression = "isinstance(further_assistance, str) and re.match(r'^(Yes|No)$', further_assistance) is not None"
@@ -554,9 +553,6 @@ class NeoCarWashFSM(AbstractFSM):
         # validation = lambda x: {expression.replace(variable_name, "x")}
         validation = lambda x: x == "No"
         return self._validate_method(variable_name, validation)
-
-    def is_error_code_200(self):
-        return self._plugin_error_code_validation(200)
 
     def is_error_code_400(self):
         return self._plugin_error_code_validation(400)
