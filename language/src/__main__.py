@@ -79,7 +79,6 @@ async def handle_incoming_message(
             language_input=language_input,
             turn_type=turn_info.turn_type,
         )
-        logger.info("Channel Inputs %s", len(channel_inputs))
         for channel_input in channel_inputs:
             callback(channel_input)
 

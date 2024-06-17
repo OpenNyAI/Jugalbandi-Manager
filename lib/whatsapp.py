@@ -15,6 +15,7 @@ load_dotenv()
 
 wa_api_host = os.getenv("WA_API_HOST")
 
+logger = logging.getLogger(__name__)
 
 class WAMsgType(int, Enum):
     text = 0
@@ -206,7 +207,7 @@ class WhatsappHelper:
 
             return None
         except Exception as e:
-            logging.error(e)
+            logger.error("Error in sending audio message: %s %s", e, traceback.format_exc())
             return None
 
     # handle list
@@ -265,10 +266,10 @@ class WhatsappHelper:
                     return json_output["messages"][0]["id"]
 
                 else:
-                    logging.error("Status Code: %s :: %s", r.status_code, json_output)
+                    logger.error("Status Code: %s :: %s", r.status_code, json_output)
                 return None
             except Exception as e:
-                logging.error("Error in sending interactive message: %s, %s", e, traceback.format_exc())
+                logger.error("Error in sending interactive message: %s, %s", e, traceback.format_exc())
                 return None
 
 
@@ -353,14 +354,13 @@ class WhatsappHelper:
         try:
             r = requests.post(url, data=json.dumps(data), headers=headers)
             json_output = r.json()
-            logging.error("json output is %s", json_output)
             if json_output and json_output["messages"]:
                 return json_output["messages"][0]["id"]
             else:
-                logging.error("Status Code: %s :: %s", r.status_code, json_output)
+                logger.error("Status Code: %s :: %s", r.status_code, json_output)
             return None
         except Exception as e:
-            logging.error("Error in sending interactive message: %s, %s", e, traceback.format_exc())
+            logger.error("Error in sending interactive message: %s, %s", e, traceback.format_exc())
             return None
 
     @staticmethod
