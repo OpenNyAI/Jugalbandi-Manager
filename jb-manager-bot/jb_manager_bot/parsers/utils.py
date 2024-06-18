@@ -15,6 +15,7 @@ class LLMManager:
         azure_openai_api_key=None,
         azure_openai_api_version=None,
         azure_endpoint=None,
+        azure_deployment=None,
     ):
         """Return the OpenAI client."""
         if cls.client is None:
@@ -23,6 +24,7 @@ class LLMManager:
                     api_key=azure_openai_api_key,
                     api_version=azure_openai_api_version,
                     azure_endpoint=azure_endpoint,
+                    azure_deployment=azure_deployment,
                 )
             else:
                 cls.client = OpenAI(api_key=openai_api_key)
@@ -36,6 +38,7 @@ class LLMManager:
         azure_openai_api_key=None,
         azure_openai_api_version=None,
         azure_endpoint=None,
+        azure_deployment=None,
         **kwargs
     ):
         """Use the OpenAI Language Model API to generate a response based on the given messages."""
@@ -63,6 +66,7 @@ class LLMManager:
             azure_openai_api_key=azure_openai_api_key,
             azure_openai_api_version=azure_openai_api_version,
             azure_endpoint=azure_endpoint,
+            azure_deployment=azure_deployment,
         )
         completions = client.chat.completions.create(**args)
 
@@ -130,6 +134,7 @@ class LLMManager:
         azure_openai_api_key=None,
         azure_openai_api_version=None,
         azure_endpoint=None,
+        azure_deployment=None,
         **kwargs
     ):
         """Use the OpenAI Embeddings API to generate embeddings for the given inputs."""
@@ -137,6 +142,7 @@ class LLMManager:
             openai_api_key=openai_api_key,
             azure_openai_api_key=azure_openai_api_key,
             azure_openai_api_version=azure_openai_api_version,
+            azure_deployment=azure_deployment,
             azure_endpoint=azure_endpoint,
         )
         args = {
