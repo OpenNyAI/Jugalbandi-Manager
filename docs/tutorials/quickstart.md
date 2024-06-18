@@ -17,6 +17,10 @@ If using windows, Use WSL terminal to follow the quickstart. For installation in
 
 ## Running JB Manager
 1. Clone and Change the directory to the project root.
+```bash
+$ git clone git@github.com:OpenNyAI/Jugalbandi-Manager.git
+$ cd Jugalbandi-Manager
+```
 2. Copy the contents of `.env-dev.template` file to `.env-dev` in the same directory.
 ```bash
 $ cp .env-dev.template .env-dev
