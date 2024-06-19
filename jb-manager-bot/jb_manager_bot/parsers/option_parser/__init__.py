@@ -23,7 +23,7 @@ class OptionParser:
         azure_openai_api_key=None,
         azure_openai_api_version=None,
         azure_endpoint=None,
-        azure_deployment=None,
+        azure_deployment_name=None,
     ):
         """Parse the user input and return the most appropriate option ID based on the user's response."""
 
@@ -51,7 +51,7 @@ class OptionParser:
             azure_openai_api_key=azure_openai_api_key,
             azure_openai_api_version=azure_openai_api_version,
             azure_endpoint=azure_endpoint,
-            azure_deployment=azure_deployment,
+            azure_deployment_name=azure_deployment_name,
         )
         result = json.loads(result)
         return result["id"]

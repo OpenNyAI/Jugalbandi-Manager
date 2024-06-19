@@ -15,7 +15,7 @@ class LLMManager:
         azure_openai_api_key=None,
         azure_openai_api_version=None,
         azure_endpoint=None,
-        azure_deployment=None,
+        azure_deployment_name=None,
     ):
         """Return the OpenAI client."""
         if cls.client is None:
@@ -24,7 +24,7 @@ class LLMManager:
                     api_key=azure_openai_api_key,
                     api_version=azure_openai_api_version,
                     azure_endpoint=azure_endpoint,
-                    azure_deployment=azure_deployment,
+                    azure_deployment=azure_deployment_name,
                 )
             else:
                 cls.client = OpenAI(api_key=openai_api_key)
@@ -38,7 +38,7 @@ class LLMManager:
         azure_openai_api_key=None,
         azure_openai_api_version=None,
         azure_endpoint=None,
-        azure_deployment=None,
+        azure_deployment_name=None,
         **kwargs
     ):
         """Use the OpenAI Language Model API to generate a response based on the given messages."""
@@ -66,7 +66,7 @@ class LLMManager:
             azure_openai_api_key=azure_openai_api_key,
             azure_openai_api_version=azure_openai_api_version,
             azure_endpoint=azure_endpoint,
-            azure_deployment=azure_deployment,
+            azure_deployment_name=azure_deployment_name,
         )
         completions = client.chat.completions.create(**args)
 
@@ -134,7 +134,7 @@ class LLMManager:
         azure_openai_api_key=None,
         azure_openai_api_version=None,
         azure_endpoint=None,
-        azure_deployment=None,
+        azure_deployment_name=None,
         **kwargs
     ):
         """Use the OpenAI Embeddings API to generate embeddings for the given inputs."""
@@ -142,8 +142,8 @@ class LLMManager:
             openai_api_key=openai_api_key,
             azure_openai_api_key=azure_openai_api_key,
             azure_openai_api_version=azure_openai_api_version,
-            azure_deployment=azure_deployment,
             azure_endpoint=azure_endpoint,
+            azure_deployment_name=azure_deployment_name,
         )
         args = {
             k: v
