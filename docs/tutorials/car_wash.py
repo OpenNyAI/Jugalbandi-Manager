@@ -257,6 +257,11 @@ class CarWashDealerFSM(AbstractFSM):
         )
         if not self.credentials["AZURE_OPENAI_API_ENDPOINT"]:
             raise ValueError("Missing credential: AZURE_OPENAI_API_ENDPOINT")
+        self.credentials["AZURE_DEPLOYMENT_NAME"] = credentials.get(
+            "AZURE_DEPLOYMENT_NAME"
+        )
+        if not self.credentials["AZURE_DEPLOYMENT_NAME"]:
+            raise ValueError("Missing credential: AZURE_DEPLOYMENT_NAME")
 
         self.plugins: Dict[str, AbstractFSM] = {}
         super().__init__(send_message=send_message)
@@ -341,6 +346,7 @@ class CarWashDealerFSM(AbstractFSM):
             azure_openai_api_key=self.credentials["AZURE_OPENAI_API_KEY"],
             azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
             azure_endpoint=self.credentials["AZURE_OPENAI_API_ENDPOINT"],
+            azure_deployment_name=self.credentials["AZURE_DEPLOYMENT_NAME"],
         )
         self.variables["service_id"] = result
         self.status = Status.MOVE_FORWARD
@@ -372,6 +378,7 @@ class CarWashDealerFSM(AbstractFSM):
             azure_openai_api_key=self.credentials["AZURE_OPENAI_API_KEY"],
             azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
             azure_endpoint=self.credentials["AZURE_OPENAI_API_ENDPOINT"],
+            azure_deployment_name=self.credentials["AZURE_DEPLOYMENT_NAME"],
             response_format={"type": "json_object"},
             model="gpt4",
         )
@@ -430,6 +437,7 @@ class CarWashDealerFSM(AbstractFSM):
             azure_openai_api_key=self.credentials["AZURE_OPENAI_API_KEY"],
             azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
             azure_endpoint=self.credentials["AZURE_OPENAI_API_ENDPOINT"],
+            azure_deployment_name=self.credentials["AZURE_DEPLOYMENT_NAME"],
         )
         self.variables["appointment_id"] = result
         self.status = Status.MOVE_FORWARD
@@ -516,6 +524,7 @@ class CarWashDealerFSM(AbstractFSM):
             azure_openai_api_key=self.credentials["AZURE_OPENAI_API_KEY"],
             azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
             azure_endpoint=self.credentials["AZURE_OPENAI_API_ENDPOINT"],
+            azure_deployment_name=self.credentials["AZURE_DEPLOYMENT_NAME"],
         )
         if result == "1":
             self.variables["further_assistance"] = "yes"
