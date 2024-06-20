@@ -27,9 +27,6 @@ class OptionParser:
     ):
         """Parse the user input and return the most appropriate option ID based on the user's response."""
 
-        if azure_openai_api_key is not None:
-            model = model.replace(".", "")
-
         for option in options:
             if "id" not in option and not hasattr(option, "id"):
                 raise ValueError("Option ID is required")
