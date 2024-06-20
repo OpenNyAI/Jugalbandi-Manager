@@ -23,10 +23,10 @@ class OptionParser:
         azure_openai_api_key=None,
         azure_openai_api_version=None,
         azure_endpoint=None,
+        model="gpt-3.5-turbo"
     ):
         """Parse the user input and return the most appropriate option ID based on the user's response."""
 
-        model = "gpt-3.5-turbo"
         if azure_openai_api_key is not None:
             model = model.replace(".", "")
 
