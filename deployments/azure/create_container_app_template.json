@@ -1,0 +1,146 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "resources": [
+      {
+        "type": "Microsoft.App/managedEnvironments",
+        "apiVersion": "2022-03-01",
+        "name": "[parameters('containerAppEnvironmentName')]",
+        "location": "[parameters('location')]",
+        "properties": {}
+      },
+      {
+        "type": "Microsoft.App/containerApps",
+        "apiVersion": "2022-03-01",
+        "name": "[parameters('containerAppName')]",
+        "location": "[parameters('location')]",
+        "dependsOn": [
+            "[resourceId('Microsoft.App/managedEnvironments', parameters('containerAppEnvironmentName'))]"
+        ],
+        "properties": {
+          "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', parameters('containerAppEnvironmentName'))]",
+          "configuration": {
+            "ingress": {
+              "external": true,
+              "targetPort": "[parameters('containerTargetPort')]",
+              "traffic": [
+                {
+                  "latestRevision": true,
+                  "weight": 100
+                }
+              ]
+            },
+            "dapr": {
+              "enabled": false
+            }
+          },
+          "template": {
+            "containers": [
+              {
+                "name": "[parameters('containerAppName')]",
+                "image": "hello_world:latest",
+                "resources": {
+                  "cpu": "[parameters('cpu')]",
+                  "memory": "[parameters('memory')]"
+                },
+                "env": "[parameters('environmentVariables')]"
+              }
+            ],
+            "scale": {
+              "minReplicas": "[parameters('minReplicas')]",
+              "maxReplicas": "[parameters('maxReplicas')]",
+              "rules": [
+                {
+                  "name": "http-rule",
+                  "custom": {
+                    "type": "http",
+                    "metadata": {
+                      "concurrentRequests": "50"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "workloadProfileName": "Consumption"
+        }
+      }
+    ],
+    "parameters": {
+      "containerAppName": {
+        "type": "string",
+        "metadata": {
+          "description": "The name of the Container App."
+        }
+      },
+      "location": {
+        "type": "string",
+        "metadata": {
+          "description": "The location of the Container App."
+        }
+      },
+      "containerAppEnvironmentName": {
+        "type": "string",
+        "metadata": {
+          "description": "The name of the Container App environment."
+        }
+      },
+      "containerTargetPort": {
+        "type": "int",
+        "metadata": {
+          "description": "The target port for the container."
+        }
+      },
+      "cpu": {
+        "type": "string",
+        "defaultValue": "0.5",
+        "metadata": {
+          "description": "The CPU allocation for the container."
+        }
+      },
+      "memory": {
+        "type": "string",
+        "defaultValue": "1Gi",
+        "metadata": {
+          "description": "The memory allocation for the container."
+        }
+      },
+      "minReplicas": {
+        "type": "int",
+        "defaultValue": 1,
+        "metadata": {
+          "description": "The minimum number of container replicas."
+        }
+      },
+      "maxReplicas": {
+        "type": "int",
+        "defaultValue": 2,
+        "metadata": {
+          "description": "The maximum number of container replicas."
+        }
+      },
+      "environmentVariables": {
+        "type": "array",
+        "metadata": {
+          "description": "The list of environment variables for the container."
+        },
+        "defaultValue": [
+          {
+            "name": "POSTGRES_DATABASE_NAME",
+            "value": "example_db"
+          },
+          {
+            "name": "POSTGRES_DATABASE_USERNAME",
+            "value": "example_user"
+          }
+        ]
+      }
+    },
+    "outputs": {
+      "fqdn": {
+        "type": "string",
+        "value": "[reference(resourceId('Microsoft.App/containerApps', parameters('containerAppName'))).properties.configuration.ingress.fqdn]"
+      }
+    }
+  }
+  

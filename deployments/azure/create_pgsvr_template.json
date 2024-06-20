@@ -1,0 +1,101 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "postgresqlServerName": {
+        "type": "string",
+        "metadata": {
+          "description": "The name of the PostgreSQL Flexible Server."
+        }
+      },
+      "location": {
+        "type": "string",
+        "metadata": {
+          "description": "The location of the PostgreSQL Flexible Server."
+        }
+      },
+      "adminUser": {
+        "type": "string",
+        "metadata": {
+          "description": "The administrator username for the PostgreSQL Flexible Server."
+        }
+      },
+      "adminPassword": {
+        "type": "securestring",
+        "metadata": {
+          "description": "The administrator password for the PostgreSQL Flexible Server."
+        }
+      },
+      "databaseName": {
+        "type": "string",
+        "metadata": {
+          "description": "The name of the database to create in the PostgreSQL Flexible Server."
+        }
+      }
+    },
+    "resources": [
+      {
+        "type": "Microsoft.DBforPostgreSQL/flexibleServers",
+        "apiVersion": "2023-12-01-preview",
+        "name": "[parameters('postgresqlServerName')]",
+        "location": "[parameters('location')]",
+        "properties": {
+          "replica": {
+            "role": "Primary"
+          },
+          "storage": {
+            "iops": 120,
+            "tier": "P4",
+            "storageSizeGB": 32,
+            "autoGrow": "Enabled"
+          },
+          "network": {
+            "publicNetworkAccess": "Enabled"
+          },
+          "dataEncryption": {
+            "type": "SystemManaged"
+          },
+          "authConfig": {
+            "activeDirectoryAuth": "Disabled",
+            "passwordAuth": "Enabled"
+          },
+          "version": "16",
+          "administratorLogin": "[parameters('adminUser')]",
+          "administratorLoginPassword": "[parameters('adminPassword')]",
+          "availabilityZone": "1",
+          "backup": {
+            "backupRetentionDays": 7,
+            "geoRedundantBackup": "Disabled"
+          },
+          "highAvailability": {
+            "mode": "Disabled"
+          },
+          "maintenanceWindow": {
+            "customWindow": "Disabled",
+            "dayOfWeek": 0,
+            "startHour": 0,
+            "startMinute": 0
+          },
+          "replicationRole": "Primary"
+        },
+        "sku": {
+          "name": "Standard_D2ds_v4",
+          "tier": "GeneralPurpose",
+          "family": "D",
+          "capacity": 2
+        }
+      },
+      {
+        "type": "Microsoft.DBforPostgreSQL/flexibleServers/databases",
+        "apiVersion": "2023-12-01-preview",
+        "name": "[concat(parameters('postgresqlServerName'), '/', parameters('databaseName'))]",
+        "properties": {
+            "charset": "UTF8",
+            "collation": "en_US.utf8"
+        },
+        "dependsOn": [
+          "[resourceId('Microsoft.DBforPostgreSQL/flexibleServers', parameters('postgresqlServerName'))]"
+        ]
+      }
+    ]
+  }
