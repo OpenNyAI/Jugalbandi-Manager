@@ -62,10 +62,10 @@ $ python3 -m http.server 5000
 ```bash
 $ ./loophole http 5000
 ```
-and copy the forwarding URL from the terminal and add it to `PUBLIC_URL_PREFIX` in `.env-dev` file.
+Copy the tunnel url from the loophole shell and add it to `PUBLIC_URL_PREFIX` in `.env-dev` file.
+![](../assets/quickstart-loophole-5000.png)
 ```
-# Set Tunnel URL if using local storage
-PUBLIC_URL_PREFIX=
+PUBLIC_URL_PREFIX= # Set Tunnel URL if using local storage
 ```
 
 7. Start the `kafka` and `postgres` container.
@@ -99,7 +99,7 @@ The detailed information about the fields are given below:
     1. **Name [Mandatory]** is the name of the bot. It should be the name of class for your bot code mentioned below. For this example, use `CarWashDealerFSM`.
     2. **Code [Mandatory]** is the fsm.py file python code. Copy the contents of [python file](car_wash.py) and paste it.
     3. **version [Mandatory]** - version of the bot. Put `1.0.0`.
-    4. **required_credentials [Mandatory]** - Credentials required by the bot to access various external services. Enter the following: `AZURE_OPENAI_API_KEY,AZURE_OPENAI_API_VERSION,AZURE_OPENAI_API_ENDPOINT,FAST_MODEL,SLOW_MODEL`, so put these keys in this section seperated by comma.
+    4. **required_credentials [Mandatory]** - Credentials required by the bot to access various external services. Enter the following: `AZURE_OPENAI_API_KEY,AZURE_OPENAI_API_VERSION,AZURE_OPENAI_API_ENDPOINT,FAST_MODEL,SLOW_MODEL` , so put these keys in this section seperated by comma.
     5. Click on `Install` button.
     
 3. Once the bot is created, click on the **settings (⚙) icon** to enter the given credentials values and click save to save the credentials values. For this example, put the values of `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_API_VERSION`, `AZURE_OPENAI_API_ENDPOINT`, `FAST_MODEL` (typically, `gpt-3.5-turbo`) and `SLOW_MODEL` (typically, `gpt-4`). **Note: Remember to verify your model names. If you are using Azure OpenAI, this corresponds to Deployment Name and not model type**
@@ -112,8 +112,8 @@ The detailed information about the fields are given below:
 ```bash
 $ ./loophole http 8000
 ```
-7. Copy the tunnel url from the ngrok shell.
-![](../assets/quickstart-ngrok.png)
+7. Copy the tunnel url from the loophole shell.
+![](../assets/quickstart-loophole-8000.png)
 8. Add this url to register the callback URL for Whatsapp service provider. Your callback url will look like this `<Tunnel URL>/callback`. 
 
     For this tutorial, we are using the shell script to add the callback URL. Run the script on a new shell session with the appropriate values to register the callback URL.
