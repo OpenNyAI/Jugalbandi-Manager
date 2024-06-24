@@ -8,7 +8,12 @@ Jugalbandi (JB) Manager is a full AI-powered conversational chatbot platform. It
 The documentation is organized as follows:
 
 1. [Tutorials](tutorials/)
-   1. [Quick Start](tutorials/quick-start.md)
+	1. [Quickstart](tutorials/quickstart.md) -- Start Here
 2. [How to guides](how-tos/)
+	1. [Local Development](how-tos/Developer.md)
+	2. [Write Your Own Bot](how-tos/fsm_building.md)
 3. [References](references/)
+	1. [Dependencies](references/dependencies.md)
+	2. [Output from Bot](references/fsm-output.md)
 4. [Explanations](explanations/)
+	1. [JB Manager Architecture](explanations/architecture.md)
