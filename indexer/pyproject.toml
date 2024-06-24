@@ -24,7 +24,7 @@ aiofiles = "^23.2.1"
 confluent-kafka = "^2.3.0"
 
 [tool.poetry.group.dev.dependencies]
-lib = {path = "../lib", develop = true}
+lib = {path = "../jb-lib", develop = true}
 
 [build-system]
 requires = ["poetry-core"]

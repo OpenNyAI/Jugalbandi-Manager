@@ -8,12 +8,12 @@ ENV POETRY_NO_INTERACTION=1 \
     POETRY_CACHE_DIR=/tmp/poetry_cache
 
 WORKDIR /app
-COPY ./lib lib
-WORKDIR /app/lib
+COPY ./jb-lib jb-lib
+WORKDIR /app/jb-lib
 RUN poetry build
 WORKDIR /app
-RUN cp ./lib/dist/*.whl .
-RUN rm -rf ./lib
+RUN cp ./jb-lib/dist/*.whl .
+RUN rm -rf ./jb-lib
 # COPY ./indexer/pyproject.toml ./indexer/poetry.lock ./
 COPY ./indexer/pyproject.toml ./
 # poetry needs a README.md to build the project

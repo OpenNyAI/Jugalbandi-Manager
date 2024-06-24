@@ -25,7 +25,7 @@ tenacity = "^8.2.3"
 psycopg2-binary = "^2.9.9"
 
 [tool.poetry.group.dev.dependencies]
-lib = {path = "../lib", develop = true}
+lib = {path = "../jb-lib", develop = true}
 
 [build-system]
 requires = ["poetry-core"]
