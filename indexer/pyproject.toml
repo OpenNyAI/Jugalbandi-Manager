@@ -26,6 +26,8 @@ langchain-postgres = "^0.0.7"
 psycopg = {extras = ["binary", "pool"], version = "^3.1.19"}
 pymupdf = "^1.24.5"
 
+[tool.poetry.group.dev.dependencies]
+lib = {path = "../jb-lib", develop = true}
 
 [build-system]
 requires = ["poetry-core"]
