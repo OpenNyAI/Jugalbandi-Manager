@@ -8,11 +8,20 @@ ENV POETRY_NO_INTERACTION=1 \
     POETRY_CACHE_DIR=/tmp/poetry_cache
 
 WORKDIR /app
+COPY ./lib lib
+WORKDIR /app/lib
+RUN poetry build
+WORKDIR /app
+RUN cp ./lib/dist/*.whl .
+RUN rm -rf ./lib
+
 COPY ./language/pyproject.toml ./language/poetry.lock ./
 # poetry needs a README.md to build the project
 RUN touch README.md 
 
-RUN poetry install && rm -rf $POETRY_CACHE_DIR
+RUN poetry remove lib --group dev
+RUN poetry add --lock ./lib-*.whl
+RUN poetry install --without dev --sync && rm -rf $POETRY_CACHE_DIR
 
 FROM python:3.11-slim-buster as runtime
 
@@ -28,6 +37,5 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 COPY ./language/src ./language
-COPY ./lib lib
 
 CMD ["python", "-u", "-m", "language"]

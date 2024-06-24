@@ -1,3 +1,4 @@
+import logging
 import base64
 from builtins import ExceptionGroup
 import json
@@ -8,12 +9,10 @@ from abc import ABC, abstractmethod
 import azure.cognitiveservices.speech as speechsdk
 import httpx
 
-from lib.jb_logging import Logger
-
+from lib.model import InternalServerException, Language
 from .audio_converter import convert_wav_bytes_to_mp3_bytes
-from .model import InternalServerException, Language
 
-logger = Logger("speech_processor")
+logger = logging.getLogger("speech_processor")
 
 
 class SpeechProcessor(ABC):
@@ -285,7 +284,7 @@ class AzureSpeechProcessor(SpeechProcessor):
             "KO": ["ko-KR", "ko-KR-SunHiNeural"],
             "PT": ["pt-PT", "pt-PT-RaquelNeural"],
             "RU": ["ru-RU", "ru-RU-SvetlanaNeural"],
-            "ES": ["es-ES", "	es-ES-ElviraNeural"],
+            "ES": ["es-ES", "es-ES-ElviraNeural"],
             "TR": ["tr-TR", "tr-TR-EmelNeural"],
         }
         self.speech_config = speechsdk.SpeechConfig(

@@ -8,11 +8,18 @@ ENV POETRY_NO_INTERACTION=1 \
     POETRY_CACHE_DIR=/tmp/poetry_cache
 
 WORKDIR /app
-COPY ./api/pyproject.toml ./api/poetry.lock ./
-# poetry needs a README.md to build the project
-RUN touch README.md 
+COPY ./lib lib
+WORKDIR /app/lib
+RUN poetry build
+WORKDIR /app
+RUN cp ./lib/dist/*.whl .
+RUN rm -rf ./lib
 
-RUN poetry install && rm -rf $POETRY_CACHE_DIR
+COPY ./api/pyproject.toml ./api/poetry.lock ./
+
+RUN poetry remove lib --group dev
+RUN poetry add --lock ./lib-*.whl
+RUN poetry install --without dev --sync && rm -rf $POETRY_CACHE_DIR
 
 FROM python:3.11-slim-buster as runtime
 
@@ -23,7 +30,7 @@ WORKDIR /app
 
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
-COPY ./api .
-COPY ./lib lib
+# COPY ./api .
+COPY ./api/app app
 
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

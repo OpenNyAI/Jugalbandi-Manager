@@ -17,6 +17,8 @@ pgvector = "^0.2.4"
 psycopg2-binary = "^2.9.9"
 langchain-openai = "^0.0.2"
 
+[tool.poetry.group.dev.dependencies]
+lib = {path = "../lib", develop = true}
 
 [build-system]
 requires = ["poetry-core"]

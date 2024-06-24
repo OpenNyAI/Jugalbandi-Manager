@@ -22,6 +22,9 @@ psycopg2-binary = "^2.9.9"
 cryptography = "^42.0.4"
 
 
+[tool.poetry.group.dev.dependencies]
+lib = {path = "../lib", develop = true}
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
