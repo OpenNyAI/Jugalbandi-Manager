@@ -56,7 +56,9 @@ class TestAzureStorage:
     @patch("lib.file_storage.azure.azure_storage.ContentSettings")
     @pytest.mark.asyncio
     async def test_write_file(self, mock_content_settings, mock_blob_client):
-        with patch("lib.file_storage.azure.azure_storage.os.getenv") as mock_getenv, patch(
+        with patch(
+            "lib.file_storage.azure.azure_storage.os.getenv"
+        ) as mock_getenv, patch(
             "lib.file_storage.azure.azure_storage.BlobServiceClient"
         ) as mock_blob_service_client:
             mock_getenv.side_effect = lambda key: {
@@ -90,7 +92,9 @@ class TestAzureStorage:
     @patch("azure.storage.blob.BlobClient")
     @pytest.mark.asyncio
     async def test_download_file_to_temp_storage(self, mock_blob_client):
-        with patch("lib.file_storage.azure.azure_storage.os.getenv") as mock_getenv, patch(
+        with patch(
+            "lib.file_storage.azure.azure_storage.os.getenv"
+        ) as mock_getenv, patch(
             "lib.file_storage.azure.azure_storage.BlobServiceClient"
         ) as mock_blob_service_client:
             mock_getenv.side_effect = lambda key: {
@@ -123,7 +127,9 @@ class TestAzureStorage:
     @patch("azure.storage.blob.BlobClient")
     @pytest.mark.asyncio
     async def test_public_url(self, mock_blob_client, mock_generate_blob_sas):
-        with patch("lib.file_storage.azure.azure_storage.os.getenv") as mock_getenv, patch(
+        with patch(
+            "lib.file_storage.azure.azure_storage.os.getenv"
+        ) as mock_getenv, patch(
             "lib.file_storage.azure.azure_storage.BlobServiceClient"
         ) as mock_blob_service_client:
             mock_getenv.side_effect = lambda key: {
