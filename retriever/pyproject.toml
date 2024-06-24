@@ -12,10 +12,12 @@ fastapi = "^0.108.0"
 python-dotenv = "^1.0.0"
 confluent-kafka = "^2.3.0"
 uvicorn = "^0.25.0"
-langchain = "0.0.351"
 pgvector = "^0.2.4"
 psycopg2-binary = "^2.9.9"
-langchain-openai = "^0.0.2"
+langchain = "^0.2.5"
+langchain-openai = "^0.1.8"
+langchain-postgres = "^0.0.7"
+psycopg = {extras = ["binary", "pool"], version = "^3.1.19"}
 
 
 [build-system]

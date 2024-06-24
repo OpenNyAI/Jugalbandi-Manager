@@ -6,13 +6,12 @@ import sys
 import traceback
 
 from dotenv import load_dotenv
-from langchain.embeddings.azure_openai import AzureOpenAIEmbeddings
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain_community.vectorstores.pgvector import PGVector
+from langchain_openai import AzureOpenAIEmbeddings, OpenAIEmbeddings
+from langchain_postgres.vectorstores import PGVector
 from openai import OpenAI
 
-from lib.kafka_utils import KafkaConsumer, KafkaProducer
 from lib.data_models import FlowInput, RAGInput
+from lib.kafka_utils import KafkaConsumer, KafkaProducer
 
 load_dotenv()
 
@@ -57,18 +56,21 @@ async def querying_with_langchain(
     callback: callable = None,
 ):
     print(query, collection_name, top_chunk_k_value)
-    # check if OpenAI type is Azure then pass the deployment name
     if os.environ["OPENAI_API_TYPE"] == "azure":
         embeddings = AzureOpenAIEmbeddings(
-            azure_deployment=os.environ["OPENAI_EMBEDDINGS_DEPLOYMENT"]
+            model="text-embedding-ada-002",
+            azure_deployment=os.environ["AZURE_DEPLOYMENT_NAME"],
+            azure_endpoint=os.environ["AZURE_OPENAI_ENDPOINT"],
+            openai_api_type=os.environ["OPENAI_API_TYPE"],
+            openai_api_key=os.environ["AZURE_OPENAI_API_KEY"],
         )
     else:
         embeddings = OpenAIEmbeddings(client="")
 
     search_index = PGVector(
         collection_name=collection_name,
-        connection_string=db_url,
-        embedding_function=embeddings,
+        connection=db_url,
+        embeddings=embeddings,
     )
     # TODO: Check metadata is not None and add it to the search_index filter
     if metadata:

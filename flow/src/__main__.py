@@ -10,7 +10,7 @@ from dotenv import load_dotenv
 
 
 from . import crud
-from .extensions import save_file
+# from .extensions import save_file
 from lib.kafka_utils import KafkaConsumer, KafkaProducer
 from lib.data_models import (
     BotOutput,
@@ -205,14 +205,14 @@ async def flow_loop():
                 if fsm_output.media_url is not None:
                     media_url = fsm_output.media_url
 
-                if fsm_output.file is not None:
-                    upload_file = fsm_output.file
+                # if fsm_output.file is not None:
+                #     upload_file = fsm_output.file
 
-                    with open(upload_file.path, "rb") as f:
-                        file_content = f.read()
-                    media_url = save_file(
-                        upload_file.filename, file_content, upload_file.mime_type
-                    )
+                #     with open(upload_file.path, "rb") as f:
+                #         file_content = f.read()
+                #     media_url = save_file(
+                #         upload_file.filename, file_content, upload_file.mime_type
+                #     )
                 logger.info("FSM Output: %s", fsm_output)
                 logger.info("FSM Output Destination: %s", fsm_output.dest)
                 if fsm_output.dest == "out":
