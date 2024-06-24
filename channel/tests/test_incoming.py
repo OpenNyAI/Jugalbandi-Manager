@@ -1,15 +1,7 @@
-import os
-import sys
 import base64
-import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
+import pytest
 
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
-)
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-print(sys.path)
 from lib.data_models import (
     ChannelInput,
     ChannelData,
@@ -19,9 +11,8 @@ from lib.data_models import (
     MessageData,
     LanguageInput,
     FlowInput,
-    LanguageIntent
+    LanguageIntent,
 )
-from lib.whatsapp import WAMsgType
 
 # Patch StorageHandler.get_instance before importing the module
 mock_storage_instance = MagicMock()
@@ -130,7 +121,10 @@ async def test_process_incoming_audio_message():
                     assert result.data.message_type == MessageType.AUDIO
                     assert result.data.message_data is not None
                     assert result.data.message_data.media_url is not None
-                    assert result.data.message_data.media_url == "https://storage.url/test_audio.ogg"
+                    assert (
+                        result.data.message_data.media_url
+                        == "https://storage.url/test_audio.ogg"
+                    )
 
 
 @pytest.mark.asyncio
@@ -166,6 +160,7 @@ async def test_process_incoming_interactive_message():
     assert result.data.message_data.message_text is not None
     assert result.data.message_data.message_text == "test_button_id"
 
+
 @pytest.mark.asyncio
 async def test_process_incoming_language_selection_message():
     mock_set_user_language = AsyncMock()
@@ -198,6 +193,7 @@ async def test_process_incoming_language_selection_message():
         assert result.dialog is not None
         assert result.dialog == "language_selected"
 
+
 @pytest.mark.asyncio
 async def test_process_incoming_form_message():
     message = ChannelInput(
@@ -220,4 +216,3 @@ async def test_process_incoming_form_message():
     assert result is not None
     assert isinstance(result, FlowInput)
     assert result.form_response is not None
-

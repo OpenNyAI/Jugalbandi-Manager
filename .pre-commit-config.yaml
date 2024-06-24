@@ -12,3 +12,8 @@ repos:
         entry: bash -c 'cd jb-lib && poetry run pytest'
         language: system
         types: [python]
+    -   id: run-tests-channel
+        name: Run Tests in channel
+        entry: bash -c 'cd channel && poetry run pytest'
+        language: system
+        types: [python]

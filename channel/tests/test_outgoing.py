@@ -1,14 +1,6 @@
-import os
-import sys
-import pytest
 from unittest.mock import patch, AsyncMock, MagicMock
+import pytest
 
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src"))
-)
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
-print(sys.path)
 from lib.data_models import (
     ChannelInput,
     BotOutput,
@@ -262,14 +254,22 @@ async def test_send_document_message():
     mock_wa_send_document = MagicMock(return_value="test_channel_id")
     mock_create_message = AsyncMock()
 
-    with patch("src.handlers.outgoing.get_user_by_session_id", mock_get_user_by_session_id):
-        with patch("src.handlers.outgoing.get_bot_by_session_id", mock_get_bot_by_session_id):
-            with patch("src.handlers.outgoing.decrypt_credentials", mock_decrypt_credentials):
+    with patch(
+        "src.handlers.outgoing.get_user_by_session_id", mock_get_user_by_session_id
+    ):
+        with patch(
+            "src.handlers.outgoing.get_bot_by_session_id", mock_get_bot_by_session_id
+        ):
+            with patch(
+                "src.handlers.outgoing.decrypt_credentials", mock_decrypt_credentials
+            ):
                 with patch(
                     "lib.whatsapp.WhatsappHelper.wa_send_document",
                     mock_wa_send_document,
                 ):
-                    with patch("src.handlers.outgoing.create_message", mock_create_message):
+                    with patch(
+                        "src.handlers.outgoing.create_message", mock_create_message
+                    ):
                         message = ChannelInput(
                             source="language",
                             message_id="test_msg_id",
@@ -308,13 +308,21 @@ async def test_send_form_message():
     mock_wa_send_form = MagicMock(return_value="test_channel_id")
     mock_create_message = AsyncMock()
 
-    with patch("src.handlers.outgoing.get_user_by_session_id", mock_get_user_by_session_id):
-        with patch("src.handlers.outgoing.get_bot_by_session_id", mock_get_bot_by_session_id):
-            with patch("src.handlers.outgoing.decrypt_credentials", mock_decrypt_credentials):
+    with patch(
+        "src.handlers.outgoing.get_user_by_session_id", mock_get_user_by_session_id
+    ):
+        with patch(
+            "src.handlers.outgoing.get_bot_by_session_id", mock_get_bot_by_session_id
+        ):
+            with patch(
+                "src.handlers.outgoing.decrypt_credentials", mock_decrypt_credentials
+            ):
                 with patch(
                     "lib.whatsapp.WhatsappHelper.wa_send_form", mock_wa_send_form
                 ):
-                    with patch("src.handlers.outgoing.create_message", mock_create_message):
+                    with patch(
+                        "src.handlers.outgoing.create_message", mock_create_message
+                    ):
                         message = ChannelInput(
                             source="language",
                             message_id="test_msg_id",
@@ -358,9 +366,15 @@ async def test_send_language_message():
     mock_wa_send_interactive_message = MagicMock(return_value="test_channel_id")
     mock_create_message = AsyncMock()
 
-    with patch("src.handlers.outgoing.get_user_by_session_id", mock_get_user_by_session_id):
-        with patch("src.handlers.outgoing.get_bot_by_session_id", mock_get_bot_by_session_id):
-            with patch("src.handlers.outgoing.decrypt_credentials", mock_decrypt_credentials):
+    with patch(
+        "src.handlers.outgoing.get_user_by_session_id", mock_get_user_by_session_id
+    ):
+        with patch(
+            "src.handlers.outgoing.get_bot_by_session_id", mock_get_bot_by_session_id
+        ):
+            with patch(
+                "src.handlers.outgoing.decrypt_credentials", mock_decrypt_credentials
+            ):
                 with patch(
                     "lib.whatsapp.WhatsappHelper.wa_send_text_message",
                     mock_wa_send_text_message,
@@ -369,7 +383,9 @@ async def test_send_language_message():
                         "lib.whatsapp.WhatsappHelper.wa_send_interactive_message",
                         mock_wa_send_interactive_message,
                     ):
-                        with patch("src.handlers.outgoing.create_message", mock_create_message):
+                        with patch(
+                            "src.handlers.outgoing.create_message", mock_create_message
+                        ):
                             message = ChannelInput(
                                 source="language",
                                 message_id="test_msg_id",
