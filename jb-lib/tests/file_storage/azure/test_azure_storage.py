@@ -1,25 +1,17 @@
-import os
-import sys
-import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
+import pytest
 from azure.storage.blob import (
     BlobServiceClient,
     BlobClient,
-    ContentSettings,
-    generate_blob_sas,
-    BlobSasPermissions,
 )
 
-sys.path.append(
-    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
-)
-from file_storage import AzureStorage
+from lib.file_storage import AzureStorage
 
 
 class TestAzureStorage:
 
-    @patch("file_storage.azure.azure_storage.os.makedirs")
-    @patch("file_storage.azure.azure_storage.os.getenv")
+    @patch("lib.file_storage.azure.azure_storage.os.makedirs")
+    @patch("lib.file_storage.azure.azure_storage.os.getenv")
     @patch("azure.storage.blob.BlobServiceClient")
     def test_init(self, mock_blob_service_client, mock_getenv, mock_makedirs):
         # Mock environment variables
@@ -61,11 +53,13 @@ class TestAzureStorage:
             AzureStorage()
 
     @patch("azure.storage.blob.BlobClient")
-    @patch("file_storage.azure.azure_storage.ContentSettings")
+    @patch("lib.file_storage.azure.azure_storage.ContentSettings")
     @pytest.mark.asyncio
     async def test_write_file(self, mock_content_settings, mock_blob_client):
-        with patch("file_storage.azure.azure_storage.os.getenv") as mock_getenv, patch(
-            "file_storage.azure.azure_storage.BlobServiceClient"
+        with patch(
+            "lib.file_storage.azure.azure_storage.os.getenv"
+        ) as mock_getenv, patch(
+            "lib.file_storage.azure.azure_storage.BlobServiceClient"
         ) as mock_blob_service_client:
             mock_getenv.side_effect = lambda key: {
                 "AZURE_STORAGE_ACCOUNT_URL": "https://example.blob.core.windows.net",
@@ -98,8 +92,10 @@ class TestAzureStorage:
     @patch("azure.storage.blob.BlobClient")
     @pytest.mark.asyncio
     async def test_download_file_to_temp_storage(self, mock_blob_client):
-        with patch("file_storage.azure.azure_storage.os.getenv") as mock_getenv, patch(
-            "file_storage.azure.azure_storage.BlobServiceClient"
+        with patch(
+            "lib.file_storage.azure.azure_storage.os.getenv"
+        ) as mock_getenv, patch(
+            "lib.file_storage.azure.azure_storage.BlobServiceClient"
         ) as mock_blob_service_client:
             mock_getenv.side_effect = lambda key: {
                 "AZURE_STORAGE_ACCOUNT_URL": "https://example.blob.core.windows.net",
@@ -127,12 +123,14 @@ class TestAzureStorage:
             mock_blob_client_instance.download_blob.assert_called_once()
             stream.readall.assert_called_once()
 
-    @patch("file_storage.azure.azure_storage.generate_blob_sas")
+    @patch("lib.file_storage.azure.azure_storage.generate_blob_sas")
     @patch("azure.storage.blob.BlobClient")
     @pytest.mark.asyncio
     async def test_public_url(self, mock_blob_client, mock_generate_blob_sas):
-        with patch("file_storage.azure.azure_storage.os.getenv") as mock_getenv, patch(
-            "file_storage.azure.azure_storage.BlobServiceClient"
+        with patch(
+            "lib.file_storage.azure.azure_storage.os.getenv"
+        ) as mock_getenv, patch(
+            "lib.file_storage.azure.azure_storage.BlobServiceClient"
         ) as mock_blob_service_client:
             mock_getenv.side_effect = lambda key: {
                 "AZURE_STORAGE_ACCOUNT_URL": "https://example.blob.core.windows.net",
