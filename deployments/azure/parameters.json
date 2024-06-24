@@ -1,0 +1,64 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+      "namespaces_ehnstesting_name": {
+        "value": "myEventHubNamespace"
+      },
+      "postgresqlServerName": {
+        "value": "myPostgreSqlServer"
+      },
+      "location": {
+        "value": "Central India"
+      },
+      "adminUser": {
+        "value": "myAdminUser"
+      },
+      "adminPassword": {
+        "value": "myAdminPassword"
+      },
+      "databaseName": {
+        "value": "myDatabase"
+      },
+      "storageAccountName": {
+        "value": "mystorageaccount"
+      },
+      "containerName": {
+        "value": "mycontainer"
+      },
+      "containerAppName": {
+        "value": "myContainerApp"
+      },
+      "containerAppEnvironmentName": {
+        "value": "myContainerAppEnvironment"
+      },
+      "containerTargetPort": {
+        "value": 80
+      },
+      "cpu": {
+        "value": "0.5"
+      },
+      "memory": {
+        "value": "1Gi"
+      },
+      "minReplicas": {
+        "value": 1
+      },
+      "maxReplicas": {
+        "value": 2
+      },
+      "environmentVariables": {
+        "value": [
+          {
+            "name": "POSTGRES_DATABASE_NAME",
+            "value": "myDatabase"
+          },
+          {
+            "name": "POSTGRES_DATABASE_USERNAME",
+            "value": "myAdminUser"
+          }
+        ]
+      }
+    }
+  }
+  
