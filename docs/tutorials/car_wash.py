@@ -247,16 +247,28 @@ class CarWashDealerFSM(AbstractFSM):
         )
         if not self.credentials["AZURE_OPENAI_API_KEY"]:
             raise ValueError("Missing credential: AZURE_OPENAI_API_KEY")
+
         self.credentials["AZURE_OPENAI_API_VERSION"] = credentials.get(
             "AZURE_OPENAI_API_VERSION"
         )
         if not self.credentials["AZURE_OPENAI_API_VERSION"]:
             raise ValueError("Missing credential: AZURE_OPENAI_API_VERSION")
+
         self.credentials["AZURE_OPENAI_API_ENDPOINT"] = credentials.get(
             "AZURE_OPENAI_API_ENDPOINT"
         )
         if not self.credentials["AZURE_OPENAI_API_ENDPOINT"]:
             raise ValueError("Missing credential: AZURE_OPENAI_API_ENDPOINT")
+
+        self.credentials["FAST_MODEL"] = credentials.get("FAST_MODEL")
+        if not self.credentials["FAST_MODEL"]:
+            raise ValueError("Missing credentials: FAST_MODEL")
+
+        self.credentials["SLOW_MODEL"] = credentials.get("SLOW_MODEL")
+        if not self.credentials["SLOW_MODEL"]:
+            raise ValueError("Missing credentials: SLOW_MODEL")
+
+        # print(self.credentials)
 
         self.plugins: Dict[str, AbstractFSM] = {}
         super().__init__(send_message=send_message)
@@ -341,6 +353,7 @@ class CarWashDealerFSM(AbstractFSM):
             azure_openai_api_key=self.credentials["AZURE_OPENAI_API_KEY"],
             azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
             azure_endpoint=self.credentials["AZURE_OPENAI_API_ENDPOINT"],
+            model=self.credentials["FAST_MODEL"]
         )
         self.variables["service_id"] = result
         self.status = Status.MOVE_FORWARD
@@ -352,7 +365,7 @@ class CarWashDealerFSM(AbstractFSM):
 
     def on_enter_appointment_query_display(self):
         self.status = Status.WAIT_FOR_ME
-        message = "Great choice! When would you like to book the appointment? Please provide the date you would be interested YYYY-MM-DD?"
+        message = "Great choice! When would you like to book the appointment? Please provide the date you would be interested?"
         self.send_message(FSMOutput(message_data=MessageData(body=message)))
         self.status = Status.MOVE_FORWARD
 
@@ -365,7 +378,7 @@ class CarWashDealerFSM(AbstractFSM):
         result = LLMManager.llm(
             messages=[
                 LLMManager.sm(
-                    "The user provides a date, convert it into a format of YYYY-MM-DD. If the date provided is wrong and could not be decided return None. Based on the user's input, return the output in json format. {'appointment_date': <date>}"
+                    "The user provides a date, convert it into a format of YYYY-MM-DD. If the date provided is wrong and could not be decided return None. Based on the user's input, return the output in json format. {'appointment_date': <date>}. Current time is " + str(datetime.now())
                 ),
                 LLMManager.um(self.current_input),
             ],
@@ -373,7 +386,7 @@ class CarWashDealerFSM(AbstractFSM):
             azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
             azure_endpoint=self.credentials["AZURE_OPENAI_API_ENDPOINT"],
             response_format={"type": "json_object"},
-            model="gpt4",
+            model=self.credentials["SLOW_MODEL"]
         )
         result = json.loads(result)
         self.variables["appointment_date"] = result["appointment_date"]
@@ -430,6 +443,7 @@ class CarWashDealerFSM(AbstractFSM):
             azure_openai_api_key=self.credentials["AZURE_OPENAI_API_KEY"],
             azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
             azure_endpoint=self.credentials["AZURE_OPENAI_API_ENDPOINT"],
+            model=self.credentials["FAST_MODEL"]
         )
         self.variables["appointment_id"] = result
         self.status = Status.MOVE_FORWARD
@@ -516,6 +530,7 @@ class CarWashDealerFSM(AbstractFSM):
             azure_openai_api_key=self.credentials["AZURE_OPENAI_API_KEY"],
             azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
             azure_endpoint=self.credentials["AZURE_OPENAI_API_ENDPOINT"],
+            model=self.credentials["FAST_MODEL"]
         )
         if result == "1":
             self.variables["further_assistance"] = "yes"
@@ -559,7 +574,8 @@ class CarWashDealerFSM(AbstractFSM):
     def is_valid_date(self):
         if self.variables["appointment_date"]:
             try:
-                datetime.strptime(self.variables["appointment_date"], "%Y-%m-%d")
+                datetime.strptime(
+                    self.variables["appointment_date"], "%Y-%m-%d")
                 return True
             except ValueError:
                 return False
@@ -591,7 +607,7 @@ class CarWashDealerFSM(AbstractFSM):
         self.send_message(
             FSMOutput(
                 message_data=MessageData(
-                    body="Sorry, I am unable to process your request at the moment, error while plugin call. Please try again later."
+                    body="Sorry, I am unable to process your request at the moment, error while plugin call. Please try again later.\n Note this is expected behaviour as the plugin returns positive or negative values on random."
                 ),
             )
         )
