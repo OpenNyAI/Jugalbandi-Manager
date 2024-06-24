@@ -1,64 +1,116 @@
 {
-    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
-    "contentVersion": "1.0.0.0",
-    "parameters": {
-      "namespaces_ehnstesting_name": {
-        "value": "myEventHubNamespace"
-      },
-      "postgresqlServerName": {
-        "value": "myPostgreSqlServer"
-      },
-      "location": {
-        "value": "Central India"
-      },
-      "adminUser": {
-        "value": "myAdminUser"
-      },
-      "adminPassword": {
-        "value": "myAdminPassword"
-      },
-      "databaseName": {
-        "value": "myDatabase"
-      },
-      "storageAccountName": {
-        "value": "mystorageaccount"
-      },
-      "containerName": {
-        "value": "mycontainer"
-      },
-      "containerAppName": {
-        "value": "myContainerApp"
-      },
-      "containerAppEnvironmentName": {
-        "value": "myContainerAppEnvironment"
-      },
-      "containerTargetPort": {
-        "value": 80
-      },
-      "cpu": {
-        "value": "0.5"
-      },
-      "memory": {
-        "value": "1Gi"
-      },
-      "minReplicas": {
-        "value": 1
-      },
-      "maxReplicas": {
-        "value": 2
-      },
-      "environmentVariables": {
-        "value": [
-          {
-            "name": "POSTGRES_DATABASE_NAME",
-            "value": "myDatabase"
-          },
-          {
-            "name": "POSTGRES_DATABASE_USERNAME",
-            "value": "myAdminUser"
-          }
-        ]
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "namespaces_ehnstesting_name": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the Eventhub Namespace"
       }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "The location for the resources."
+      }
+    },
+    "postgresqlServerName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the PostgreSQL Flexible Server."
+      }
+    },
+    "adminUser": {
+      "type": "string",
+      "metadata": {
+        "description": "The administrator username for the PostgreSQL Flexible Server."
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The administrator password for the PostgreSQL Flexible Server."
+      }
+    },
+    "databaseName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the database to create in the PostgreSQL Flexible Server."
+      }
+    },
+    "storageAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the Storage Account."
+      }
+    },
+    "containerName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the container in the Storage Account."
+      }
+    },
+    "containerAppEnvironmentName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the Container App environment."
+      }
+    },
+    "containerAppName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the Container App."
+      }
+    },
+    "containerTargetPort": {
+      "type": "int",
+      "metadata": {
+        "description": "The target port for the container."
+      }
+    },
+    "cpu": {
+      "type": "string",
+      "defaultValue": "0.5",
+      "metadata": {
+        "description": "The CPU allocation for the container."
+      }
+    },
+    "memory": {
+      "type": "string",
+      "defaultValue": "1Gi",
+      "metadata": {
+        "description": "The memory allocation for the container."
+      }
+    },
+    "minReplicas": {
+      "type": "int",
+      "defaultValue": 1,
+      "metadata": {
+        "description": "The minimum number of container replicas."
+      }
+    },
+    "maxReplicas": {
+      "type": "int",
+      "defaultValue": 2,
+      "metadata": {
+        "description": "The maximum number of container replicas."
+      }
+    },
+    "environmentVariables": {
+      "type": "array",
+      "metadata": {
+        "description": "The list of environment variables for the container."
+      },
+      "defaultValue": [
+        {
+          "name": "POSTGRES_DATABASE_NAME",
+          "value": "example_db"
+        },
+        {
+          "name": "POSTGRES_DATABASE_USERNAME",
+          "value": "example_user"
+        }
+      ]
     }
   }
-  
+}

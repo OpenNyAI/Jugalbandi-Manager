@@ -38,7 +38,7 @@
             "containers": [
               {
                 "name": "[parameters('containerAppName')]",
-                "image": "hello_world:latest",
+                "image": "opennyaiin/jugalbandi-manager:api-v1.0.4",
                 "resources": {
                   "cpu": "[parameters('cpu')]",
                   "memory": "[parameters('memory')]"

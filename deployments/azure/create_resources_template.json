@@ -283,93 +283,173 @@
       },
       {
         "type": "Microsoft.DBforPostgreSQL/flexibleServers",
-        "apiVersion": "2023-03-01-preview",
+        "apiVersion": "2023-12-01-preview",
         "name": "[parameters('postgresqlServerName')]",
         "location": "[parameters('location')]",
-        "sku": {
-          "name": "Standard_D4s_v3",
-          "tier": "GeneralPurpose",
-          "family": "Gen5",
-          "capacity": 2
-        },
         "properties": {
-          "administratorLogin": "[parameters('adminUser')]",
-          "administratorLoginPassword": "[parameters('adminPassword')]",
+          "replica": {
+            "role": "Primary"
+          },
           "storage": {
-            "storageSizeGB": 512
-          },
-          "version": "12",
-          "backup": {
-            "backupRetentionDays": 7,
-            "geoRedundantBackup": "Enabled"
-          },
-          "highAvailability": {
-            "mode": "ZoneRedundant"
+            "iops": 120,
+            "tier": "P4",
+            "storageSizeGB": 32,
+            "autoGrow": "Enabled"
           },
           "network": {
-            "delegatedSubnetResourceId": "[parameters('subnetResourceId')]",
-            "privateDnsZoneResourceId": "[parameters('dnsZoneResourceId')]",
-            "publicNetworkAccess": "Disabled"
-          }
+            "publicNetworkAccess": "Enabled"
+          },
+          "dataEncryption": {
+            "type": "SystemManaged"
+          },
+          "authConfig": {
+            "activeDirectoryAuth": "Disabled",
+            "passwordAuth": "Enabled"
+          },
+          "version": "16",
+          "administratorLogin": "[parameters('adminUser')]",
+          "administratorLoginPassword": "[parameters('adminPassword')]",
+          "availabilityZone": "1",
+          "backup": {
+            "backupRetentionDays": 7,
+            "geoRedundantBackup": "Disabled"
+          },
+          "highAvailability": {
+            "mode": "Disabled"
+          },
+          "maintenanceWindow": {
+            "customWindow": "Disabled",
+            "dayOfWeek": 0,
+            "startHour": 0,
+            "startMinute": 0
+          },
+          "replicationRole": "Primary"
+        },
+        "sku": {
+          "name": "Standard_D2ds_v4",
+          "tier": "GeneralPurpose",
+          "family": "D",
+          "capacity": 2
         }
       },
       {
         "type": "Microsoft.DBforPostgreSQL/flexibleServers/databases",
-        "apiVersion": "2023-03-01-preview",
+        "apiVersion": "2023-12-01-preview",
         "name": "[concat(parameters('postgresqlServerName'), '/', parameters('databaseName'))]",
-        "location": "[parameters('location')]",
+        "properties": {
+            "charset": "UTF8",
+            "collation": "en_US.utf8"
+        },
         "dependsOn": [
           "[resourceId('Microsoft.DBforPostgreSQL/flexibleServers', parameters('postgresqlServerName'))]"
-        ],
-        "properties": {
-          "charset": "utf8",
-          "collation": "en_US.utf8"
-        }
+        ]
       },
       {
         "type": "Microsoft.Storage/storageAccounts",
-        "apiVersion": "2022-09-01",
+        "apiVersion": "2023-05-01",
         "name": "[parameters('storageAccountName')]",
         "location": "[parameters('location')]",
         "sku": {
-          "name": "Standard_LRS"
+          "name": "Standard_LRS",
+          "tier": "Standard"
         },
         "kind": "StorageV2",
         "properties": {
-          "accessTier": "Hot"
+            "dnsEndpointType": "Standard",
+            "defaultToOAuthAuthentication": false,
+            "publicNetworkAccess": "Enabled",
+            "allowCrossTenantReplication": false,
+            "minimumTlsVersion": "TLS1_2",
+            "allowBlobPublicAccess": true,
+            "allowSharedKeyAccess": true,
+            "networkAcls": {
+                "bypass": "AzureServices",
+                "virtualNetworkRules": [],
+                "ipRules": [],
+                "defaultAction": "Allow"
+            },
+            "supportsHttpsTrafficOnly": true,
+            "encryption": {
+                "requireInfrastructureEncryption": false,
+                "services": {
+                    "file": {
+                        "keyType": "Account",
+                        "enabled": true
+                    },
+                    "blob": {
+                        "keyType": "Account",
+                        "enabled": true
+                    }
+                },
+                "keySource": "Microsoft.Storage"
+            },
+            "accessTier": "Hot"
+        }
+      },
+      {
+        "type": "Microsoft.Storage/storageAccounts/blobServices",
+        "apiVersion": "2023-05-01",
+        "name": "[concat(parameters('storageAccountName'), '/default')]",
+        "dependsOn": [
+            "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+        ],
+        "sku": {
+            "name": "Standard_LRS",
+            "tier": "Standard"
+        },
+        "properties": {
+            "changeFeed": {
+                "enabled": false
+            },
+            "restorePolicy": {
+                "enabled": false
+            },
+            "containerDeleteRetentionPolicy": {
+                "enabled": true,
+                "days": 7
+            },
+            "cors": {
+                "corsRules": []
+            },
+            "deleteRetentionPolicy": {
+                "allowPermanentDelete": false,
+                "enabled": true,
+                "days": 7
+            },
+            "isVersioningEnabled": false
         }
       },
       {
         "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
-        "apiVersion": "2022-09-01",
+        "apiVersion": "2023-05-01",
         "name": "[concat(parameters('storageAccountName'), '/default/', parameters('containerName'))]",
         "dependsOn": [
-          "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
+            "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('storageAccountName'), 'default')]",
+            "[resourceId('Microsoft.Storage/storageAccounts', parameters('storageAccountName'))]"
         ],
-        "properties": {}
-      },
-      {
-        "type": "Microsoft.App/managedEnvironments",
-        "apiVersion": "2023-05-02",
-        "name": "[parameters('containerAppEnvironmentName')]",
-        "location": "[parameters('location')]",
         "properties": {
-          "appLogsConfiguration": {
-            "destination": "log-analytics",
-            "logAnalyticsConfiguration": {
-              "customerId": "[parameters('logAnalyticsCustomerId')]",
-              "sharedKey": "[parameters('logAnalyticsSharedKey')]"
-            }
-          }
+            "immutableStorageWithVersioning": {
+                "enabled": false
+            },
+            "defaultEncryptionScope": "$account-encryption-key",
+            "denyEncryptionScopeOverride": false,
+            "publicAccess": "None"
         }
       },
       {
+        "type": "Microsoft.App/managedEnvironments",
+        "apiVersion": "2022-03-01",
+        "name": "[parameters('containerAppEnvironmentName')]",
+        "location": "[parameters('location')]",
+        "properties": {}
+      },
+      {
         "type": "Microsoft.App/containerApps",
-        "apiVersion": "2023-05-02",
+        "apiVersion": "2022-03-01",
         "name": "[parameters('containerAppName')]",
         "location": "[parameters('location')]",
         "dependsOn": [
-          "[resourceId('Microsoft.App/managedEnvironments', parameters('containerAppEnvironmentName'))]"
+            "[resourceId('Microsoft.App/managedEnvironments', parameters('containerAppEnvironmentName'))]"
         ],
         "properties": {
           "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', parameters('containerAppEnvironmentName'))]",
@@ -379,20 +459,20 @@
               "targetPort": "[parameters('containerTargetPort')]",
               "traffic": [
                 {
-                  "revisionName": "myapp-1",
+                  "latestRevision": true,
                   "weight": 100
                 }
               ]
             },
             "dapr": {
-              "enabled": true
+              "enabled": false
             }
           },
           "template": {
             "containers": [
               {
                 "name": "[parameters('containerAppName')]",
-                "image": "myregistry.azurecr.io/myapp:v1",
+                "image": "opennyaiin/jugalbandi-manager:api-v1.0.4",
                 "resources": {
                   "cpu": "[parameters('cpu')]",
                   "memory": "[parameters('memory')]"
@@ -402,9 +482,21 @@
             ],
             "scale": {
               "minReplicas": "[parameters('minReplicas')]",
-              "maxReplicas": "[parameters('maxReplicas')]"
+              "maxReplicas": "[parameters('maxReplicas')]",
+              "rules": [
+                {
+                  "name": "http-rule",
+                  "custom": {
+                    "type": "http",
+                    "metadata": {
+                      "concurrentRequests": "50"
+                    }
+                  }
+                }
+              ]
             }
-          }
+          },
+          "workloadProfileName": "Consumption"
         }
       }
     ]
