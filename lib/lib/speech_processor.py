@@ -9,7 +9,7 @@ from abc import ABC, abstractmethod
 import azure.cognitiveservices.speech as speechsdk
 import httpx
 
-from lib.model import InternalServerException, Language
+from .model import InternalServerException, Language
 from .audio_converter import convert_wav_bytes_to_mp3_bytes
 
 logger = logging.getLogger("speech_processor")
