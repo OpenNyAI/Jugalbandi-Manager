@@ -129,6 +129,8 @@ $ ./loophole http 8000
     BODY='{"webhook_url": "'$WEBHOOK_URL'"}'
     echo $BODY
 
+    TEST HAHA
+
     curl -k "$WA_API_HOST/v1/setwebhooks" \
     --header "wanumber: $WABA_NUMBER" \
     --header "apikey: $WA_API_KEY" \
