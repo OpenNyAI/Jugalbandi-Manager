@@ -16,9 +16,16 @@ jobs:
         uses: snok/install-poetry@v1.3.4
         with:
           version: latest
-      - name: Install dependencies
+      - name: Install dependencies JB lib
         working-directory: ./jb-lib
         run: poetry install --with test
-      - name: Test with pytest
+      - name: Test JB lib
         working-directory: ./jb-lib
         run: poetry run pytest
+      - name: Install dependencies channel
+        working-directory: ./channel
+        run: poetry install --with test
+      - name: Test channel with pytest
+        working-directory: ./channel
+        run: poetry run pytest
+
