@@ -1,4 +1,4 @@
-name: Test lib
+name: Test Cases
 
 on: [push]
 
@@ -17,8 +17,8 @@ jobs:
         with:
           version: latest
       - name: Install dependencies
-        working-directory: ./lib
+        working-directory: ./jb-lib
         run: poetry install --with test
       - name: Test with pytest
-        working-directory: ./lib
-        run: poetry run pytest tests/file_storage/
+        working-directory: ./jb-lib
+        run: poetry run pytest
