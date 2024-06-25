@@ -538,8 +538,8 @@ class AbstractFSM(ABC):
             )
 
         plugin_input = {
-            key: getattr(self.variables, value)
-            for key, value in input_variables.items()
+            key: getattr(self.variables, value) if hasattr(self.variables, value) else value
+            for key, value in input_variables.items() 
         }
         plugin_output = plugin(**plugin_input)
 
