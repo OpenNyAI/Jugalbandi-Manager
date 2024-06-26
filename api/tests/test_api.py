@@ -131,3 +131,29 @@ async def test_install_bot(client):
             mock_produce_message.assert_called_once()
             assert response.json() == {"status": "success"}
     
+@pytest.mark.asyncio
+async def test_activate_bot(client):
+    bot_id = "bot1"
+    activate_content = {
+        "phone_number": "1234567890",
+        "channels": {"whatsapp": "wa_credentials"}
+    }
+
+    mock_bot = MagicMock(id=bot_id, status="inactive", required_credentials=[], credentials={})
+    mock_get_bot_by_id = AsyncMock(return_value=mock_bot)
+    mock_get_bot_by_phone_number = AsyncMock(return_value=None)
+    mock_update_bot = AsyncMock()
+
+    with patch("app.main.get_bot_by_id", mock_get_bot_by_id):
+        with patch("app.main.get_bot_by_phone_number", mock_get_bot_by_phone_number):
+            with patch("app.main.update_bot", mock_update_bot):
+                response = await client.post(f"/bot/{bot_id}/activate", json=activate_content)
+                
+                assert response.status_code == 200
+                assert response.json() == {"status": "success"}
+                
+                mock_update_bot.assert_called_once_with(bot_id, {
+                    "phone_number": "1234567890",
+                    "channels": {"whatsapp": "wa_credentials"},
+                    "status": "active"
+                })
