@@ -24,6 +24,41 @@ async def test_read_root(client):
     assert response.status_code == 200
     assert response.json() == {"Hello": "World"}
 
+
+@pytest.mark.asyncio
+async def test_get_bots(client):
+    # TODO: Confirm the JBBot object structure
+    bot_list = [
+        {
+            "id": "bot1",
+            "name": "Test Bot 1",
+            "phone_number": "1234567890",
+            "status": "active",
+            "config_env": {"existing_key": "existing_value"},
+            "version": "1.0.0",
+            "channels": ["whatsapp"]
+        },
+        {
+            "id": "bot2",
+            "name": "Test Bot 2",
+            "phone_number": "0987654321",
+            "status": "inactive",
+            "config_env": {"another_key": "another_value"},
+            "version": "1.1.0",
+            "channels": ["telegram"]
+        }
+    ]
+    
+    # Mock the get_bot_list function
+    mock_get_bot_list = AsyncMock(return_value=bot_list)
+    with patch("app.main.get_bot_list", mock_get_bot_list):
+        # Send a GET request to the /bots endpoint
+        response = await client.get("/bots")
+        
+        # Verify the response status code and data
+        assert response.status_code == 200
+        assert response.json() == bot_list
+
 @pytest.mark.asyncio
 async def test_update_bot_data(client):
 # understand how the bot data is stored in db
