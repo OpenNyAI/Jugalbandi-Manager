@@ -92,3 +92,42 @@ async def test_update_bot_data(client):
             assert returned_bot["id"] == bot_id
             assert "config_env" in returned_bot
 
+
+@pytest.mark.asyncio
+async def test_install_bot(client):
+    bot_id = "bot1"
+    #TODO: write correct installation content
+    install_content = {
+        "name": "Test Bot",
+        "status": "inactive",
+        "dsl": "some_dsl",
+        "code": "print('Hello World')",
+        "requirements": "",
+        "index_urls": [],
+        "version": "1.0.0",
+        "required_credentials": []
+    }
+    
+    # TODO: Make sure the bot object structure is correct
+    mock_bot = {
+        "id": bot_id,
+        "name": install_content["name"],
+        "status": install_content["status"],
+        "dsl": install_content["dsl"],
+        "code": install_content["code"],
+        "requirements": install_content["requirements"],
+        "index_urls": install_content["index_urls"],
+        "version": install_content["version"],
+        "required_credentials": install_content["required_credentials"]
+    }
+
+    mock_create_bot = AsyncMock(return_value=mock_bot)
+    
+    with patch("app.main.create_bot", mock_create_bot):
+        with patch("app.main.produce_message", AsyncMock()) as mock_produce_message:
+            response = await client.post("/bot/install", json=install_content)
+            assert response.status_code == 200
+            mock_create_bot.assert_called_once_with(install_content)
+            mock_produce_message.assert_called_once()
+            assert response.json() == {"status": "success"}
+    
