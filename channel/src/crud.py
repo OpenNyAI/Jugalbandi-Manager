@@ -1,8 +1,7 @@
-from datetime import datetime
 import uuid
-from sqlalchemy import desc, join, select, update
+from sqlalchemy import select, update
 
-from lib.db_connection import async_session
+from lib.db_session_handler import DBSessionHandler
 
 from lib.models import JBSession, JBUser, JBMessage, JBBot
 
@@ -10,7 +9,7 @@ from lib.models import JBSession, JBUser, JBMessage, JBBot
 async def get_user_by_session_id(session_id: str):
     # TODO: have to make it as single query
     query = select(JBSession).where(JBSession.id == session_id)
-    async with async_session() as session:
+    async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             result = await session.execute(query)
             s = result.scalars().first()
@@ -21,10 +20,11 @@ async def get_user_by_session_id(session_id: str):
                 return user
     return None
 
+
 async def get_bot_by_session_id(session_id: str):
     # TODO: have to make it as single query
     query = select(JBSession).where(JBSession.id == session_id)
-    async with async_session() as session:
+    async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             result = await session.execute(query)
             s = result.scalars().first()
@@ -37,7 +37,7 @@ async def get_bot_by_session_id(session_id: str):
 
 
 async def set_user_language(session_id: str, language: str):
-    async with async_session() as session:
+    async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             query = select(JBSession).where(JBSession.id == session_id)
             result = await session.execute(query)
@@ -55,7 +55,7 @@ async def set_user_language(session_id: str, language: str):
 
 
 async def update_message(msg_id: str, **kwargs):
-    async with async_session() as session:
+    async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             query = update(JBMessage).where(JBMessage.id == msg_id).values(**kwargs)
             await session.execute(query)
@@ -74,7 +74,7 @@ async def create_message(
     media_url: str = None,
 ):
     message_id = str(uuid.uuid4())
-    async with async_session() as session:
+    async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             session.add(
                 JBMessage(

@@ -8,11 +8,20 @@ ENV POETRY_NO_INTERACTION=1 \
     POETRY_CACHE_DIR=/tmp/poetry_cache
 
 WORKDIR /app
+COPY ./jb-lib jb-lib
+WORKDIR /app/jb-lib
+RUN poetry build
+WORKDIR /app
+RUN cp ./jb-lib/dist/*.whl .
+RUN rm -rf ./jb-lib
+
 COPY ./channel/pyproject.toml ./channel/poetry.lock ./
 # poetry needs a README.md to build the project
 RUN touch README.md 
 
-RUN poetry install && rm -rf $POETRY_CACHE_DIR
+RUN poetry remove lib --group dev
+RUN poetry add --lock ./lib-*.whl
+RUN poetry install --without dev --sync && rm -rf $POETRY_CACHE_DIR
 
 FROM python:3.11-slim-buster as runtime
 
@@ -24,6 +33,5 @@ WORKDIR /app
 COPY --from=builder ${VIRTUAL_ENV} ${VIRTUAL_ENV}
 
 COPY ./channel/src ./channel
-COPY ./lib ./lib
 
 CMD ["python", "-m", "channel"]
