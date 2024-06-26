@@ -157,3 +157,36 @@ async def test_activate_bot(client):
                     "channels": {"whatsapp": "wa_credentials"},
                     "status": "active"
                 })
+
+@pytest.mark.asyncio
+async def test_deactivate_bot(client):
+    bot_id = "bot1"
+    
+    mock_bot = {
+        "id": bot_id,
+        "name": "Test Bot",
+        "status": "active",
+        "phone_number": "1234567890",
+        "channels": {"whatsapp": "wa_credentials"}
+    }
+    
+    mock_get_bot_by_id = AsyncMock(return_value=mock_bot)
+    mock_update_bot = AsyncMock()
+
+    with patch("app.main.get_bot_by_id", mock_get_bot_by_id):
+        with patch("app.main.update_bot", mock_update_bot):
+            response = await client.get(f"/bot/{bot_id}/deactivate")
+            
+            assert response.status_code == 200
+            
+            expected_bot_data = {
+                "status": "inactive",
+                "phone_number": None,
+                "channels": None
+            }
+            mock_update_bot.assert_called_once_with(bot_id, expected_bot_data)
+            
+            returned_bot = response.json()
+            assert returned_bot["id"] == bot_id
+            assert returned_bot["status"] == "inactive"
+
