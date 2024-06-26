@@ -3,7 +3,7 @@
     "contentVersion": "1.0.0.0",
     "parameters": {
         "resourceNamePrefix": {
-            "value": "jbtest" 
+            "value": "jbtestt" 
         },
         "location": {
             "value": "centralindia"
@@ -42,7 +42,7 @@
             "value": "12232343432243"
         },
         "whatsappAPIHost": {
-            "value": "aaa"
+            "value": "https://api.whatsapp.com"
         }
     }
 }
