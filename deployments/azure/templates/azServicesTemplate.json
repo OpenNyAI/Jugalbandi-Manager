@@ -1,0 +1,75 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourceNamePrefix": {
+      "type": "string",
+      "metadata": {
+        "description": "The prefix used by all resources created by this template."
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "The location for the resources."
+      }
+    }
+  },
+  // setting up azure speech and language(translation) services to get the following vars as output:
+  //   #Azure Speech Keys
+  // AZURE_SPEECH_KEY=
+  // AZURE_SPEECH_REGION=
+  // # Azure Translation Keys
+  // AZURE_TRANSLATION_KEY=
+  // AZURE_TRANSLATION_RESOURCE_LOCATION=
+
+  "variables": {
+    "speechResourceName": "[concat(parameters('resourceNamePrefix'), '-speech')]",
+    "translationResourceName": "[concat(parameters('resourceNamePrefix'), '-translation')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.CognitiveServices/accounts",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('speechResourceName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "S0",
+        "tier": "Standard"
+      },
+      "kind": "SpeechServices",
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.CognitiveServices/accounts",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('translationResourceName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "S0",
+        "tier": "Standard"
+      },
+      "kind": "TextTranslation",
+      "properties": {}
+    }
+
+  ],
+  "outputs": {
+    "speechKey": {
+      "type": "string",
+      "value": "[listKeys(variables('speechResourceName'), '2023-05-01').key1]"
+    },
+    "speechRegion": {
+      "type": "string",
+      "value": "[parameters('location')]"
+    },
+    "translationKey": {
+      "type": "string",
+      "value": "[listKeys(variables('translationResourceName'), '2023-05-01').key1]"
+    },
+    "translationLocation": {
+      "type": "string",
+      "value": "[parameters('location')]"
+    }
+  }
+}

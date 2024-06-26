@@ -1,0 +1,352 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourceNamePrefix": {
+      "type": "string",
+      "metadata": {
+        "description": "The prefix used by all resources created by this template."
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "The location for the resources."
+      }
+    },
+    // postgres params
+    "postgresAdminUser": {
+      "type": "string",
+      "metadata": {
+        "description": "The administrator username for the PostgreSQL Flexible Server."
+      }
+    },
+    "postgresAdminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The administrator password for the PostgreSQL Flexible Server."
+      }
+    },
+    "postgresDatabaseName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the database to create in the PostgreSQL Flexible Server."
+      }
+    },
+
+    "bhashniUserID": {
+      "type": "string",
+      "defaultValue": null
+    },
+    "bhashniApiKey": {
+      "type": "string",
+      "defaultValue": null
+    },
+    "bhashniPipelineID": {
+      "type": "string",
+      "defaultValue": null
+    },
+    "encryptionKey": {
+      "type": "string",
+      "defaultValue": "12232343432243"
+    },
+    "whatsappAPIHost": {
+      "type": "string",
+      "defaultValue": null
+    },
+
+
+    // container app params
+    "cpu": {
+      "type": "string",
+      "defaultValue": "0.5",
+      "metadata": {
+        "description": "The CPU allocation for the container."
+      }
+    },
+    "memory": {
+      "type": "string",
+      "defaultValue": "1Gi",
+      "metadata": {
+        "description": "The memory allocation for the container."
+      }
+    },
+    "minReplicas": {
+      "type": "int",
+      "defaultValue": 1,
+      "metadata": {
+        "description": "The minimum number of container replicas."
+      }
+    },
+    "maxReplicas": {
+      "type": "int",
+      "defaultValue": 2,
+      "metadata": {
+        "description": "The maximum number of container replicas."
+      }
+    }
+  },
+  "variables": {
+    "eventhubNamespace": "[concat(parameters('resourceNamePrefix'), '-eventhub-namespace')]",
+    "publicIpName": "[concat(parameters('resourceNamePrefix'), '-public-ip')]",
+    "containerAppEnvironmentName": "[concat(parameters('resourceNamePrefix'), '-container-app-environment')]",
+    "containerAppName": "[concat(parameters('resourceNamePrefix'), '-container-app')]",
+    "presetEnvironmentVariables": [
+      {
+        "name": "POSTGRES_DATABASE_NAME",
+        "value": "[parameters('postgresDatabaseName')]"
+      },
+      {
+        "name": "POSTGRES_DATABASE_USERNAME",
+        "value": "[parameters('postgresAdminUser')]"
+      },
+      {
+        "name": "POSTGRES_DATABASE_PASSWORD",
+        "value": "[parameters('postgresAdminPassword')]"
+      },
+      {
+        "name": "BHASHNI_USER_ID",
+        "value": "[parameters('bhashniUserID')]"
+      },
+      {
+        "name": "BHASHNI_API_KEY",
+        "value": "[parameters('bhashniApiKey')]"
+      },
+      {
+        "name": "BHASHNI_PIPELINE_ID",
+        "value": "[parameters('bhashniPipelineID')]"
+      },
+      {
+        "name": "ENCRYPTION_KEY",
+        "value": "[parameters('encryptionKey')]"
+      },
+      {
+        "name": "WHATSAPP_API_HOST",
+        "value": "[parameters('whatsappAPIHost')]"
+      }
+    ]
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2021-04-01",
+      "name": "eventHubTemplateDeployment",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[uri(deployment().properties.templateLink.uri, 'templates/eventHubTemplate.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "eventHubNamespace": {
+            "value": "[variables('eventhubNamespace')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2021-04-01",
+      "name": "postgresqlTemplateDeployment",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[uri(deployment().properties.templateLink.uri, 'templates/postgresTemplate.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "resourceNamePrefix": {
+            "value": "[parameters('resourceNamePrefix')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "postgresAdminUser": {
+            "value": "[parameters('postgresAdminUser')]"
+          },
+          "postgresAdminPassword": {
+            "value": "[parameters('postgresAdminPassword')]"
+          },
+          "postgresDatabaseName": {
+            "value": "[parameters('postgresDatabaseName')]"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2021-04-01",
+      "name": "storageTemplateDeployment",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[uri(deployment().properties.templateLink.uri, 'templates/storageTemplate.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "resourceNamePrefix": {
+            "value": "[parameters('resourceNamePrefix')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2021-04-01",
+      "name": "azServicesTemplateDeployment",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[uri(deployment().properties.templateLink.uri, 'templates/azServicesTemplate.json')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "resourceNamePrefix": {
+            "value": "[parameters('resourceNamePrefix')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        }
+      }
+    },
+
+    {
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2023-04-01",
+      "name": "[variables('publicIpName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "publicIPAllocationMethod": "Static",
+        "dnsSettings": {
+          "domainNameLabel": "[concat(parameters('resourceNamePrefix'), '-dns')]"
+        }
+      },
+      "sku": {
+        "name": "Standard"
+      }
+    },
+
+    {
+      "type": "Microsoft.App/managedEnvironments",
+      "apiVersion": "2022-03-01",
+      "name": "[variables('containerAppEnvironmentName')]",
+      "location": "[parameters('location')]",
+      "properties": {}
+    },
+
+
+    {
+      "type": "Microsoft.App/containerApps",
+      "apiVersion": "2022-03-01",
+      "name": "[variables('containerAppName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        // actually depends on the other files and the ip address
+        "[resourceId('Microsoft.Resources/deployments', 'eventHubTemplateDeployment')]",
+        "[resourceId('Microsoft.Resources/deployments', 'postgresqlTemplateDeployment')]",
+        "[resourceId('Microsoft.Resources/deployments', 'storageTemplateDeployment')]",
+        "[resourceId('Microsoft.Resources/deployments', 'azServicesTemplateDeployment')]",
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName'))]",
+
+        "[resourceId('Microsoft.App/managedEnvironments', variables('containerAppEnvironmentName'))]"
+      ],
+      "properties": {
+        "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', variables('containerAppEnvironmentName'))]",
+        "configuration": {
+          "ingress": {
+            "external": true,
+            "targetPort": 8000,
+            "traffic": [
+              {
+                "latestRevision": true,
+                "weight": 100
+              }
+            ],
+            "publicIpId": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIpName'))]"
+          },
+          "dapr": {
+            "enabled": false
+          }
+        },
+        "template": {
+          "containers": [
+            {
+              "name": "api",
+              "image": "opennyaiin/jugalbandi-manager:api-v1.0.4",
+              "resources": {
+                "cpu": "[parameters('cpu')]",
+                "memory": "[parameters('memory')]"
+              },
+              // append a list of all the outputs from the earlier deployments and some more
+              "env": [
+                "[variables('presetEnvironmentVariables')]",
+                // {
+                //   "name": "EVENTHUB_CONNECTION_STRING",
+                //   "value": "[reference('eventHubTemplateDeployment').outputs.eventHubConnectionString.value]"
+                // },
+                // {
+                //   "name": "STORAGE_ACCOUNT_CONNECTION_STRING",
+                //   "value": "[reference('storageTemplateDeployment').outputs.storageAccountConnectionString.value]"
+                // },
+                // {
+                //   "name": "AZURE_SERVICES_CONNECTION_STRING",
+                //   "value": "[reference('azServicesTemplateDeployment').outputs.azureServicesConnectionString.value]"
+                // }
+                {
+                  "name": "KAFKA_USE_SASL",
+                  "value": "true"
+                },
+                {
+                  "name": "KAFKA_BROKER",
+                  "value": "[reference('eventHubTemplateDeployment').outputs.kafkaBroker.value]"
+                }
+
+              ]
+            },
+            {
+              "name": "language",
+              "image": "opennyaiin/jugalbandi-manager:language-v1.0.4",
+              "resources": {
+                "cpu": "[parameters('cpu')]",
+                "memory": "[parameters('memory')]"
+              },
+              "env": "[parameters('environmentVariables')]"
+            },
+            {
+              "name": "flow",
+              "image": "opennyaiin/jugalbandi-manager:flow-v1.0.4",
+              "resources": {
+                "cpu": "[parameters('cpu')]",
+                "memory": "[parameters('memory')]"
+              },
+              "env": "[parameters('environmentVariables')]"
+            }
+          ],
+          "scale": {
+            "minReplicas": "[parameters('minReplicas')]",
+            "maxReplicas": "[parameters('maxReplicas')]",
+            "rules": [
+              {
+                "name": "http-rule",
+                "custom": {
+                  "type": "http",
+                  "metadata": {
+                    "concurrentRequests": "50"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "workloadProfileName": "Consumption"
+      }
+    }
+  ]
+}

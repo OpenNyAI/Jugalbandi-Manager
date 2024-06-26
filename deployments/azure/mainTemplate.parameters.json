@@ -1,0 +1,48 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "resourceNamePrefix": {
+            "value": "jbtest" 
+        },
+        "location": {
+            "value": "centralindia"
+        },
+        "postgresAdminUser": {
+            "value": "postgres"
+        },
+        "postgresAdminPassword": {
+            "value": "postgres"
+        },
+        "postgresDatabaseName": {
+            "value": "jb_db"
+        },
+        "cpu": {
+            "value": "0.5"
+        },
+        "memory": {
+            "value": "1Gi"
+        },
+        "minReplicas": {
+            "value": 1
+        },
+        "maxReplicas": {
+            "value": 2
+        },
+        "bhashniApiKey": {
+            "value": "xxx"
+        },
+        "bhashniPipelineID": {
+            "value": "aa"
+        },
+        "bhashniUserID": {
+            "value": "aa"
+        },
+        "encryptionKey": {
+            "value": "12232343432243"
+        },
+        "whatsappAPIHost": {
+            "value": "aaa"
+        }
+    }
+}
