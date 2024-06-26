@@ -190,3 +190,70 @@ async def test_deactivate_bot(client):
             assert returned_bot["id"] == bot_id
             assert returned_bot["status"] == "inactive"
 
+@pytest.mark.asyncio
+async def test_delete_bot(client):
+    bot_id = "bot1"
+
+    #TODO: JBBot object structure
+    mock_bot = {
+        "id": bot_id,
+        "name": "Test Bot",
+        "status": "active",
+        "phone_number": "1234567890",
+        "channels": {"whatsapp": "wa_credentials"}
+    }
+    
+    mock_get_bot_by_id = AsyncMock(return_value=mock_bot)
+    mock_update_bot = AsyncMock()
+
+    with patch("app.main.get_bot_by_id", mock_get_bot_by_id):
+        with patch("app.main.update_bot", mock_update_bot):
+            response = await client.delete(f"/bot/{bot_id}")
+            
+            assert response.status_code == 200
+            assert response.json() == {"status": "success"}
+            
+            expected_bot_data = {
+                "status": "deleted",
+                "phone_number": None,
+                "channels": None
+            }
+            mock_update_bot.assert_called_once_with(bot_id, expected_bot_data)
+
+@pytest.mark.asyncio
+async def test_add_bot_configuration(client):
+    bot_id = "bot1"
+    configuration_content = {
+        "credentials": {"key": "value"},
+        "config_env": {"key": "value"}
+    }
+    #TODO: JBBot object structure
+    mock_bot = {
+        "id": bot_id,
+        "name": "Test Bot",
+        "status": "active",
+        "phone_number": "1234567890",
+        "channels": {"whatsapp": "wa_credentials"},
+        "credentials": {},
+        "config_env": {}
+    }
+    
+    mock_get_bot_by_id = AsyncMock(return_value=mock_bot)
+    mock_update_bot = AsyncMock()
+
+    with patch("app.main.get_bot_by_id", mock_get_bot_by_id):
+        with patch("app.main.update_bot", mock_update_bot):
+            response = await client.post(f"/bot/{bot_id}/configure", json=configuration_content)
+            
+            assert response.status_code == 200
+            assert response.json() == {"status": "success"}
+            
+            expected_credentials = {
+                "key": encrypt_text("value")
+            }
+            #TODO: all the keys of the bot should be present?
+            expected_bot_data = {
+                "credentials": expected_credentials,
+                "config_env": {"key": "value"}
+            }
+            mock_update_bot.assert_called_once_with(bot_id, expected_bot_data)
