@@ -256,10 +256,10 @@ async def test_activate_bot(client):
 async def test_deactivate_bot(client):
     bot_id = "bot1"
     
-    mock_bot = MagicMock(
+    mock_bot = JBBot(
         id=bot_id,
         name="Test Bot",
-        status="active",
+        status="inactive",
         phone_number="1234567890",
         channels={"whatsapp": "wa_credentials"},
         config_env={"key": "value"},
@@ -272,8 +272,8 @@ async def test_deactivate_bot(client):
     mock_get_bot_by_id = AsyncMock(return_value=mock_bot)
     mock_update_bot = AsyncMock()
 
-    with patch("app.crud.get_bot_by_id", mock_get_bot_by_id):
-        with patch("app.crud.update_bot", mock_update_bot):
+    with patch("app.main.get_bot_by_id", mock_get_bot_by_id):
+        with patch("app.main.update_bot", mock_update_bot):
             response = await client.get(f"/bot/{bot_id}/deactivate")
             
             assert response.status_code == 200
@@ -296,7 +296,7 @@ async def test_delete_bot(client):
     bot_id = "bot1"
 
     # Define the mock JBBot object
-    mock_bot = MagicMock(
+    mock_bot = JBBot(
         id=bot_id,
         name="Test Bot",
         status="active",
@@ -312,7 +312,7 @@ async def test_delete_bot(client):
     mock_get_bot_by_id = AsyncMock(return_value=mock_bot)
     mock_update_bot = AsyncMock()
 
-    with patch("app.crud.get_bot_by_id", mock_get_bot_by_id):
+    with patch("app.main.get_bot_by_id", mock_get_bot_by_id):
         with patch("app.main.update_bot", mock_update_bot):
             response = await client.delete(f"/bot/{bot_id}")
             
@@ -334,7 +334,7 @@ async def test_add_bot_configuration(client):
         "config_env": {"key": "value"}
     }
 
-    mock_bot = MagicMock(
+    mock_bot = JBBot(
         id=bot_id,
         name="Test Bot",
         status="active",
@@ -346,16 +346,18 @@ async def test_add_bot_configuration(client):
     
     mock_get_bot_by_id = AsyncMock(return_value=mock_bot)
     mock_update_bot = AsyncMock()
+    mock_encrypt_text = MagicMock(return_value="value")
 
-    with patch("app.crud.get_bot_by_id", mock_get_bot_by_id):
-        with patch("app.crud.update_bot", mock_update_bot):
-            response = await client.post(f"/bot/{bot_id}/configure", json=configuration_content)
+    with patch("app.main.get_bot_by_id", mock_get_bot_by_id):
+        with patch("app.main.update_bot", mock_update_bot):
+            with patch("app.main.encrypt_text", mock_encrypt_text):
+                response = await client.post(f"/bot/{bot_id}/configure", json=configuration_content)
             
             assert response.status_code == 200
             assert response.json() == {"status": "success"}
             
             expected_credentials = {
-                "key": encrypt_text("value")
+                "key": "value"
             }
             expected_bot_data = {
                 "credentials": expected_credentials,
