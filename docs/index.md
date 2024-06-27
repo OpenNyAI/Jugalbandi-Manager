@@ -12,6 +12,7 @@ The documentation is organized as follows:
 2. [How to guides](how-tos/)
 	1. [Local Development](how-tos/Developer.md)
 	2. [Write Your Own Bot](how-tos/fsm_building.md)
+	3. [Example: Grievance Bot](example-grievance-bot/index.md)
 3. [References](references/)
 	1. [Dependencies](references/dependencies.md)
 	2. [Output from Bot](references/fsm-output.md)
