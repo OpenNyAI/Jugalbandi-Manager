@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import desc, select, update
 from sqlalchemy.orm import joinedload
 
-from lib.db_connection import async_session
+from lib.db_session_handler import DBSessionHandler
 
 from lib.models import JBPluginUUID, JBSession, JBTurn, JBUser, JBMessage, JBBot
 
@@ -19,7 +19,7 @@ async def create_user(
         first_name=first_name,
         last_name=last_name,
     )
-    async with async_session() as session:
+    async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             session.add(user)
             await session.commit()
@@ -31,7 +31,7 @@ async def get_user_by_number(number: str, bot_id: str) -> JBUser:
     query = select(JBUser).where(
         JBUser.phone_number == number and JBUser.bot_id == bot_id
     )
-    async with async_session() as session:
+    async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             result = await session.execute(query)
             user = result.scalars().first()
@@ -41,7 +41,7 @@ async def get_user_by_number(number: str, bot_id: str) -> JBUser:
 
 async def create_session(pid: str, bot_id: str):
     session_id = str(uuid.uuid4())
-    async with async_session() as session:
+    async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             s = JBSession(id=session_id, pid=pid, bot_id=bot_id)
             session.add(s)
@@ -56,7 +56,7 @@ async def get_user_session(bot_id: str, pid: str, timeout: int):
         .where(JBSession.pid == pid and JBSession.bot_id == bot_id)
         .order_by(desc(JBSession.created_at))
     )
-    async with async_session() as session:
+    async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             result = await session.execute(query)
             session = result.scalars().first()
@@ -70,7 +70,7 @@ async def get_user_session(bot_id: str, pid: str, timeout: int):
 
 
 async def update_session(session_id: str):
-    async with async_session() as session:
+    async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             stmt = (
                 update(JBSession)
@@ -85,7 +85,7 @@ async def update_session(session_id: str):
 
 async def create_turn(session_id: str, bot_id: str, turn_type: str, channel: str):
     turn_id: str = str(uuid.uuid4())
-    async with async_session() as session:
+    async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             session.add(
                 JBTurn(
@@ -109,7 +109,7 @@ async def create_message(
     is_user_sent: bool = False,
 ):
     message_id = str(uuid.uuid4())
-    async with async_session() as session:
+    async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             session.add(
                 JBMessage(
@@ -128,7 +128,7 @@ async def create_message(
 
 async def get_bot_by_id(bot_id: str):
     query = select(JBBot).where(JBBot.id == bot_id)
-    async with async_session() as session:
+    async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             result = await session.execute(query)
             bot = result.scalars().first()
@@ -137,7 +137,7 @@ async def get_bot_by_id(bot_id: str):
 
 async def get_bot_by_phone_number(phone_number):
     query = select(JBBot).where(JBBot.phone_number == phone_number and JBBot.status == 'active')
-    async with async_session() as session:
+    async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             result = await session.execute(query)
             bot = result.scalars().first()
@@ -147,7 +147,7 @@ async def get_bot_by_phone_number(phone_number):
 
 async def get_chat_history(bot_id: str, skip=0, limit=1000):
     # TODO: introduce pagination
-    async with async_session() as session:
+    async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             result = await session.execute(
                         select(JBSession)
@@ -165,7 +165,7 @@ async def get_plugin_reference(plugin_uuid: str) -> JBPluginUUID:
     # Create a query to select JBPluginMapping based on the provided plugin_uuid
     query = select(JBPluginUUID).where(JBPluginUUID.id == plugin_uuid)
 
-    async with async_session() as session:
+    async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             result = await session.execute(query)
             s = result.scalars().first()
@@ -173,7 +173,7 @@ async def get_plugin_reference(plugin_uuid: str) -> JBPluginUUID:
     return None
 
 async def get_bot_list():
-    async with async_session() as session:
+    async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             query = select(JBBot).where(JBBot.status != 'deleted')
             result = await session.execute(query)
@@ -183,7 +183,7 @@ async def get_bot_list():
 
 
 async def get_bot_chat_sessions(bot_id: str, session_id: str):
-    async with async_session() as session:
+    async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             result = await session.execute(
                 select(JBSession)
@@ -198,7 +198,7 @@ async def get_bot_chat_sessions(bot_id: str, session_id: str):
     return None
 
 async def update_bot(bot_id: str, data):
-    async with async_session() as session:
+    async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             stmt = (
                 update(JBBot)
@@ -213,7 +213,7 @@ async def update_bot(bot_id: str, data):
 async def create_bot(data):
     bot_id = str(uuid.uuid4())
     bot = JBBot(id=bot_id, **data)
-    async with async_session() as session:
+    async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             session.add(bot)
             await session.commit()

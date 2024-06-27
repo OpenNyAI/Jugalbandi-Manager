@@ -7,15 +7,56 @@ from httpx import AsyncClient
 from app.main import app, produce_message, encrypt_text, encrypt_dict
 from cryptography.fernet import Fernet
 from app.jb_schema import JBBotUpdate, JBBotConfig, JBBotActivate, JBBotCode
-from lib import JBBot
+from lib.models import JBPluginUUID, JBSession, JBTurn, JBUser, JBMessage, JBBot
+
+# class JBBot(Base):
+#     __tablename__ = "jb_bot"
+
+#     id = Column(String, primary_key=True) # "1234"
+#     name = Column(String) # "My Bot"
+#     phone_number = Column(String, unique=True) # +2348123456789
+#     status = Column(String, nullable=False) # active or inactive
+#     dsl = Column(String)
+#     code = Column(String)
+#     requirements = Column(String)
+#     index_urls = Column(ARRAY(String))
+#     config_env = Column(JSON) # variables to pass to the bot environment
+#     required_credentials = Column(ARRAY(String)) # ["API_KEY", "API_SECRET"]
+#     credentials = Column(JSON) # {"API_KEY and other secrets"}
+#     version = Column(String, nullable=False) # 0.0.1
+#     channels = Column(JSON) # w, tele
+#     created_at = Column(
+#         TIMESTAMP(timezone=True), 
+#         server_default=func.now(), 
+#         nullable=False
+#     )
+#     updated_at = Column(
+#         TIMESTAMP(timezone=True), 
+#         server_default=func.now(), 
+#         nullable=False,
+#         onupdate=func.now(),
+#     )
+#     users = relationship("JBUser", back_populates="bot")
+#     sessions = relationship("JBSession", back_populates="bot")
 
 
 # Mock environment variables
 os.environ["KAFKA_CHANNEL_TOPIC"] = "test_channel_topic"
 os.environ["KAFKA_FLOW_TOPIC"] = "test_flow_topic"
 os.environ["ENCRYPTION_KEY"] = Fernet.generate_key().decode()
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"  # Use in-memory SQLite for testing
 producer = "jb"
+os.environ["POSTGRES_DATABASE_NAME"] = "test_db"
+os.environ["POSTGRES_DATABASE_USERNAME"] = "test_user"
+os.environ["POSTGRES_DATABASE_PASSWORD"] = "test_pass"
+os.environ["POSTGRES_DATABASE_HOST"] = "localhost"
+os.environ["POSTGRES_DATABASE_PORT"] = "5432"
 
+@pytest.fixture
+def client():
+    return AsyncClient(app=app, base_url="http://test")
+
+@pytest.fixture
 def client():
     return AsyncClient(app=app, base_url="http://test")
 
@@ -75,7 +116,7 @@ async def test_update_bot_data(client):
     update_fields = JBBotUpdate(config_env={"key": "value"})
 
     # Define the mock JBBot object
-    mock_bot = MagicMock(
+    mock_bot = JBBot(
         id=bot_id,
         name="Test Bot",
         phone_number="1234567890",
@@ -83,32 +124,38 @@ async def test_update_bot_data(client):
         config_env={"existing_key": "existing_value"},
         version="1.0.0",
         channels=["whatsapp"],
-        required_credentials=[],
-        credentials={},
+        required_credentials=["API_KEY", "API_SECRET"],
+        credentials={
+            "API_KEY": "secret",
+            "API_SECRET": "super_secret"
+        },
         dsl="some_dsl",
         code="print('Hello World')",
         requirements="",
         created_at="2022-01-01T00:00:00Z",
         updated_at="2022-01-01T00:00:00Z"
     )
-    
+
+    mock_encrypt_text = MagicMock(return_value="value")
     mock_get_bot_by_id = AsyncMock(return_value=mock_bot)
     mock_update_bot = AsyncMock()
 
     with patch("app.main.get_bot_by_id", mock_get_bot_by_id):
         with patch("app.main.update_bot", mock_update_bot):
-            response = await client.patch(f"/bot/{bot_id}", json=update_fields.dict(exclude_unset=True))
+            with patch("app.main.encrypt_text", mock_encrypt_text):
+                response = await client.patch(f"/bot/{bot_id}", json=update_fields.model_dump(exclude_unset=True))
             
             assert response.status_code == 200
             
             expected_updated_data = {
                 "config_env": {
-                    "key": encrypt_text("value")
+                    "key": "value"
                 }
             }
             mock_update_bot.assert_called_once_with(bot_id, expected_updated_data)
             
             returned_bot = response.json()
+            print(returned_bot)
             assert returned_bot["id"] == bot_id
             assert "config_env" in returned_bot
 
@@ -164,33 +211,40 @@ async def test_activate_bot(client):
     }
 
     # Define the mock JBBot object
-    mock_bot = MagicMock(
+    mock_bot = JBBot(
         id=bot_id,
         name="Test Bot",
+        phone_number="1234567890",
         status="inactive",
-        phone_number=None,
-        channels=None,
-        required_credentials=[],
-        credentials={},
-        config_env={"key": "value"},
-        version="0.0.1",
+        config_env={"existing_key": "existing_value"},
+        version="1.0.0",
+        channels=["whatsapp"],
+        required_credentials=["API_KEY", "API_SECRET"],
+        credentials={
+            "API_KEY": "secret",
+            "API_SECRET": "super_secret"
+        },
+        dsl="some_dsl",
+        code="print('Hello World')",
+        requirements="",
         created_at="2022-01-01T00:00:00Z",
         updated_at="2022-01-01T00:00:00Z"
     )
 
     mock_get_bot_by_id = AsyncMock(return_value=mock_bot)
-    mock_get_bot_by_phone_number = AsyncMock(return_value=None)
+    mock_get_bot_by_phone_number = AsyncMock(return_value=mock_bot)
     mock_update_bot = AsyncMock()
-
+    mock_encrypt_dict = MagicMock(return_value={"whatsapp": "wa_credentials"})
     with patch("app.main.get_bot_by_id", mock_get_bot_by_id):
         with patch("app.main.get_bot_by_phone_number", mock_get_bot_by_phone_number):
             with patch("app.main.update_bot", mock_update_bot):
-                response = await client.post(f"/bot/{bot_id}/activate", json=activate_content)
+                with patch("app.main.encrypt_dict", mock_encrypt_dict):
+                    response = await client.post(f"/bot/{bot_id}/activate", json=activate_content)
                 
                 assert response.status_code == 200
                 assert response.json() == {"status": "success"}
                 
-                expected_channels = encrypt_dict({"whatsapp": "wa_credentials"})
+                expected_channels = {"whatsapp": "wa_credentials"}
                 
                 mock_update_bot.assert_called_once_with(bot_id, {
                     "phone_number": "1234567890",
@@ -218,8 +272,8 @@ async def test_deactivate_bot(client):
     mock_get_bot_by_id = AsyncMock(return_value=mock_bot)
     mock_update_bot = AsyncMock()
 
-    with patch("app.main.get_bot_by_id", mock_get_bot_by_id):
-        with patch("app.main.update_bot", mock_update_bot):
+    with patch("app.crud.get_bot_by_id", mock_get_bot_by_id):
+        with patch("app.crud.update_bot", mock_update_bot):
             response = await client.get(f"/bot/{bot_id}/deactivate")
             
             assert response.status_code == 200
@@ -258,7 +312,7 @@ async def test_delete_bot(client):
     mock_get_bot_by_id = AsyncMock(return_value=mock_bot)
     mock_update_bot = AsyncMock()
 
-    with patch("app.main.get_bot_by_id", mock_get_bot_by_id):
+    with patch("app.crud.get_bot_by_id", mock_get_bot_by_id):
         with patch("app.main.update_bot", mock_update_bot):
             response = await client.delete(f"/bot/{bot_id}")
             
@@ -293,8 +347,8 @@ async def test_add_bot_configuration(client):
     mock_get_bot_by_id = AsyncMock(return_value=mock_bot)
     mock_update_bot = AsyncMock()
 
-    with patch("app.main.get_bot_by_id", mock_get_bot_by_id):
-        with patch("app.main.update_bot", mock_update_bot):
+    with patch("app.crud.get_bot_by_id", mock_get_bot_by_id):
+        with patch("app.crud.update_bot", mock_update_bot):
             response = await client.post(f"/bot/{bot_id}/configure", json=configuration_content)
             
             assert response.status_code == 200
