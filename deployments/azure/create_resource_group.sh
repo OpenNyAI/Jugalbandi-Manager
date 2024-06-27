@@ -1,1 +1,0 @@
-az group create --location centralindia --resource-group $RESOURCE_GROUP
