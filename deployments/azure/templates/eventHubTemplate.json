@@ -1,0 +1,174 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "eventHubNamespace": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the Event Hub namespace."
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "The location for the resources."
+      }
+    }
+  },
+  "variables": {
+  },
+  "resources": [
+    {
+      "type": "Microsoft.EventHub/namespaces",
+      "apiVersion": "2024-01-01",
+      "name": "[parameters('eventhubNamespace')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard",
+        "tier": "Standard",
+        "capacity": 1
+      },
+      "properties": {
+        "minimumTlsVersion": "1.2",
+        "publicNetworkAccess": "Enabled",
+        "disableLocalAuth": false,
+        "zoneRedundant": true,
+        "isAutoInflateEnabled": true,
+        "maximumThroughputUnits": 5,
+        "kafkaEnabled": true
+      }
+    },
+
+    // generate SAS policy for sending and listening
+    {
+      "type": "Microsoft.EventHub/namespaces/authorizationrules",
+      "apiVersion": "2024-01-01",
+      "name": "[concat(parameters('eventhubNamespace'), '/sendlisten')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.EventHub/namespaces', parameters('eventhubNamespace'))]"
+      ],
+      "properties": {
+        "rights": [
+          "Send",
+          "Listen"
+        ]
+      }
+    },
+
+    // create eventhubs
+    {
+      "type": "Microsoft.EventHub/namespaces/eventhubs",
+      "apiVersion": "2024-01-01",
+      "name": "[concat(parameters('eventhubNamespace'), '/channel')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.EventHub/namespaces', parameters('eventhubNamespace'))]"
+      ],
+      "properties": {
+        "retentionDescription": {
+          "cleanupPolicy": "Delete",
+          "retentionTimeInHours": 1
+        },
+        "messageRetentionInDays": 1,
+        "partitionCount": 3,
+        "status": "Active"
+      }
+    },
+    {
+      "type": "Microsoft.EventHub/namespaces/eventhubs",
+      "apiVersion": "2024-01-01",
+      "name": "[concat(parameters('eventhubNamespace'), '/flow')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.EventHub/namespaces', parameters('eventhubNamespace'))]"
+      ],
+      "properties": {
+        "retentionDescription": {
+          "cleanupPolicy": "Delete",
+          "retentionTimeInHours": 1
+        },
+        "messageRetentionInDays": 1,
+        "partitionCount": 3,
+        "status": "Active"
+      }
+    },
+    {
+      "type": "Microsoft.EventHub/namespaces/eventhubs",
+      "apiVersion": "2024-01-01",
+      "name": "[concat(parameters('eventhubNamespace'), '/language')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.EventHub/namespaces', parameters('eventhubNamespace'))]"
+      ],
+      "properties": {
+        "retentionDescription": {
+          "cleanupPolicy": "Delete",
+          "retentionTimeInHours": 1
+        },
+        "messageRetentionInDays": 1,
+        "partitionCount": 3,
+        "status": "Active"
+      }
+    },
+
+    // create consumer groups
+    {
+      "type": "Microsoft.EventHub/namespaces/eventhubs/consumergroups",
+      "apiVersion": "2024-01-01",
+      "name": "[concat(parameters('eventhubNamespace'), '/channel/$Default')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.EventHub/namespaces/eventhubs', parameters('eventhubNamespace'), 'channel')]"
+      ],
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.EventHub/namespaces/eventhubs/consumergroups",
+      "apiVersion": "2024-01-01",
+      "name": "[concat(parameters('eventhubNamespace'), '/flow/$Default')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.EventHub/namespaces/eventhubs', parameters('eventhubNamespace'), 'flow')]"
+      ],
+      "properties": {}
+    },
+    {
+      "type": "Microsoft.EventHub/namespaces/eventhubs/consumergroups",
+      "apiVersion": "2024-01-01",
+      "name": "[concat(parameters('eventhubNamespace'), '/language/$Default')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.EventHub/namespaces/eventhubs', parameters('eventhubNamespace'), 'language')]"
+      ],
+      "properties": {}
+    }
+    // below not needed until we want to whitelist IP ranges in a private network
+    // See https://docs.microsoft.com/en-us/azure/event-hubs/event-hubs-network-rules
+    // SASL should protect the event hub from unauthorized access for now
+    // {
+    //   "type": "Microsoft.EventHub/namespaces/networkrulesets",
+    //   "apiVersion": "2024-01-01",
+    //   "name": "[concat(parameters('eventhubNamespace'), '/default')]",
+    //   "dependsOn": [
+    //     "[resourceId('Microsoft.EventHub/namespaces', parameters('eventhubNamespace'))]"
+    //   ],
+    //   "properties": {
+    //     "publicNetworkAccess": "Enabled",
+    //     "defaultAction": "Allow",
+    //     "virtualNetworkRules": [],
+    //     "ipRules": [],
+    //     "trustedServiceAccessEnabled": false
+    //   }
+    // },
+
+  ],
+  // make sure to output kafka credentials for event hub, username and pwd
+  "outputs": {
+    "kafkaConnectionUsername": {
+      "type": "string",
+      "value": "$ConnectionString"
+    },
+    "kafkaConnectionPassword": {
+      "type": "string",
+      "value": "[listKeys(resourceId('Microsoft.EventHub/namespaces/authorizationRules', parameters('eventhubNamespace'), 'sendlisten'), '2024-01-01').primaryConnectionString]"},
+    "kafkaBroker": {
+      "type": "string",
+      // "value": "[reference(resourceId('Microsoft.EventHub/namespaces', parameters('eventhubNamespace'))).serviceBusEndpoint]"
+      "value": "[concat(parameters('eventhubNamespace'), '.servicebus.windows.net:9093')]"
+    }
+  }
+}
