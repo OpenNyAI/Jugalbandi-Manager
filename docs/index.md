@@ -15,5 +15,6 @@ The documentation is organized as follows:
 3. [References](references/)
 	1. [Dependencies](references/dependencies.md)
 	2. [Output from Bot](references/fsm-output.md)
+	3. [Example: Grievance Bot](example-grievance-bot/index.md)
 4. [Explanations](explanations/)
 	1. [JB Manager Architecture](explanations/architecture.md)
