@@ -218,7 +218,7 @@ async def test_activate_bot(client):
         status="inactive",
         config_env={"existing_key": "existing_value"},
         version="1.0.0",
-        channels=["whatsapp"],
+        channels=["whatsapp"], 
         required_credentials=["API_KEY", "API_SECRET"],
         credentials={
             "API_KEY": "secret",
