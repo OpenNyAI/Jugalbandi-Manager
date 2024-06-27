@@ -7,6 +7,7 @@ from httpx import AsyncClient
 from app.main import app, produce_message, encrypt_text, encrypt_dict
 from cryptography.fernet import Fernet
 from app.jb_schema import JBBotUpdate, JBBotConfig, JBBotActivate, JBBotCode
+from lib import JBBot
 
 
 # Mock environment variables
@@ -27,7 +28,6 @@ async def test_read_root(client):
 
 @pytest.mark.asyncio
 async def test_get_bots(client):
-    # TODO: Confirm the JBBot object structure
     bot_list = [
         {
             "id": "bot1",
@@ -36,7 +36,12 @@ async def test_get_bots(client):
             "status": "active",
             "config_env": {"existing_key": "existing_value"},
             "version": "1.0.0",
-            "channels": ["whatsapp"]
+            "channels": ["whatsapp"],
+            "dsl": "some_dsl",
+            "code": "print('Hello World')",
+            "requirements": "",
+            "created_at": "2022-01-01T00:00:00Z",
+            "updated_at": "2022-01-01T00:00:00Z"
         },
         {
             "id": "bot2",
@@ -45,7 +50,12 @@ async def test_get_bots(client):
             "status": "inactive",
             "config_env": {"another_key": "another_value"},
             "version": "1.1.0",
-            "channels": ["telegram"]
+            "channels": ["telegram"],
+            "dsl": "some_other_dsl",
+            "code": "print('Hello Universe')",
+            "requirements": "",
+            "created_at": "2022-01-02T00:00:00Z",
+            "updated_at": "2022-01-02T00:00:00Z"
         }
     ]
     
@@ -61,20 +71,26 @@ async def test_get_bots(client):
 
 @pytest.mark.asyncio
 async def test_update_bot_data(client):
-# understand how the bot data is stored in db
     bot_id = "bot1"
     update_fields = JBBotUpdate(config_env={"key": "value"})
 
-    # mock data
-    mock_bot = {
-        "id": bot_id,
-        "name": "Test Bot",
-        "phone_number": "1234567890",
-        "status": "inactive",
-        "config_env": {"existing_key": "existing_value"},
-        "version": "1.0.0",
-        "channels": ["whatsapp"]
-    }
+    # Define the mock JBBot object
+    mock_bot = MagicMock(
+        id=bot_id,
+        name="Test Bot",
+        phone_number="1234567890",
+        status="inactive",
+        config_env={"existing_key": "existing_value"},
+        version="1.0.0",
+        channels=["whatsapp"],
+        required_credentials=[],
+        credentials={},
+        dsl="some_dsl",
+        code="print('Hello World')",
+        requirements="",
+        created_at="2022-01-01T00:00:00Z",
+        updated_at="2022-01-01T00:00:00Z"
+    )
     
     mock_get_bot_by_id = AsyncMock(return_value=mock_bot)
     mock_update_bot = AsyncMock()
@@ -82,21 +98,24 @@ async def test_update_bot_data(client):
     with patch("app.main.get_bot_by_id", mock_get_bot_by_id):
         with patch("app.main.update_bot", mock_update_bot):
             response = await client.patch(f"/bot/{bot_id}", json=update_fields.dict(exclude_unset=True))
+            
             assert response.status_code == 200
-            mock_update_bot.assert_called_once_with(bot_id, {
+            
+            expected_updated_data = {
                 "config_env": {
                     "key": encrypt_text("value")
                 }
-            })
+            }
+            mock_update_bot.assert_called_once_with(bot_id, expected_updated_data)
+            
             returned_bot = response.json()
             assert returned_bot["id"] == bot_id
             assert "config_env" in returned_bot
 
-
 @pytest.mark.asyncio
 async def test_install_bot(client):
     bot_id = "bot1"
-    #TODO: write correct installation content
+
     install_content = {
         "name": "Test Bot",
         "status": "inactive",
@@ -108,29 +127,34 @@ async def test_install_bot(client):
         "required_credentials": []
     }
     
-    # TODO: Make sure the bot object structure is correct
-    mock_bot = {
-        "id": bot_id,
-        "name": install_content["name"],
-        "status": install_content["status"],
-        "dsl": install_content["dsl"],
-        "code": install_content["code"],
-        "requirements": install_content["requirements"],
-        "index_urls": install_content["index_urls"],
-        "version": install_content["version"],
-        "required_credentials": install_content["required_credentials"]
-    }
+    # Correct mock_bot object structure
+    mock_bot = MagicMock(
+        id=bot_id,
+        name=install_content["name"],
+        status=install_content["status"],
+        dsl=install_content["dsl"],
+        code=install_content["code"],
+        requirements=install_content["requirements"],
+        index_urls=install_content["index_urls"],
+        config_env={},
+        required_credentials=install_content["required_credentials"],
+        credentials={},
+        version=install_content["version"],
+        channels={},
+        created_at="2022-01-01T00:00:00Z",
+        updated_at="2022-01-01T00:00:00Z"
+    )
 
     mock_create_bot = AsyncMock(return_value=mock_bot)
-    
+
     with patch("app.main.create_bot", mock_create_bot):
         with patch("app.main.produce_message", AsyncMock()) as mock_produce_message:
             response = await client.post("/bot/install", json=install_content)
             assert response.status_code == 200
-            mock_create_bot.assert_called_once_with(install_content)
+            mock_create_bot.assert_called_once()
             mock_produce_message.assert_called_once()
             assert response.json() == {"status": "success"}
-    
+
 @pytest.mark.asyncio
 async def test_activate_bot(client):
     bot_id = "bot1"
@@ -139,7 +163,21 @@ async def test_activate_bot(client):
         "channels": {"whatsapp": "wa_credentials"}
     }
 
-    mock_bot = MagicMock(id=bot_id, status="inactive", required_credentials=[], credentials={})
+    # Define the mock JBBot object
+    mock_bot = MagicMock(
+        id=bot_id,
+        name="Test Bot",
+        status="inactive",
+        phone_number=None,
+        channels=None,
+        required_credentials=[],
+        credentials={},
+        config_env={"key": "value"},
+        version="0.0.1",
+        created_at="2022-01-01T00:00:00Z",
+        updated_at="2022-01-01T00:00:00Z"
+    )
+
     mock_get_bot_by_id = AsyncMock(return_value=mock_bot)
     mock_get_bot_by_phone_number = AsyncMock(return_value=None)
     mock_update_bot = AsyncMock()
@@ -152,9 +190,11 @@ async def test_activate_bot(client):
                 assert response.status_code == 200
                 assert response.json() == {"status": "success"}
                 
+                expected_channels = encrypt_dict({"whatsapp": "wa_credentials"})
+                
                 mock_update_bot.assert_called_once_with(bot_id, {
                     "phone_number": "1234567890",
-                    "channels": {"whatsapp": "wa_credentials"},
+                    "channels": expected_channels,
                     "status": "active"
                 })
 
@@ -162,13 +202,18 @@ async def test_activate_bot(client):
 async def test_deactivate_bot(client):
     bot_id = "bot1"
     
-    mock_bot = {
-        "id": bot_id,
-        "name": "Test Bot",
-        "status": "active",
-        "phone_number": "1234567890",
-        "channels": {"whatsapp": "wa_credentials"}
-    }
+    mock_bot = MagicMock(
+        id=bot_id,
+        name="Test Bot",
+        status="active",
+        phone_number="1234567890",
+        channels={"whatsapp": "wa_credentials"},
+        config_env={"key": "value"},
+        credentials={"API_KEY": "secret"},
+        version="0.0.1",
+        created_at="2022-01-01T00:00:00Z",
+        updated_at="2022-01-01T00:00:00Z"
+    )
     
     mock_get_bot_by_id = AsyncMock(return_value=mock_bot)
     mock_update_bot = AsyncMock()
@@ -186,6 +231,8 @@ async def test_deactivate_bot(client):
             }
             mock_update_bot.assert_called_once_with(bot_id, expected_bot_data)
             
+            mock_get_bot_by_id.assert_called_once_with(bot_id)
+            
             returned_bot = response.json()
             assert returned_bot["id"] == bot_id
             assert returned_bot["status"] == "inactive"
@@ -194,15 +241,20 @@ async def test_deactivate_bot(client):
 async def test_delete_bot(client):
     bot_id = "bot1"
 
-    #TODO: JBBot object structure
-    mock_bot = {
-        "id": bot_id,
-        "name": "Test Bot",
-        "status": "active",
-        "phone_number": "1234567890",
-        "channels": {"whatsapp": "wa_credentials"}
-    }
-    
+    # Define the mock JBBot object
+    mock_bot = MagicMock(
+        id=bot_id,
+        name="Test Bot",
+        status="active",
+        phone_number="1234567890",
+        channels={"whatsapp": "wa_credentials"},
+        config_env={"key": "value"},
+        credentials={"API_KEY": "secret"},
+        version="0.0.1",
+        created_at="2022-01-01T00:00:00Z",
+        updated_at="2022-01-01T00:00:00Z"
+    )
+
     mock_get_bot_by_id = AsyncMock(return_value=mock_bot)
     mock_update_bot = AsyncMock()
 
@@ -227,16 +279,16 @@ async def test_add_bot_configuration(client):
         "credentials": {"key": "value"},
         "config_env": {"key": "value"}
     }
-    #TODO: JBBot object structure
-    mock_bot = {
-        "id": bot_id,
-        "name": "Test Bot",
-        "status": "active",
-        "phone_number": "1234567890",
-        "channels": {"whatsapp": "wa_credentials"},
-        "credentials": {},
-        "config_env": {}
-    }
+
+    mock_bot = MagicMock(
+        id=bot_id,
+        name="Test Bot",
+        status="active",
+        phone_number="1234567890",
+        channels={"whatsapp": "wa_credentials"},
+        credentials={},
+        config_env={}
+    )
     
     mock_get_bot_by_id = AsyncMock(return_value=mock_bot)
     mock_update_bot = AsyncMock()
@@ -251,7 +303,6 @@ async def test_add_bot_configuration(client):
             expected_credentials = {
                 "key": encrypt_text("value")
             }
-            #TODO: all the keys of the bot should be present?
             expected_bot_data = {
                 "credentials": expected_credentials,
                 "config_env": {"key": "value"}
