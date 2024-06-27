@@ -46,7 +46,7 @@
       "name": "[variables('translationResourceName')]",
       "location": "[parameters('location')]",
       "sku": {
-        "name": "S0",
+        "name": "S1",
         "tier": "Standard"
       },
       "kind": "TextTranslation",

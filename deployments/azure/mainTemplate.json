@@ -54,6 +54,10 @@
       "type": "string",
       "defaultValue": null
     },
+    "whatsappAPIKey": {
+      "type": "string",
+      "defaultValue": null
+    },
 
 
     // container app params
@@ -101,7 +105,8 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[uri(deployment().properties.templateLink.uri, 'templates/eventHubTemplate.json')]",
+          // "uri": "[uri(deployment().properties.templateLink.uri, 'templates/eventHubTemplate.json')]",
+          "relativePath": "templates/eventHubTemplate.json",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -121,7 +126,8 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[uri(deployment().properties.templateLink.uri, 'templates/postgresTemplate.json')]",
+          // "uri": "[uri(deployment().properties.templateLink.uri, 'templates/postgresTemplate.json')]",
+          "relativePath": "templates/postgresTemplate.json",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -150,7 +156,8 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[uri(deployment().properties.templateLink.uri, 'templates/storageTemplate.json')]",
+          // "uri": "[uri(deployment().properties.templateLink.uri, 'templates/storageTemplate.json')]",
+          "relativePath": "templates/storageTemplate.json",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -170,7 +177,8 @@
       "properties": {
         "mode": "Incremental",
         "templateLink": {
-          "uri": "[uri(deployment().properties.templateLink.uri, 'templates/azServicesTemplate.json')]",
+          // "uri": "[uri(deployment().properties.templateLink.uri, 'templates/azServicesTemplate.json')]",
+          "relativePath": "templates/azServicesTemplate.json",
           "contentVersion": "1.0.0.0"
         },
         "parameters": {
@@ -246,7 +254,7 @@
           "containers": [
             {
               "name": "api",
-              "image": "opennyaiin/jugalbandi-manager:api-v1.0.4",
+              "image": "opennyaiin/jugalbandi-manager:api-latest",
               "resources": {
                 "cpu": "[parameters('cpu')]",
                 "memory": "[parameters('memory')]"
@@ -286,6 +294,14 @@
                   "value": "[parameters('whatsappAPIHost')]"
                 },
                 {
+                  "name": "WHATSAPP_API_KEY",
+                  "value": "[parameters('whatsappAPIKey')]"
+                },
+                {
+                  "name": "WHATSAPP_API_KEY",
+                  "value": "[parameters('whatsappAPIKey')]"
+                },
+                {
                   "name": "KAFKA_USE_SASL",
                   "value": "true"
                 },
@@ -332,7 +348,7 @@
                 },
                 {
                   "name": "POSTGRES_DATABASE_PORT",
-                  "value": "[reference('postgresqlTemplateDeployment').outputs.postgresqlServerPort.value]"
+                  "value": "5432"
                 },
 
                 {
@@ -372,7 +388,7 @@
             },
             {
               "name": "language",
-              "image": "opennyaiin/jugalbandi-manager:language-v1.0.4",
+              "image": "opennyaiin/jugalbandi-manager:language-latest",
               "resources": {
                 "cpu": "[parameters('cpu')]",
                 "memory": "[parameters('memory')]"
@@ -409,6 +425,10 @@
                 {
                   "name": "WHATSAPP_API_HOST",
                   "value": "[parameters('whatsappAPIHost')]"
+                },
+                {
+                  "name": "WHATSAPP_API_KEY",
+                  "value": "[parameters('whatsappAPIKey')]"
                 },
                 {
                   "name": "KAFKA_USE_SASL",
@@ -457,7 +477,7 @@
                 },
                 {
                   "name": "POSTGRES_DATABASE_PORT",
-                  "value": "[reference('postgresqlTemplateDeployment').outputs.postgresqlServerPort.value]"
+                  "value": "5432"
                 },
 
                 {
@@ -499,7 +519,7 @@
             },
             {
               "name": "flow",
-              "image": "opennyaiin/jugalbandi-manager:flow-v1.0.4",
+              "image": "opennyaiin/jugalbandi-manager:flow-latest",
               "resources": {
                 "cpu": "[parameters('cpu')]",
                 "memory": "[parameters('memory')]"
@@ -584,7 +604,7 @@
                 },
                 {
                   "name": "POSTGRES_DATABASE_PORT",
-                  "value": "[reference('postgresqlTemplateDeployment').outputs.postgresqlServerPort.value]"
+                  "value": "5432"
                 },
 
                 {

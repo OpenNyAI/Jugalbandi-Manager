@@ -160,14 +160,15 @@
   "outputs": {
     "kafkaConnectionUsername": {
       "type": "string",
-      "value": "[listKeys(resourceId('Microsoft.EventHub/namespaces/authorizationRules', parameters('eventhubNamespace'), 'sendlisten'), '2024-01-01').primaryConnectionString]"
+      "value": "$ConnectionString"
     },
     "kafkaConnectionPassword": {
       "type": "string",
-      "value": "[listKeys(resourceId('Microsoft.EventHub/namespaces/authorizationRules', parameters('eventhubNamespace'), 'sendlisten'), '2024-01-01').secondaryConnectionString]"},
+      "value": "[listKeys(resourceId('Microsoft.EventHub/namespaces/authorizationRules', parameters('eventhubNamespace'), 'sendlisten'), '2024-01-01').primaryConnectionString]"},
     "kafkaBroker": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.EventHub/namespaces', parameters('eventhubNamespace'))).properties.serviceBusEndpoint]"
+      // "value": "[reference(resourceId('Microsoft.EventHub/namespaces', parameters('eventhubNamespace'))).serviceBusEndpoint]"
+      "value": "[concat(parameters('eventhubNamespace'), '.servicebus.windows.net:9093')]"
     }
   }
 }
