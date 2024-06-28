@@ -90,6 +90,19 @@
       }
     },
     {
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/firewallRules",
+      "apiVersion": "2023-12-01-preview",
+      "name": "[concat(variables('postgresqlServerName'), '/AllowAllAzureIPs')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DBforPostgreSQL/flexibleServers', variables('postgresqlServerName'))]"
+      ],
+      "properties": {
+        "startIpAddress": "0.0.0.0",
+        "endIpAddress": "0.0.0.0"
+      }
+    },
+    
+    {
       "type": "Microsoft.DBforPostgreSQL/flexibleServers/databases",
       "apiVersion": "2023-12-01-preview",
       "name": "[concat(variables('postgresqlServerName'), '/', parameters('postgresDatabaseName'))]",
