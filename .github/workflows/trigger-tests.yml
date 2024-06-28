@@ -28,4 +28,10 @@ jobs:
       - name: Test channel with pytest
         working-directory: ./channel
         run: poetry run pytest
+      - name: Install dependencies language
+        working-directory: ./language
+        run: poetry install --with test
+      - name: Test language with pytest
+        working-directory: ./language
+        run: poetry run pytest
 
