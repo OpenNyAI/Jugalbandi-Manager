@@ -76,22 +76,22 @@ pprint(messages)
 ```
 ```json
 [
-    {'content': 'You are a helpful assistant, the CPGRAMS bot, working with the '
-             'Prime Minister of India’s office. Your role is to help users '
-             'share their grievances on a grievance redressal platform for the '
-             'Government of India. You will not offer any solutions for their '
-             'grievance. You will merely try to extract as much information as '
-             'possible to allow a grievance officer to deal with the grievance '
-             'effectively. Current date: 2024-04-25', 'role': 'system'},
-    {'content': 'Hi, How can I help you?', 'role': 'assistant'},
-    {'content': 'I am unable to access my PAN card from digilocker', 'role': 'user'},
-    {'content': 'Analyze the above conversation in detail and give your analysis.'
-             'Your analysis should be detailed enough such that it could be used' 
-             'to determine the grievance category from a database.'
-             'Do not try to determine the grievance category in this step.'
-             'Current date and time: 2024-04-25 15:16:17'
-             'Process any date and time related information in the conversation.', 
-             'role': 'system'}
+    {
+        "content": "You are a helpful assistant, the CPGRAMS bot, working with the Prime Minister of India's office. Your role is to help users share their grievances on a grievance redressal platform for the Government of India. You will not offer any solutions for their grievance. You will merely try to extract as much information as possible to allow a grievance officer to deal with the grievance effectively. Current date: 2024-04-25",
+        "role": "system"
+    },
+    {
+        "content": "Hi, How can I help you?",
+        "role": "assistant"
+    },
+    {
+        "content": "I am unable to access my PAN card from digilocker",
+        "role": "user"
+    },
+    {
+        "content": "Analyze the above conversation in detail and give your analysis. Your analysis should be detailed enough such that it could be used to determine the grievance category from a database. Do not try to determine the grievance category in this step. Current date and time: 2024-04-25 15:16:17. Process any date and time related information in the conversation.",
+        "role": "system"
+    }
 ]
 ```
 ## Summarizing details provided so far
@@ -209,35 +209,20 @@ grievance_buckets, _ = determine_grievance_bucket_and_followup_questions(
 )
 pprint(grievance_buckets)
 ```
-```
+```json
 {
-    'follow_up_questions': [],
-    'grievance_bucket': {
-        'bucket_id': '6',
-        'category': 'Digital Services (CSC/MyGov/NeGD/NIC)',
-        'description':  'The DigiLocker service provided by the '
-                        'National e-Governance Division (NeGD) '
-                        'under the Ministry of Electronics & '
-                        'Information Technology allows users to '
-                        'store, access, and share digital copies '
-                        'of important documents and certificates.'
-                        'Users may have the following grievances '
-                        'related to DigiLocker:'
-                        '1. Difficulty in accessing or signing up for DigiLocker account\n'
-                        '2. Issues with uploading or downloading documents on DigiLocker\n'
-                        '3. Concerns about the security and privacy of personal information stored on DigiLocker'
-                        '4. Problems with linking DigiLocker to other government services or platforms'
-                        '5. Unauthorized access to DigiLocker account'
-                        '6. Technical glitches or errors while using DigiLocker'
-                        '7. Unclear guidelines or instructions on how to use DigiLocker effectively'
-                            'Alternate terms for DigiLocker may '
-                            'include digital locker, online document '
-                            'storage, digital document repository, etc.',
-        'ministry': 'Ministry of Electronics & Information Technology',
-        'subcategory': ['NeGD', 'DigiLocker']
+    "follow_up_questions": [],
+    "grievance_bucket": {
+        "bucket_id": "6",
+        "category": "Digital Services (CSC/MyGov/NeGD/NIC)",
+        "description": "The DigiLocker service provided by the National e-Governance Division (NeGD) under the Ministry of Electronics & Information Technology allows users to store, access, and share digital copies of important documents and certificates. Users may have the following grievances related to DigiLocker:\n1. Difficulty in accessing or signing up for DigiLocker account\n2. Issues with uploading or downloading documents on DigiLocker\n3. Concerns about the security and privacy of personal information stored on DigiLocker\n4. Problems with linking DigiLocker to other government services or platforms\n5. Unauthorized access to DigiLocker account\n6. Technical glitches or errors while using DigiLocker\n7. Unclear guidelines or instructions on how to use DigiLocker effectively. Alternate terms for DigiLocker may include digital locker, online document storage, digital document repository, etc.",
+        "ministry": "Ministry of Electronics & Information Technology",
+        "subcategory": [
+            "NeGD",
+            "DigiLocker"
+        ]
     },
-    'user_message': "I'm really sorry to hear that you're facing issues with "
-                    "accessing your PAN card from DigiLocker 😟. Let's get this sorted."
+    "user_message": "I'm really sorry to hear that you're facing issues with accessing your PAN card from DigiLocker. Let's get this sorted."
 }
 ```
 
@@ -309,40 +294,27 @@ field_questions, _ = generate_field_questions(user_choice, required_fields, summ
 pprint(field_questions)
 ```
 
-```
+```json
 {
-    'field_data': {
-        'Device_Used': 'none',
-        'Document_Type': 'PAN card',
-        'Error_Message': 'none',
-        'Internet_Connection': 'none',
-        'Issue_Details': 'Inability to access PAN card on DigiLocker, '
-                          'potentially due to technical issues, '
-                          'account problems, or discrepancies in '
-                          'linking PAN with DigiLocker account.'
+    "field_data": {
+        "Device_Used": "none",
+        "Document_Type": "PAN card",
+        "Error_Message": "none",
+        "Internet_Connection": "none",
+        "Issue_Details": "Inability to access PAN card on DigiLocker, potentially due to technical issues, account problems, or discrepancies in linking PAN with DigiLocker account."
     },
-    'follow_up_questions': [],
-    'grievance_bucket': {
-        'bucket_id': '6',
-        'category': 'Digital Services (CSC/MyGov/NeGD/NIC)',
-        'description': 'The user is experiencing difficulty accessing their Permanent Account '
-                        'Number (PAN) card on DigiLocker. This '
-                        'issue may be due to technical glitches, '
-                        'user account problems, or discrepancies '
-                        'in linking the PAN with the DigiLocker '
-                        'account. Access to the PAN card is '
-                        'crucial for the user for various '
-                        'financial transactions and identity '
-                        'verification processes.',
-        'ministry': 'Ministry of Electronics & Information Technology',
-        'subcategory': ['NeGD', 'DigiLocker']
+    "follow_up_questions": [],
+    "grievance_bucket": {
+        "bucket_id": "6",
+        "category": "Digital Services (CSC/MyGov/NeGD/NIC)",
+        "description": "The user is experiencing difficulty accessing their Permanent Account Number (PAN) card on DigiLocker. This issue may be due to technical glitches, user account problems, or discrepancies in linking the PAN with the DigiLocker account. Access to the PAN card is crucial for the user for various financial transactions and identity verification processes.",
+        "ministry": "Ministry of Electronics & Information Technology",
+        "subcategory": [
+            "NeGD",
+            "DigiLocker"
+        ]
     },
-    'mandatory_data_present': True,
-    'user_message': 'We understand how important it is for you to access your '
-                  'PAN card on DigiLocker and the inconvenience this issue may '
-                  "be causing you 😟. Rest assured, we're here to help. All the "
-                  'required details for filing your grievance are present. '
-                  'Could you please confirm the details so we can proceed with '
-                  'filing your grievance?'
+    "mandatory_data_present": true,
+    "user_message": "We understand how important it is for you to access your PAN card on DigiLocker and the inconvenience this issue may be causing you. Rest assured, we're here to help. All the required details for filing your grievance are present. Could you please confirm the details so we can proceed with filing your grievance?"
 }
 ```
