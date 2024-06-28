@@ -252,9 +252,9 @@ async def flow_loop():
                         source="flow",
                         session_id=session_id,
                         turn_id=flow_input.turn_id,
-                        collection_name="KB_Law_Files",
+                        collection_name=fsm_output.retriever_collection_name,
                         query=msg_text,
-                        top_chunk_k_value=5,
+                        top_chunk_k_value=fsm_output.retriever_chunk_size,
                     )
                     logger.info("FLOW -- %s --> %s", rag_topic, rag_input)
                     producer.send_message(rag_topic, rag_input.model_dump_json())
