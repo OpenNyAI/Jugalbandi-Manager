@@ -1,0 +1,112 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourceNamePrefix": {
+      "type": "string",
+      "metadata": {
+        "description": "The prefix used by all resources created by this template."
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "The location for the resources."
+      }
+    },
+    // postgres params
+    "postgresAdminUser": {
+      "type": "string",
+      "metadata": {
+        "description": "The administrator username for the PostgreSQL Flexible Server."
+      }
+    },
+    "postgresAdminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The administrator password for the PostgreSQL Flexible Server."
+      }
+    },
+    "postgresDatabaseName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the database to create in the PostgreSQL Flexible Server."
+      }
+    }
+  },
+  "variables": {
+    "postgresqlServerName": "[concat(parameters('resourceNamePrefix'), '-postgresql-server')]"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers",
+      "apiVersion": "2023-12-01-preview",
+      "name": "[variables('postgresqlServerName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "replica": {
+          "role": "Primary"
+        },
+        "storage": {
+          "iops": 120,
+          "tier": "P4",
+          "storageSizeGB": 32,
+          "autoGrow": "Enabled"
+        },
+        "network": {
+          "publicNetworkAccess": "Enabled"
+        },
+        "dataEncryption": {
+          "type": "SystemManaged"
+        },
+        "authConfig": {
+          "activeDirectoryAuth": "Disabled",
+          "passwordAuth": "Enabled"
+        },
+        "version": "16",
+        "administratorLogin": "[parameters('postgresAdminUser')]",
+        "administratorLoginPassword": "[parameters('postgresAdminPassword')]",
+        "availabilityZone": "1",
+        "backup": {
+          "backupRetentionDays": 7,
+          "geoRedundantBackup": "Disabled"
+        },
+        "highAvailability": {
+          "mode": "Disabled"
+        },
+        "maintenanceWindow": {
+          "customWindow": "Disabled",
+          "dayOfWeek": 0,
+          "startHour": 0,
+          "startMinute": 0
+        },
+        "replicationRole": "Primary"
+      },
+      "sku": {
+        "name": "Standard_D2ds_v4",
+        "tier": "GeneralPurpose",
+        "family": "D",
+        "capacity": 2
+      }
+    },
+    {
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/databases",
+      "apiVersion": "2023-12-01-preview",
+      "name": "[concat(variables('postgresqlServerName'), '/', parameters('postgresDatabaseName'))]",
+      "properties": {
+        "charset": "UTF8",
+        "collation": "en_US.utf8"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DBforPostgreSQL/flexibleServers', variables('postgresqlServerName'))]"
+      ]
+    }
+  ],
+  // return the postgres hostname ip address and port
+  "outputs": {
+    "postgresqlServerIP": {
+      "type": "string",
+      "value": "[reference(variables('postgresqlServerName')).fullyQualifiedDomainName]"
+    }
+  }
+}
