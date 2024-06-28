@@ -2,11 +2,9 @@
 
 name: Publish JBManagerBot to Pypi
 
-on: [push]
-
-# on:
-#   release:
-#     types: [published]
+on:
+  release:
+    types: [published]
 
 permissions:
   contents: read
