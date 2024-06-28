@@ -2,9 +2,10 @@
 
 name: Publish JBManagerBot to Pypi
 
-on:
-  release:
-    types: [published]
+on: [push]
+# on:
+#   release:
+#     types: [published]
 
 permissions:
   contents: read
@@ -37,4 +38,5 @@ jobs:
       run: poetry build
     - name: Publish to PyPI
       uses: pypa/gh-action-pypi-publish@release/v1
-      working-directory: ./jb-manager-bot
+      with:
+        packages-dir: ./jb-manager-bot/dist/
