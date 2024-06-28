@@ -17,3 +17,8 @@ repos:
         entry: bash -c 'cd channel && poetry run pytest'
         language: system
         types: [python]
+    -   id: run-tests-language
+        name: Run Tests in language
+        entry: bash -c 'cd language && poetry run pytest'
+        language: system
+        types: [python]
