@@ -2,7 +2,6 @@ from enum import Enum
 from typing import List, Optional
 from pydantic import BaseModel
 
-
 class Status(Enum):
     """
     Enum class to define the status of the FSM."""
@@ -43,7 +42,6 @@ class UploadFile(BaseModel):
     path: str
     mime_type: str
     filename: str
-
 
 class FSMOutput(BaseModel):
     """

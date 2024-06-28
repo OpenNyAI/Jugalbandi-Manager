@@ -1,3 +1,3 @@
-from jb_manager_bot.parsers.option_parser import OptionParser, Parser
+from jb_manager_bot.parsers.option_parser import OptionParser
 
-__all__ = ["OptionParser", "Parser"]
+__all__ = ["OptionParser"]

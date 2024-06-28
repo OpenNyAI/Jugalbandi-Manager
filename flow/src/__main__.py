@@ -214,7 +214,7 @@ async def flow_loop():
                 #         upload_file.filename, file_content, upload_file.mime_type
                 #     )
                 logger.info("FSM Output: %s", fsm_output)
-                logger.info("FSM Output Destination: %s", fsm_output.dest)
+
                 if fsm_output.dest == "out":
                     if fsm_output.options_list is not None:
                         options_list = [
@@ -323,10 +323,9 @@ async def flow_loop():
 
             # logger.error("Output from fsm: %s", completed_process.stdout)
             for line in completed_process.stdout.split("\n"):
-
                 if not line:
                     continue
-                logger.info("Output from fsm: %s", line)
+                # logger.error("Output from fsm: %s", line)
                 fsm_op = json.loads(line)
                 if "callback_message" in fsm_op:
                     logger.info("Callback message: %s", fsm_op["callback_message"])
@@ -338,10 +337,9 @@ async def flow_loop():
                     saved_state = await crud.update_state_and_variables(
                         session_id, "zerotwo", new_state_variables
                     )
-                    logger.info("Saved state: %s", saved_state)
+
         except Exception as e:
             logger.error("Error in flow loop: %s :: %s", e, traceback.format_exc())
-        logger.info("Finished processing message")
 
 
 if __name__ == "__main__":
