@@ -14,8 +14,7 @@ RUN poetry build
 WORKDIR /app
 RUN cp ./jb-lib/dist/*.whl .
 RUN rm -rf ./jb-lib
-# COPY ./indexer/pyproject.toml ./indexer/poetry.lock ./
-COPY ./indexer/pyproject.toml ./
+COPY ./indexer/pyproject.toml ./indexer/poetry.lock ./
 # poetry needs a README.md to build the project
 RUN touch README.md 
 
