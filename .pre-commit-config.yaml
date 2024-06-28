@@ -1,0 +1,24 @@
+repos:
+-   repo: https://github.com/psf/black
+    rev: 24.4.2
+    hooks:
+    -   id: black
+        language_version: python3
+
+-   repo: local
+    hooks:
+    -   id: run-tests-lib
+        name: Run Tests in jb-lib
+        entry: bash -c 'cd jb-lib && poetry run pytest'
+        language: system
+        types: [python]
+    -   id: run-tests-channel
+        name: Run Tests in channel
+        entry: bash -c 'cd channel && poetry run pytest'
+        language: system
+        types: [python]
+    -   id: run-tests-language
+        name: Run Tests in language
+        entry: bash -c 'cd language && poetry run pytest'
+        language: system
+        types: [python]

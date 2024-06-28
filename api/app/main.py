@@ -3,6 +3,7 @@
 
 import json
 import os
+import logging
 from typing import Dict
 import uuid
 from fastapi import FastAPI, HTTPException, Request
@@ -49,7 +50,7 @@ from .crud import (
 load_dotenv()
 
 app = FastAPI()
-logger = Logger("jb-manager-api")
+logger = logging.getLogger("jb-manager-api")
 
 app.add_middleware(
     CORSMiddleware,

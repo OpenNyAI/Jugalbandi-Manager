@@ -1,3 +1,4 @@
+import logging
 import json
 import os
 import uuid
@@ -6,11 +7,9 @@ from abc import ABC, abstractmethod
 import aiohttp
 import httpx
 
-from lib.jb_logging import Logger
-
 from .model import InternalServerException, Language
 
-logger = Logger("translator")
+logger = logging.getLogger("translator")
 
 
 class Translator(ABC):

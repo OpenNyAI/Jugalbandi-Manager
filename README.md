@@ -1,6 +1,6 @@
 
 [![Join us on Discord](https://img.shields.io/badge/Join%20us%20on%20Discord-7289DA?logo=discord&logoColor=white&color=7289DA)](https://discord.gg/grg4nqUPNe)
-
+[![Test Cases](https://github.com/OpenNyAI/Jugalbandi-Manager/actions/workflows/trigger-tests.yml/badge.svg)](https://github.com/OpenNyAI/Jugalbandi-Manager/actions/workflows/trigger-tests.yml)
 
 # Jugalbandi Manager
 
