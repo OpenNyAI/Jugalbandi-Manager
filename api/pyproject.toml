@@ -25,6 +25,15 @@ cryptography = "^42.0.4"
 [tool.poetry.group.dev.dependencies]
 lib = {path = "../jb-lib", develop = true}
 
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.2.2"
+pytest-async = "^0.1.1"
+pytest-asyncio = "^0.23.7"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+pythonpath = "./"
