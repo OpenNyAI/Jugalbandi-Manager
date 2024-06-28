@@ -1,76 +1,58 @@
+from datetime import datetime
+import json
+from os import error
 import re
-from pydantic import BaseModel
-from typing import Dict, Any, Optional, Type
+from typing import Any, Dict, Type
+
 from jb_manager_bot import (
     AbstractFSM,
     FSMOutput,
+    MessageData,
+    MessageType,
+    OptionsListType,
     Status,
 )
+from jb_manager_bot.parsers import OptionParser
+from jb_manager_bot.parsers.utils import LLMManager
 
 
-def availability_plugin(SELECTED_SERVICE, APPOINTMENT_DATE, APPOINTMENT_TIME):
-    return {
-        "error_code": 200,
-        "booking_status": "confirmed",
-        "appointment_image": "https://d27jswm5an3efw.cloudfront.net/app/uploads/2019/08/image-url-3.jpg",
-    }
-
-
-from pydantic import BaseModel, Field
-import re
-from typing import Literal, Optional, Dict
-
-
-class CarWashVariables(BaseModel):
-    selected_service: Optional[str] = None
-    appointment_date: Optional[str] = None
-    appointment_time: Optional[str] = None
-    availability_status: Optional[str] = None
-    booking_message: Optional[str] = None
-    further_assistance: Optional[str] = None
-    booking_status: Optional[str] = None
-    appointment_image: Optional[str] = None
-    error_code: Optional[int] = None
-    fail_service_count: int = 0
-
-
-class NeoCarWashFSM(AbstractFSM):
+class CarWashDealerFSM(AbstractFSM):
+    """
+    This is the FSM class for the Car Wash Dealer project.
+    """
 
     states = [
         "zero",
-        "language_selection",
+        "select_language",
         "welcome_message_display",
         "service_selection_display",
         "service_selection_input",
         "service_selection_logic",
-        "service_selection_fail",
-        "service_selection_task_fail_verify",
         "service_selection_fail_display",
-        "date_display",
+        "appointment_query_display",
         "date_input",
-        "date_logic",
-        "time_display",
-        "time_input",
-        "time_logic",
-        "date_fail_display",
-        "time_fail_display",
+        "process_date_logic",
+        "get_time_of_day_display",
+        "time_of_day_input",
+        "time_of_day_logic",
+        "appointment_date_fail_display",
+        "appointment_time_fail_display",
         "check_availability_plugin",
         "plugin_fail_display",
         "check_booking_status_logic",
         "booking_confirmation_display",
-        "booking_pending_display",
+        "alternative_appointment_display",
         "further_assistance_display",
         "further_assistance_input",
-        "further_assistance_logic",
+        "process_further_assistance_logic",
         "further_assistance_fail_display",
-        "further_assistance_verify",
         "conclusion_display",
         "end",
     ]
     transitions = [
-        {"source": "zero", "dest": "language_selection", "trigger": "next"},
+        {"source": "zero", "dest": "select_language", "trigger": "next"},
         {
-            "source": "language_selection",
+            "source": "select_language",
             "dest": "welcome_message_display",
             "trigger": "next",
         },
@@ -91,82 +73,75 @@ class NeoCarWashFSM(AbstractFSM):
         },
         {
             "source": "service_selection_logic",
-            "dest": "date_display",
+            "dest": "appointment_query_display",
             "trigger": "next",
             "conditions": "is_valid_service",
         },
         {
             "source": "service_selection_logic",
-            "dest": "service_selection_fail",
+            "dest": "service_selection_fail_display",
             "trigger": "next",
         },
         {
-            "source": "service_selection_fail",
-            "dest": "service_selection_task_fail_verify",
-            "trigger": "next",
-        },
-        {
-            "source": "service_selection_task_fail_verify",
+            "source": "service_selection_fail_display",
             "dest": "service_selection_display",
             "trigger": "next",
-            "conditions": "is_service_fail_count_less_than_3",
         },
         {
-            "source": "service_selection_task_fail_verify",
-            "dest": "end",
-            "trigger": "next",
-            "conditions": "is_service_fail_count_3",
-        },
-        {
-            "source": "date_display",
+            "source": "appointment_query_display",
             "dest": "date_input",
             "trigger": "next",
         },
         {
             "source": "date_input",
-            "dest": "date_logic",
+            "dest": "process_date_logic",
             "trigger": "next",
         },
         {
-            "source": "date_logic",
-            "dest": "time_display",
+            "source": "process_date_logic",
+            "dest": "get_time_of_day_display",
             "trigger": "next",
             "conditions": "is_valid_date",
         },
         {
-            "source": "date_logic",
-            "dest": "date_fail_display",
+            "source": "process_date_logic",
+            "dest": "appointment_date_fail_display",
             "trigger": "next",
         },
         {
-            "source": "date_fail_display",
-            "dest": "date_display",
+            "source": "appointment_query_display",
+            "dest": "appointment_date_fail_display",
             "trigger": "next",
         },
         {
-            "source": "time_display",
-            "dest": "time_input",
+            "source": "appointment_date_fail_display",
+            "dest": "appointment_query_display",
             "trigger": "next",
         },
         {
-            "source": "time_input",
-            "dest": "time_logic",
+            "source": "get_time_of_day_display",
+            "dest": "time_of_day_input",
             "trigger": "next",
         },
         {
-            "source": "time_logic",
+            "source": "time_of_day_input",
+            "dest": "time_of_day_logic",
+            "trigger": "next",
+        },
+        {
+            "source": "time_of_day_logic",
             "dest": "check_availability_plugin",
             "trigger": "next",
             "conditions": "is_valid_time",
         },
         {
-            "source": "time_logic",
-            "dest": "time_fail_display",
+            "source": "time_of_day_logic",
+            "dest": "appointment_time_fail_display",
             "trigger": "next",
         },
         {
-            "source": "time_fail_display",
-            "dest": "time_display",
+            "source": "appointment_time_fail_display",
+            "dest": "get_time_of_day_display",
             "trigger": "next",
         },
         {
@@ -195,23 +170,23 @@ class NeoCarWashFSM(AbstractFSM):
         },
         {
             "source": "plugin_fail_display",
-            "dest": "end",
+            "dest": "service_selection_display",
             "trigger": "next",
         },
         {
             "source": "check_booking_status_logic",
             "dest": "booking_confirmation_display",
-            "trigger": "next",
+            "trigger": "booking_confirmed",
             "conditions": "is_booking_confirmed",
         },
         {
             "source": "check_booking_status_logic",
-            "dest": "booking_pending_display",
-            "trigger": "next",
+            "dest": "alternative_appointment_display",
+            "trigger": "booking_not_confirmed",
         },
         {
-            "source": "booking_pending_display",
-            "dest": "end",
+            "source": "alternative_appointment_display",
+            "dest": "appointment_query_display",
             "trigger": "next",
         },
         {
@@ -226,31 +201,19 @@ class NeoCarWashFSM(AbstractFSM):
         },
         {
             "source": "further_assistance_input",
-            "dest": "further_assistance_logic",
+            "dest": "process_further_assistance_logic",
             "trigger": "next",
         },
         {
-            "source": "further_assistance_logic",
-            "dest": "further_assistance_verify",
-            "trigger": "next",
-            "conditions": "is_further_assistance_valid",
-        },
-        {
-            "source": "further_assistance_logic",
-            "dest": "further_assistance_fail_display",
-            "trigger": "next",
-        },
-        {
-            "source": "further_assistance_verify",
+            "source": "process_further_assistance_logic",
             "dest": "service_selection_display",
             "trigger": "next",
-            "conditions": "is_further_assistance",
+            "conditions": "needs_further_assistance",
         },
         {
-            "source": "further_assistance_verify",
+            "source": "process_further_assistance_logic",
             "dest": "conclusion_display",
             "trigger": "next",
-            "conditions": "is_not_further_assistance",
         },
         {
             "source": "further_assistance_fail_display",
@@ -268,17 +231,9 @@ class NeoCarWashFSM(AbstractFSM):
         "is_valid_date",
         "is_valid_time",
         "is_booking_confirmed",
-        "is_booking_pending",
-        "is_error_code_200",
-        "is_error_code_400",
-        "is_error_code_500",
-        "is_error_code_404",
-        "is_further_assistance_valid",
-        "is_further_assistance",
-        "is_not_further_assistance",
+        "needs_further_assistance",
     }
     output_variables = set()
-    variable_names = CarWashVariables
 
     def __init__(self, send_message: callable, credentials: Dict[str, Any] = None):
 
@@ -292,273 +247,386 @@ class NeoCarWashFSM(AbstractFSM):
         )
         if not self.credentials["AZURE_OPENAI_API_KEY"]:
             raise ValueError("Missing credential: AZURE_OPENAI_API_KEY")
+
         self.credentials["AZURE_OPENAI_API_VERSION"] = credentials.get(
             "AZURE_OPENAI_API_VERSION"
         )
         if not self.credentials["AZURE_OPENAI_API_VERSION"]:
             raise ValueError("Missing credential: AZURE_OPENAI_API_VERSION")
+
         self.credentials["AZURE_OPENAI_API_ENDPOINT"] = credentials.get(
             "AZURE_OPENAI_API_ENDPOINT"
         )
         if not self.credentials["AZURE_OPENAI_API_ENDPOINT"]:
             raise ValueError("Missing credential: AZURE_OPENAI_API_ENDPOINT")
 
-        self.credentials["OPENAI_API_KEY"] = credentials.get("OPENAI_API_KEY")
-        if not self.credentials["OPENAI_API_KEY"]:
-            raise ValueError("Missing credential: OPENAI_API_KEY")
+        self.credentials["FAST_MODEL"] = credentials.get("FAST_MODEL")
+        if not self.credentials["FAST_MODEL"]:
+            raise ValueError("Missing credentials: FAST_MODEL")
+
+        self.credentials["SLOW_MODEL"] = credentials.get("SLOW_MODEL")
+        if not self.credentials["SLOW_MODEL"]:
+            raise ValueError("Missing credentials: SLOW_MODEL")
+
+        # print(self.credentials)
 
         self.plugins: Dict[str, AbstractFSM] = {}
-        self.variables = self.variable_names()
         super().__init__(send_message=send_message)
-        # print(self.variables.__dict__)
 
-    def on_enter_language_selection(self):
-        self._on_enter_select_language()
-
-    def on_enter_welcome_message_display(self):
-        self._on_enter_display(
-            message="Welcome to the Car Dealer Bot! How can I help you today?"
-        )
-
-    def on_enter_service_selection_display(self):
-        self._on_enter_display(
-            message="Would you like to buy a car, service your car, test drive, buy accessories or parts, or get a warranty and protection plan?",
-            options=[
-                "Buy a Car",
-                "Service Car",
-                "Test Drive",
-                "Buy Accessories or Parts",
-                "Warranty and Protection Plan",
-            ],
-        )
-
-    def on_enter_service_selection_input(self):
-        self._on_enter_empty_input()
-
-    def on_enter_service_selection_logic(self):
-        self._on_enter_input_logic(
-            message="Please select one of the following options:",
-            write_var="selected_service",
-            options=[
-                "Buy a Car",
-                "Service Car",
-                "Test Drive",
-                "Buy Accessories or Parts",
-                "Warranty and Protection Plan",
-            ],
-            validation="selected_service in ['Buy a Car', 'Service Car', 'Test Drive', 'Buy Accessories or Parts', 'Warranty and Protection Plan']",
-        )
-
-    def on_enter_service_selection_fail(self):
+    def standard_ask_again(self, message=None):
         self.status = Status.WAIT_FOR_ME
-        variable_name = "fail_service_count"
-        expression = "fail_service_count + 1"
-        # validation = lambda x: {expression.replace(variable_name, "x")}
-        validation = lambda x: x + 1
-        self._on_enter_assign(
-            variable_name,
-            validation,
-        )
-
+        if message is None:
+            message = (
+                "Sorry, I did not understand your question. Can you tell me again?"
+            )
+        self.send_message(FSMOutput(message_data=MessageData(body=message)))
         self.status = Status.MOVE_FORWARD
 
-    def on_enter_service_selection_task_fail_verify(self):
-        self._on_enter_empty_branching()
+    def on_enter_select_language(self):
+        self.status = Status.WAIT_FOR_ME
+        self.send_message(
+            FSMOutput(
+                message_data=MessageData(
+                    body="Please select your preferred language.\nबंधु से संपर्क करने के लिए धन्यवाद!\nकृपया अपनी भाषा चुनें।"
+                ),
+                type=MessageType.TEXT,
+                dialog="language",
+                dest="channel",
+            )
+        )
+        self.status = Status.WAIT_FOR_USER_INPUT
 
-    def is_service_fail_count_less_than_3(self):
-        variable_name = "fail_service_count"
-        expression = "fail_service_count < 3"
-        # validation = lambda x: {expression.replace(variable_name, "x")}
-        validation = lambda x: x < 3
-        return self._validate_method(variable_name, validation)
+    def on_enter_welcome_message_display(self):
+        self.status = Status.WAIT_FOR_ME
+        self.send_message(
+            FSMOutput(
+                message_data=MessageData(
+                    body="Hello! Welcome to Car Wash Dealer. How can I assist you today?"
+                ),
+                type=MessageType.TEXT,
+                dest="channel",
+            )
+        )
+        self.status = Status.MOVE_FORWARD
 
-    def is_service_fail_count_3(self):
-        variable_name = "fail_service_count"
-        expression = "fail_service_count >= 3"
-        # validation = lambda x: {expression.replace(variable_name, "x")}
-        validation = lambda x: x >= 3
-        return self._validate_method(variable_name, validation)
+    def on_enter_service_selection_display(self):
+        self.status = Status.WAIT_FOR_ME
+        message = "Would you like to buy a car, service your car, test drive, buy accessories or parts, or get a warranty and protection plan?"
+
+        options = [
+            OptionsListType(id="1", title="Buy a Car"),
+            OptionsListType(id="2", title="Service Car"),
+            OptionsListType(id="3", title="Test Drive"),
+            OptionsListType(id="4", title="Buy Accessories or Parts"),
+            OptionsListType(id="5", title="Warranty and Protection Plan"),
+        ]
+        self.send_message(
+            FSMOutput(
+                type=MessageType.INTERACTIVE,
+                message_data=MessageData(body=message),
+                options_list=options,
+                menu_selector="Service Select",
+                menu_title="Service Select",
+            )
+        )
+        self.status = Status.MOVE_FORWARD
+
+    def on_enter_service_selection_input(self):
+        self.status = Status.WAIT_FOR_ME
+        self.status = Status.WAIT_FOR_USER_INPUT
+
+    def on_enter_service_selection_logic(self):
+        self.status = Status.WAIT_FOR_ME
+        options = [
+            OptionsListType(id="1", title="Buy a Car"),
+            OptionsListType(id="2", title="Service Car"),
+            OptionsListType(id="3", title="Test Drive"),
+            OptionsListType(id="4", title="Buy Accessories or Parts"),
+            OptionsListType(id="5", title="Warranty and Protection Plan"),
+        ]
+        task = "The user is asked to select a service from the options."
+
+        result = OptionParser.parse(
+            task,
+            options,
+            self.current_input,
+            azure_openai_api_key=self.credentials["AZURE_OPENAI_API_KEY"],
+            azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
+            azure_endpoint=self.credentials["AZURE_OPENAI_API_ENDPOINT"],
+            model=self.credentials["FAST_MODEL"]
+        )
+        self.variables["service_id"] = result
+        self.status = Status.MOVE_FORWARD
 
     def on_enter_service_selection_fail_display(self):
-        self._on_enter_display(
-            message="Sorry, I didn't understand that. Please select one of the following options:",
+        self.standard_ask_again(
+            message="Sorry, I didn't get that. Please select one of the following options: Buy a Car, Service Car, Test Drive, Buy Accessories or Parts, or Warranty and Protection Plan."
         )
 
-    def on_enter_date_display(self):
-        self._on_enter_display(
-            message="Please enter the date you would like to schedule your appointment (YYYY-MM-DD):"
-        )
+    def on_enter_appointment_query_display(self):
+        self.status = Status.WAIT_FOR_ME
+        message = "Great choice! When would you like to book the appointment? Please provide the date you would be interested?"
+        self.send_message(FSMOutput(message_data=MessageData(body=message)))
+        self.status = Status.MOVE_FORWARD
 
     def on_enter_date_input(self):
-        self._on_enter_empty_input()
+        self.status = Status.WAIT_FOR_ME
+        self.status = Status.WAIT_FOR_USER_INPUT
 
-    def on_enter_date_logic(self):
-        self._on_enter_input_logic(
-            write_var="appointment_date",
-            validation="re.match(r'^\d{4}-\d{2}-\d{2}$', appointment_date) is not None",
+    def on_enter_process_date_logic(self):
+        self.status = Status.WAIT_FOR_ME
+        result = LLMManager.llm(
+            messages=[
+                LLMManager.sm(
+                    "The user provides a date, convert it into a format of YYYY-MM-DD. If the date provided is wrong and could not be decided return None. Based on the user's input, return the output in json format. {'appointment_date': <date>}. Current time is " + str(datetime.now())
+                ),
+                LLMManager.um(self.current_input),
+            ],
+            azure_openai_api_key=self.credentials["AZURE_OPENAI_API_KEY"],
+            azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
+            azure_endpoint=self.credentials["AZURE_OPENAI_API_ENDPOINT"],
+            response_format={"type": "json_object"},
+            model=self.credentials["SLOW_MODEL"]
         )
+        result = json.loads(result)
+        self.variables["appointment_date"] = result["appointment_date"]
+        self.status = Status.MOVE_FORWARD
 
-    def on_enter_date_fail_display(self):
-        self._on_enter_display(
-            message="Sorry, I didn't understand that. Please enter the date you would like to schedule your appointment (YYYY-MM-DD):"
+    def on_enter_appointment_date_fail_display(self):
+        self.status = Status.WAIT_FOR_ME
+        self.standard_ask_again(
+            message="Sorry, I didn't get that. Please provide the date in the format YYYY-MM-DD."
         )
+        self.status = Status.MOVE_FORWARD
 
-    def on_enter_time_display(self):
-        self._on_enter_display(
-            message="Please enter the time of day you would like to schedule your appointment (Morning, Afternoon, Evening):",
-            options=["Morning", "Afternoon", "Evening"],
+    def on_enter_appointment_time_fail_display(self):
+        self.status = Status.WAIT_FOR_ME
+        self.standard_ask_again(
+            message="Sorry, I didn't get that. Please select one of the following options: Morning, Afternoon, or Evening."
         )
+        self.status = Status.MOVE_FORWARD
 
-    def on_enter_time_input(self):
-        self._on_enter_empty_input()
-
-    def on_enter_time_logic(self):
-        self._on_enter_input_logic(
-            write_var="appointment_time",
-            options=["Morning", "Afternoon", "Evening"],
-            validation="appointment_time in ['Morning', 'Afternoon', 'Evening']",
+    def on_enter_get_time_of_day_display(self):
+        self.status = Status.WAIT_FOR_ME
+        message = "What time of day would you prefer? Morning, afternoon, or evening?"
+        slots = [
+            OptionsListType(id="1", title="Morning"),
+            OptionsListType(id="2", title="Afternoon"),
+            OptionsListType(id="3", title="Evening"),
+        ]
+        self.send_message(
+            FSMOutput(
+                type=MessageType.INTERACTIVE,
+                message_data=MessageData(body=message),
+                options_list=slots,
+            )
         )
+        self.status = Status.MOVE_FORWARD
 
-    def on_enter_time_fail_display(self):
-        self._on_enter_display(
-            "Sorry, I didn't understand that. Please enter the time of day you would like to schedule your appointment (Morning, Afternoon, Evening):"
+    def on_enter_time_of_day_input(self):
+        self.status = Status.WAIT_FOR_ME
+        self.status = Status.WAIT_FOR_USER_INPUT
+
+    def on_enter_time_of_day_logic(self):
+        self.status = Status.WAIT_FOR_ME
+        valid_times = ["morning", "afternoon", "evening"]
+        slots = [
+            OptionsListType(id="1", title="Morning"),
+            OptionsListType(id="2", title="Afternoon"),
+            OptionsListType(id="3", title="Evening"),
+        ]
+        task = "The user is asked to select a time of day from the options."
+        result = OptionParser.parse(
+            task,
+            slots,
+            self.current_input,
+            azure_openai_api_key=self.credentials["AZURE_OPENAI_API_KEY"],
+            azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
+            azure_endpoint=self.credentials["AZURE_OPENAI_API_ENDPOINT"],
+            model=self.credentials["FAST_MODEL"]
         )
+        self.variables["appointment_id"] = result
+        self.status = Status.MOVE_FORWARD
+
+    def availability_plugin(self):
+        return {
+            "error_code": 400,
+            "booking_status": "confirmed",
+            "appointment_image": "https://d27jswm5an3efw.cloudfront.net/app/uploads/2019/08/image-url-3.jpg",
+        }
 
     def on_enter_check_availability_plugin(self):
-        self._on_enter_plugin(
-            plugin=availability_plugin,
-            input_variables={
-                "SELECTED_SERVICE": "selected_service",
-                "APPOINTMENT_DATE": "appointment_date",
-                "APPOINTMENT_TIME": "appointment_time",
-            },
-            output_variables={
-                "booking_status": "booking_status",
-                "appointment_image": "appointment_image",
-                # "error_code": "error_code",
-            },
-            message="Checking availability for your appointment...",
+        self.status = Status.WAIT_FOR_ME
+        self.send_message(
+            FSMOutput(
+                type=MessageType.TEXT,
+                message_data=MessageData(
+                    body="Checking availability for the requested date and time..."
+                ),
+            )
         )
 
-    def on_enter_plugin_fail_display(self):
-        self._on_enter_display(
-            message="Sorry, We couldn't complete your booking. Apologies, Please try again after sometime."
-        )
+        response = self.availability_plugin()
+        self.variables["booking_status"] = response["booking_status"]
+        self.variables["appointment_image"] = response["appointment_image"]
+        self.variables["error_code"] = response["error_code"]
+        self.status = Status.MOVE_FORWARD
 
     def on_enter_check_booking_status_logic(self):
-        self._on_enter_empty_branching()
-
-    def on_enter_booking_pending_display(self):
-        self._on_enter_display(
-            message="Sorry, We couldn't complete your booking. Apologies, Please try again after sometime."
-        )
+        self.status = Status.WAIT_FOR_ME
+        if self.variables["booking_status"] == "confirmed":
+            self.trigger("booking_confirmed")
+        else:
+            self.trigger("booking_not_confirmed")
 
     def on_enter_booking_confirmation_display(self):
-        self._on_enter_display(
-            message="Your appointment has been confirmed! Please check your email for more details.",
+        self.status = Status.WAIT_FOR_ME
+        message = f"Your appointment has been successfully booked for {self.variables['service_selection']} on {self.variables['appointment_date']} at {self.variables['time_in_hr']}."
+        self.send_message(
+            FSMOutput(
+                type=MessageType.IMAGE,
+                message_data=MessageData(body=message),
+                media_url=self.variables["appointment_image"],
+            )
         )
+        self.status = Status.MOVE_FORWARD
+
+    def on_enter_alternative_appointment_display(self):
+        self.status = Status.WAIT_FOR_ME
+        message = "The requested date and time are not available. Please provide another date and time for your appointment."
+        self.send_message(FSMOutput(message_data=MessageData(body=message)))
+        self.status = Status.WAIT_FOR_USER_INPUT
 
     def on_enter_further_assistance_display(self):
-        self._on_enter_display(
-            message="Do you need further assistance?",
-            options=["Yes", "No"],
+        self.status = Status.WAIT_FOR_ME
+        message = "Is there anything else I can help you with today?"
+        options = [
+            OptionsListType(id="1", title="Yes"),
+            OptionsListType(id="2", title="No"),
+        ]
+        self.send_message(
+            FSMOutput(
+                type=MessageType.INTERACTIVE,
+                message_data=MessageData(body=message),
+                options_list=options,
+            )
         )
+        self.status = Status.MOVE_FORWARD
 
     def on_enter_further_assistance_input(self):
-        self._on_enter_empty_input()
+        self.status = Status.WAIT_FOR_ME
+        self.status = Status.WAIT_FOR_USER_INPUT
 
-    def on_enter_further_assistance_logic(self):
-        self._on_enter_input_logic(
-            write_var="further_assistance",
-            options=["Yes", "No"],
-            validation="isinstance(further_assistance, str) and re.match(r'^(Yes|No)$', further_assistance) is not None",
+    def on_enter_process_further_assistance_logic(self):
+        self.status = Status.WAIT_FOR_ME
+        options = [
+            OptionsListType(id="1", title="Yes"),
+            OptionsListType(id="2", title="No"),
+        ]
+        result = OptionParser.parse(
+            "The user provides a response to the 'Is there anything else I can help you with today?'.",
+            options,
+            self.current_input,
+            azure_openai_api_key=self.credentials["AZURE_OPENAI_API_KEY"],
+            azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
+            azure_endpoint=self.credentials["AZURE_OPENAI_API_ENDPOINT"],
+            model=self.credentials["FAST_MODEL"]
         )
+        if result == "1":
+            self.variables["further_assistance"] = "yes"
+        else:
+            self.variables["further_assistance"] = "no"
+        self.status = Status.MOVE_FORWARD
 
     def on_enter_further_assistance_fail_display(self):
-        self._on_enter_display(
-            message="Sorry, I didn't understand that. Please select one of the following options: Yes or No",
+        self.standard_ask_again(
+            message="Sorry, I didn't get that. Please select one of the following options: Yes or No."
         )
-
-    def on_enter_further_assistance_verify(self):
-        self._on_enter_empty_branching()
 
     def on_enter_conclusion_display(self):
-        self._on_enter_display(
-            message="Thank you for using the Car Dealer Bot! Have a great day!"
-        )
+        self.status = Status.WAIT_FOR_ME
+        message = "Thank you for choosing Car Wash Dealer. Have a great day!"
+        self.send_message(FSMOutput(message_data=MessageData(body=message)))
+        self.status = Status.MOVE_FORWARD
 
     def is_valid_service(self):
-        variable_name = "selected_service"
-        expression = "selected_service in ['Buy a Car', 'Service Car', 'Test Drive', 'Buy Accessories or Parts', 'Warranty and Protection Plan']"
-        # validation = lambda x: {expression.replace(variable_name, "x")}
-        validation = lambda x: x in [
+        valid_services = [
             "Buy a Car",
             "Service Car",
             "Test Drive",
             "Buy Accessories or Parts",
             "Warranty and Protection Plan",
         ]
-        return self._validate_method(variable_name, validation)
+        if (
+            self.variables["service_id"]
+            and self.variables["service_id"].isnumeric()
+            and int(self.variables["service_id"]) <= 5
+        ):
+            valid_services = [service.title() for service in valid_services]
+            index = int(self.variables["service_id"]) - 1
+            self.variables["service_selection"] = valid_services[index]
+            self.variables["service_selection"] = (
+                self.variables["service_selection"].strip().title()
+            )
+            return self.variables["service_selection"] in valid_services
+        return False
 
     def is_valid_date(self):
-        variable_name = "appointment_date"
-        expression = ("re.match(r'^\d{4}-\d{2}-\d{2}$', appointment_date) is not None",)
-        # validation = lambda x: {expression.replace(variable_name, "x")}
-        validation = lambda x: re.match(r"^\d{4}-\d{2}-\d{2}$", x) is not None
-        return self._validate_method(variable_name, validation)
+        if self.variables["appointment_date"]:
+            try:
+                datetime.strptime(
+                    self.variables["appointment_date"], "%Y-%m-%d")
+                return True
+            except ValueError:
+                return False
+        return False
 
     def is_valid_time(self):
-        variable_name = "appointment_time"
-        expression = "appointment_time in ['Morning', 'Afternoon', 'Evening']"
-        # validation = lambda x: {expression.replace(variable_name, "x")}
-        validation = lambda x: x in ["Morning", "Afternoon", "Evening"]
-        return self._validate_method(variable_name, validation)
+        if (
+            self.variables["appointment_id"]
+            and self.variables["appointment_id"].isnumeric()
+            and int(self.variables["appointment_id"]) <= 3
+        ):
+            valid_times = ["morning", "afternoon", "evening"]
+            self.variables["appointment_time"] = valid_times[
+                int(self.variables["appointment_id"]) - 1
+            ]
+
+            if self.variables["appointment_time"] in valid_times:
+                self.variables["time_in_hr"] = {
+                    "morning": "09:00:00",
+                    "afternoon": "13:00:00",
+                    "evening": "17:00:00",
+                }[self.variables["appointment_time"]]
+                return True
+            return False
+        return False
+
+    def on_enter_plugin_fail_display(self):
+        self.status = Status.WAIT_FOR_ME
+        self.send_message(
+            FSMOutput(
+                message_data=MessageData(
+                    body="Sorry, I am unable to process your request at the moment, error while plugin call. Please try again later.\n Note this is expected behaviour as the plugin returns positive or negative values on random."
+                ),
+            )
+        )
+        self.status = Status.MOVE_FORWARD
 
     def is_booking_confirmed(self):
-        variable_name = "booking_status"
-        expression = "booking_status == 'confirmed'"
-        # validation = lambda x: {expression.replace(variable_name, "x")}
-        validation = lambda x: x == "confirmed"
-        return self._validate_method(variable_name, validation)
+        return self.variables["booking_status"] == "confirmed"
 
-    def is_booking_pending(self):
-        variable_name = "booking_status"
-        expression = "booking_status != 'confirmed'"
-        # validation = lambda x: {expression.replace(variable_name, "x")}
-        validation = lambda x: x != "confirmed"
-        return self._validate_method(variable_name, validation)
+    def needs_further_assistance(self):
+        return self.variables["further_assistance"] == "yes"
 
     def is_error_code_200(self):
-        return self._plugin_error_code_validation(200)
-
-    def is_further_assistance_valid(self):
-        variable = "further_assistance"
-        expression = "isinstance(further_assistance, str) and re.match(r'^(Yes|No)$', further_assistance) is not None"
-        # validation = lambda x: {expression.replace(variable, "x")}
-        validation = (
-            lambda x: isinstance(x, str) and re.match(r"^(Yes|No)$", x) is not None
-        )
-        return self._validate_method(variable, validation)
-
-    def is_further_assistance(self):
-        variable_name = "further_assistance"
-        expression = "further_assistance == 'Yes'"
-        # validation = lambda x: {expression.replace(variable_name, "x")}
-        validation = lambda x: x == "Yes"
-        return self._validate_method(variable_name, validation)
-
-    def is_not_further_assistance(self):
-        variable_name = "further_assistance"
-        expression = "further_assistance == 'No'"
-        # validation = lambda x: {expression.replace(variable_name, "x")}
-        validation = lambda x: x == "No"
-        return self._validate_method(variable_name, validation)
+        return self.variables["error_code"] == 200
 
     def is_error_code_400(self):
-        return self._plugin_error_code_validation(400)
+        return self.variables["error_code"] == 400
 
     def is_error_code_500(self):
-        return self._plugin_error_code_validation(500)
+        return self.variables["error_code"] == 500
 
     def is_error_code_404(self):
-        return self._plugin_error_code_validation(404)
+        return self.variables["error_code"] == 404
