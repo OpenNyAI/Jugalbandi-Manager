@@ -1,5 +1,4 @@
 import logging
-from ..utils import decrypt_credentials
 from ..crud import (
     get_user_by_session_id,
     get_bot_by_session_id,
@@ -11,6 +10,7 @@ from lib.data_models import (
     MessageType,
 )
 from lib.whatsapp import WhatsappHelper
+from lib.encryption_handler import EncryptionHandler
 
 logging.basicConfig()
 logger = logging.getLogger("channel")
@@ -25,7 +25,7 @@ async def send_message_to_user(message: ChannelInput):
     wa_bnumber, bot_channel_credentials = await get_bot_by_session_id(
         session_id=session_id
     )
-    bot_channel_credentials = decrypt_credentials(bot_channel_credentials)
+    bot_channel_credentials = EncryptionHandler.decrypt_dict(bot_channel_credentials)
     wa_api_key = bot_channel_credentials["whatsapp"]
 
     if message.dialog == "language":

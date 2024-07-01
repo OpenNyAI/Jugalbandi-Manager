@@ -22,12 +22,16 @@ mock_public_url = AsyncMock(return_value="https://storage.url/test_audio.ogg")
 mock_storage_instance.write_file = mock_write_file
 mock_storage_instance.public_url = mock_public_url
 
+mock_encryption_handler = MagicMock()
+mock_encryption_handler.decrypt_dict = MagicMock(return_value={"whatsapp": "api_key"})
+
 with patch(
     "lib.file_storage.StorageHandler.get_instance", return_value=mock_storage_instance
 ):
-    import src.handlers.incoming  # replace with your actual module path
+    with patch("lib.encryption_handler.EncryptionHandler", mock_encryption_handler):
+        import src.handlers.incoming
 
-    process_incoming_messages = src.handlers.incoming.process_incoming_messages
+        process_incoming_messages = src.handlers.incoming.process_incoming_messages
 
 
 @pytest.mark.asyncio
@@ -81,50 +85,47 @@ async def test_process_incoming_audio_message():
             "src.handlers.incoming.get_bot_by_session_id", mock_get_bot_by_session_id
         ):
             with patch(
-                "src.handlers.incoming.decrypt_credentials", mock_decrypt_credentials
+                "lib.whatsapp.WhatsappHelper.wa_get_user_audio",
+                mock_wa_get_user_audio,
             ):
-                with patch(
-                    "lib.whatsapp.WhatsappHelper.wa_get_user_audio",
-                    mock_wa_get_user_audio,
-                ):
-                    message = ChannelInput(
-                        source="api",
-                        message_id="test_msg_id",
-                        turn_id="test_turn_id",
-                        session_id="test_session_id",
-                        intent=ChannelIntent.BOT_IN,
-                        channel_data=ChannelData(
-                            type=MessageType.AUDIO,
-                            timestamp="2021-09-01T00:00:00Z",
-                            audio={"url": "https://storage.url/test_audio.ogg"},
+                message = ChannelInput(
+                    source="api",
+                    message_id="test_msg_id",
+                    turn_id="test_turn_id",
+                    session_id="test_session_id",
+                    intent=ChannelIntent.BOT_IN,
+                    channel_data=ChannelData(
+                        type=MessageType.AUDIO,
+                        timestamp="2021-09-01T00:00:00Z",
+                        audio={"url": "https://storage.url/test_audio.ogg"},
+                    ),
+                    data=BotInput(
+                        message_type=MessageType.AUDIO,
+                        message_data=MessageData(
+                            media_url="https://storage.url/test_audio.ogg"
                         ),
-                        data=BotInput(
-                            message_type=MessageType.AUDIO,
-                            message_data=MessageData(
-                                media_url="https://storage.url/test_audio.ogg"
-                            ),
-                        ),
-                    )
-                    result = await process_incoming_messages(message)
-                    mock_write_file.assert_called_once_with(
-                        "test_msg_id.ogg", b"audio_bytes", "audio/ogg"
-                    )
-                    mock_public_url.assert_called_once_with("test_msg_id.ogg")
-                    mock_update_message.assert_called_once_with(
-                        "test_msg_id",
-                        media_url="https://storage.url/test_audio.ogg",
-                    )
-                    assert result is not None
-                    assert isinstance(result, LanguageInput)
-                    assert result.intent == LanguageIntent.LANGUAGE_IN
-                    assert result.data is not None
-                    assert result.data.message_type == MessageType.AUDIO
-                    assert result.data.message_data is not None
-                    assert result.data.message_data.media_url is not None
-                    assert (
-                        result.data.message_data.media_url
-                        == "https://storage.url/test_audio.ogg"
-                    )
+                    ),
+                )
+                result = await process_incoming_messages(message)
+                mock_write_file.assert_called_once_with(
+                    "test_msg_id.ogg", b"audio_bytes", "audio/ogg"
+                )
+                mock_public_url.assert_called_once_with("test_msg_id.ogg")
+                mock_update_message.assert_called_once_with(
+                    "test_msg_id",
+                    media_url="https://storage.url/test_audio.ogg",
+                )
+                assert result is not None
+                assert isinstance(result, LanguageInput)
+                assert result.intent == LanguageIntent.LANGUAGE_IN
+                assert result.data is not None
+                assert result.data.message_type == MessageType.AUDIO
+                assert result.data.message_data is not None
+                assert result.data.message_data.media_url is not None
+                assert (
+                    result.data.message_data.media_url
+                    == "https://storage.url/test_audio.ogg"
+                )
 
 
 @pytest.mark.asyncio
