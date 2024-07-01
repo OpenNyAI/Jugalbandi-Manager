@@ -1,6 +1,8 @@
 from enum import Enum
 from typing import List, Optional
+
 from pydantic import BaseModel
+
 
 class Status(Enum):
     """
@@ -43,6 +45,7 @@ class UploadFile(BaseModel):
     mime_type: str
     filename: str
 
+
 class FSMOutput(BaseModel):
     """
     Model class to define the FSM output."""
@@ -60,3 +63,5 @@ class FSMOutput(BaseModel):
     menu_title: Optional[str] = None
     form_token: Optional[str] = None
     plugin_uuid: Optional[str] = None
+    retriever_collection_name: str = "KB_Law_Files"
+    retriever_chunk_size: int = 5
