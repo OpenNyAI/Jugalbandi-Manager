@@ -6,15 +6,12 @@ import os
 import logging
 from typing import Dict
 import uuid
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from .utils import extract_reference_id
 from confluent_kafka import KafkaException
 from lib.kafka_utils import KafkaProducer
-from dotenv import load_dotenv
-from cryptography.fernet import Fernet
 from lib.whatsapp import WhatsappHelper
-from .jb_schema import JBBotUpdate, JBBotCode, JBBotActivate
 
 from lib.data_models import (
     BotInput,
@@ -26,8 +23,10 @@ from lib.data_models import (
     MessageData,
     BotConfig,
 )
-from lib.jb_logging import Logger
 from lib.models import JBBot
+from lib.encryption_handler import EncryptionHandler
+from .jb_schema import JBBotUpdate, JBBotCode, JBBotActivate
+from .utils import extract_reference_id
 
 from .crud import (
     create_turn,
@@ -76,20 +75,6 @@ def produce_message(message: str, topic: str = kafka_channel_topic):
         raise HTTPException(status_code=500, detail=f"Error producing message: {e}")
 
 
-def encrypt_text(text: str) -> str:
-    # TODO - implement encryption
-    encryption_key = os.getenv("ENCRYPTION_KEY")
-    f = Fernet(encryption_key)
-    return f.encrypt(text.encode()).decode()
-
-
-def encrypt_dict(data: dict) -> dict:
-    encrypted_data = {}
-    for k, v in data.items():
-        encrypted_data[k] = encrypt_text(v)
-    return encrypted_data
-
-
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
@@ -110,7 +95,7 @@ async def update_bot_data(bot_id: str, update_fields: JBBotUpdate):
 
     # encrypt config_env
     if "config_env" in data:
-        data["config_env"] = encrypt_dict(data["config_env"])
+        data["config_env"] = EncryptionHandler.encrypt_dict(data["config_env"])
 
     await update_bot(bot_id, data)
     return bot
@@ -137,14 +122,14 @@ async def install_bot(install_content: JBBotCode):
 
 # endpoint to activate bot and link it with a phone number
 @app.post("/bot/{bot_id}/activate")
-async def activate_bot(bot_id:str, request_body: JBBotActivate):
+async def activate_bot(bot_id: str, request_body: JBBotActivate):
     phone_number: str = request_body.phone_number
     if not phone_number:
         raise HTTPException(status_code=400, detail="No phone number provided")
     channels: Dict[str, str] = request_body.channels.model_dump()
     if not channels:
         raise HTTPException(status_code=400, detail="No channels provided")
-    if not 'whatsapp' in channels:
+    if not "whatsapp" in channels:
         raise HTTPException(status_code=400, detail="Bot must have a whatsapp channel")
     bot: JBBot = await get_bot_by_id(bot_id)
     if not bot:
@@ -159,14 +144,16 @@ async def activate_bot(bot_id:str, request_body: JBBotActivate):
         )
     required_credentials = bot.required_credentials
     current_credentials = bot.credentials if bot.credentials else {}
-    missing_credentials = [name for name in required_credentials if name not in current_credentials]
+    missing_credentials = [
+        name for name in required_credentials if name not in current_credentials
+    ]
     if missing_credentials:
         raise HTTPException(
             status_code=400,
             detail=f"Bot missing required credentials: {', '.join(missing_credentials)}",
         )
     logger.error(f"{channels} :: {type(channels)}")
-    channels = encrypt_dict(channels)
+    channels = EncryptionHandler.encrypt_dict(channels)
     bot_data = {}
     bot_data["phone_number"] = phone_number
     bot_data["channels"] = channels
@@ -174,35 +161,30 @@ async def activate_bot(bot_id:str, request_body: JBBotActivate):
     await update_bot(bot_id, bot_data)
     return {"status": "success"}
 
+
 @app.get("/bot/{bot_id}/deactivate")
 async def get_bot(bot_id: str):
     bot = await get_bot_by_id(bot_id)
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
-    bot_data = {
-        "status": "inactive",
-        "phone_number": None,
-        "channels": None
-    }
+    bot_data = {"status": "inactive", "phone_number": None, "channels": None}
     await update_bot(bot_id, bot_data)
     return bot
+
 
 @app.delete("/bot/{bot_id}")
 async def delete_bot(bot_id: str):
     bot = await get_bot_by_id(bot_id)
     if not bot:
         raise HTTPException(status_code=404, detail="Bot not found")
-    bot_data = {
-        "status": "deleted",
-        "phone_number": None,
-        "channels": None
-    }
+    bot_data = {"status": "deleted", "phone_number": None, "channels": None}
     await update_bot(bot_id, bot_data)
     return {"status": "success"}
 
+
 # endpoint to add (config)credentials for a bot to connect to things
 @app.post("/bot/{bot_id}/configure")
-async def add_bot_configuraton(bot_id:str, request: Request):
+async def add_bot_configuraton(bot_id: str, request: Request):
     request_body = await request.json()
     bot: JBBot = await get_bot_by_id(bot_id)
     if not bot:
@@ -215,7 +197,7 @@ async def add_bot_configuraton(bot_id:str, request: Request):
         )
     bot_data = {}
     if credentials is not None:
-        encrypted_credentials = encrypt_dict(credentials)
+        encrypted_credentials = EncryptionHandler.encrypt_dict(credentials)
         bot_data["credentials"] = encrypted_credentials
     if config_env is not None:
         bot_data["config_env"] = config_env

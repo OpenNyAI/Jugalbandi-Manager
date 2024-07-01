@@ -1,7 +1,6 @@
 import json
 import logging
 import base64
-from ..utils import decrypt_credentials
 from ..crud import (
     get_bot_by_session_id,
     set_user_language,
@@ -20,12 +19,14 @@ from lib.data_models import (
 from lib.model import Language
 from lib.whatsapp import WhatsappHelper, WAMsgType
 from lib.file_storage import StorageHandler
+from lib.encryption_handler import EncryptionHandler
 
 logging.basicConfig()
 logger = logging.getLogger("channel")
 logger.setLevel(logging.INFO)
 
 storage = StorageHandler.get_instance()
+
 
 async def process_incoming_messages(message: ChannelInput):
     """Process incoming messages"""
@@ -41,10 +42,16 @@ async def process_incoming_messages(message: ChannelInput):
         recieved_message = WhatsappHelper.wa_get_user_text(bot_input)
         await update_message(msg_id, message_text=recieved_message.content)
     if message_type == MessageType.AUDIO:
-        wa_bnumber, bot_channel_credentials = await get_bot_by_session_id(session_id=session_id)
-        bot_channel_credentials = decrypt_credentials(bot_channel_credentials)
+        wa_bnumber, bot_channel_credentials = await get_bot_by_session_id(
+            session_id=session_id
+        )
+        bot_channel_credentials = EncryptionHandler.decrypt_dict(
+            bot_channel_credentials
+        )
         wa_api_key = bot_channel_credentials["whatsapp"]
-        recieved_message = WhatsappHelper.wa_get_user_audio(wa_bnumber=wa_bnumber, wa_api_key=wa_api_key, msg_obj=bot_input)
+        recieved_message = WhatsappHelper.wa_get_user_audio(
+            wa_bnumber=wa_bnumber, wa_api_key=wa_api_key, msg_obj=bot_input
+        )
         audio_bytes = base64.b64decode(recieved_message.content)
         audio_file_name = f"{msg_id}.ogg"
         logger.info("audio_file_name: %s", audio_file_name)
