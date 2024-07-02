@@ -4,14 +4,28 @@ from pathlib import Path
 
 from jb_manager_bot.parsers.utils import LLMManager
 
+SYSTEM_PROMPT = """
+Given a user's response and a list of options, determine the most appropriate option that the user's response corresponds to. The options are provided in a structured format, each with a unique ID and a title that represents the action or response. The user's response is a statement expressing their preference among the provided options.
+Options:
+- List each option with its ID and title.
+
+User Response:
+- Include the user's response here.
+
+Task:
+Analyze the user's response and select the option ID that best matches the intent of their response. Consider the sentiment, keywords, and overall meaning of the user's statement. If the user's response clearly aligns with one of the options, provide the corresponding option ID. If the user's response is ambiguous or does not clearly align with any of the options, indicate that the response is inconclusive.
+
+Output: {id:"{selected_id}"}
+You need to return the `id` corresponding to the selected option from the list in json format and nothing else.
+
+Determine the most appropriate option ID based on the user's response.
+"""
+
 
 class OptionParser:
     """Parse the user input and return the most appropriate option ID based on the user's response."""
 
-    with open(
-        os.path.join(Path(__file__).parent, "prompt.txt"), "r", encoding="utf-8"
-    ) as f:
-        system_prompt = f.read()
+    system_prompt = SYSTEM_PROMPT
 
     @classmethod
     def parse(
