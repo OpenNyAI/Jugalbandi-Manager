@@ -64,3 +64,64 @@ class OptionParser:
         )
         result = json.loads(result)
         return result["id"]
+    
+class Parser:
+
+    @classmethod
+    def parse_user_input(
+        cls,
+        user_task,
+        options,
+        user_input,
+        openai_api_key=None,
+        azure_openai_api_key=None,
+        azure_openai_api_version=None,
+        azure_endpoint=None,
+    ):
+        model = "gpt-3.5-turbo"
+        if azure_openai_api_key is not None:
+            model = model.replace(".", "")
+
+        if options is None:
+            result = LLMManager.llm(
+                messages=[
+                    LLMManager.sm(user_task),
+                    LLMManager.um(f"User Input: {user_input}"),
+                ],
+                response_format={"type": "json_object"},
+                model=model,
+                openai_api_key=openai_api_key,
+                azure_openai_api_key=azure_openai_api_key,
+                azure_openai_api_version=azure_openai_api_version,
+                azure_endpoint=azure_endpoint,
+            )
+            result = json.loads(result)
+            return result
+        else:
+            model = "gpt-3.5-turbo"
+            if azure_openai_api_key is not None:
+                model = model.replace(".", "")
+
+            for option in options:
+                if "id" not in option and not hasattr(option, "id"):
+                    raise ValueError("Option ID is required")
+
+            result = LLMManager.llm(
+                messages=[
+                    LLMManager.sm(SYSTEM_PROMPT),
+                    LLMManager.am(
+                        f"""User Task- {user_task}
+        Options:
+        - {options}"""
+                    ),
+                    LLMManager.um(user_input),
+                ],
+                response_format={"type": "json_object"},
+                model=model,
+                openai_api_key=openai_api_key,
+                azure_openai_api_key=azure_openai_api_key,
+                azure_openai_api_version=azure_openai_api_version,
+                azure_endpoint=azure_endpoint,
+            )
+            result = json.loads(result)
+            return result

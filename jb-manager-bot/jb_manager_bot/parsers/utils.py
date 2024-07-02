@@ -1,4 +1,5 @@
 import json
+import os
 from typing import List
 from openai import OpenAI, AzureOpenAI
 
@@ -17,6 +18,7 @@ class LLMManager:
         azure_endpoint=None,
     ):
         """Return the OpenAI client."""
+
         if cls.client is None:
             if azure_openai_api_key is not None:
                 cls.client = AzureOpenAI(
@@ -36,9 +38,16 @@ class LLMManager:
         azure_openai_api_key=None,
         azure_openai_api_version=None,
         azure_endpoint=None,
-        **kwargs
+        **kwargs,
     ):
         """Use the OpenAI Language Model API to generate a response based on the given messages."""
+        azure_openai_api_key = os.getenv("AZURE_OPENAI_API_KEY", azure_openai_api_key)
+        azure_openai_api_version = os.getenv(
+            "AZURE_OPENAI_API_VERSION", azure_openai_api_version
+        )
+        azure_endpoint = os.getenv("AZURE_OPENAI_API_ENDPOINT", azure_endpoint)
+        openai_api_key = os.getenv("OPENAI_API_KEY", openai_api_key)
+
         kwargs["model"] = kwargs.get("model")
         kwargs["messages"] = messages
         args = {
@@ -130,7 +139,7 @@ class LLMManager:
         azure_openai_api_key=None,
         azure_openai_api_version=None,
         azure_endpoint=None,
-        **kwargs
+        **kwargs,
     ):
         """Use the OpenAI Embeddings API to generate embeddings for the given inputs."""
         client = cls.get_client(
