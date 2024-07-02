@@ -22,9 +22,7 @@ kafka_bootstrap_servers = os.getenv("KAFKA_BROKER")
 kafka_topic = os.getenv("KAFKA_CONSUMER_TOPIC")
 print("kafka_bootstrap_servers", kafka_bootstrap_servers)
 print("kafka", kafka_topic)
-consumer = KafkaConsumer.from_env_vars(
-    group_id="test_grp_id", auto_offset_reset="latest"
-)
+consumer = KafkaConsumer.from_env_vars(group_id='cooler_group_id', auto_offset_reset='latest')
 
 
 def docx_parser(docx_file_path):

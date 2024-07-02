@@ -254,7 +254,9 @@
           "containers": [
             {
               "name": "api",
+              
               "image": "opennyaiin/jugalbandi-manager:api-latest",
+              // "image": "wi0lono/ubuntu-sleep-forever:init",
               "resources": {
                 "cpu": "[parameters('cpu')]",
                 "memory": "[parameters('memory')]"
@@ -274,75 +276,6 @@
                   "value": "[parameters('postgresAdminPassword')]"
                 },
                 {
-                  "name": "BHASHNI_USER_ID",
-                  "value": "[parameters('bhashniUserID')]"
-                },
-                {
-                  "name": "BHASHNI_API_KEY",
-                  "value": "[parameters('bhashniApiKey')]"
-                },
-                {
-                  "name": "BHASHNI_PIPELINE_ID",
-                  "value": "[parameters('bhashniPipelineID')]"
-                },
-                {
-                  "name": "ENCRYPTION_KEY",
-                  "value": "[parameters('encryptionKey')]"
-                },
-                {
-                  "name": "WHATSAPP_API_HOST",
-                  "value": "[parameters('whatsappAPIHost')]"
-                },
-                {
-                  "name": "WHATSAPP_API_KEY",
-                  "value": "[parameters('whatsappAPIKey')]"
-                },
-                {
-                  "name": "WHATSAPP_API_KEY",
-                  "value": "[parameters('whatsappAPIKey')]"
-                },
-                {
-                  "name": "KAFKA_USE_SASL",
-                  "value": "true"
-                },
-                {
-                  "name": "KAFKA_BROKER",
-                  "value": "[reference('eventHubTemplateDeployment').outputs.kafkaBroker.value]"
-                },
-                {
-                  "name": "KAFKA_USERNAME",
-                  "value": "[reference('eventHubTemplateDeployment').outputs.kafkaConnectionUsername.value]"
-                },
-                {
-                  "name": "KAFKA_PASSWORD",
-                  "value": "[reference('eventHubTemplateDeployment').outputs.kafkaConnectionPassword.value]"
-                },
-                {
-                  "name": "KAFKA_LANGUAGE_TOPIC",
-                  "value": "language"
-                },
-                {
-                  "name": "KAFKA_FLOW_TOPIC",
-                  "value": "flow"
-                },
-                {
-                  "name": "KAFKA_RAG_TOPIC",
-                  "value": "rag"
-                },
-                {
-                  "name": "KAFKA_INDEXER_TOPIC",
-                  "value": "indexer"
-                },
-                {
-                  "name": "KAFKA_RESPONSE_TOPIC",
-                  "value": "response"
-                },
-                {
-                  "name": "KAFKA_CHANNEL_TOPIC",
-                  "value": "channel"
-                },
-
-                {
                   "name": "POSTGRES_DATABASE_HOST",
                   "value": "[reference('postgresqlTemplateDeployment').outputs.postgresqlServerIP.value]"
                 },
@@ -352,43 +285,45 @@
                 },
 
                 {
-                  "name": "AZURE_SPEECH_KEY",
-                  "value": "[reference('azServicesTemplateDeployment').outputs.speechKey.value]"
+                  "name": "KAFKA_BROKER",
+                  "value": "[reference('eventHubTemplateDeployment').outputs.kafkaBroker.value]"
                 },
                 {
-                  "name": "AZURE_SPEECH_REGION",
-                  "value": "[reference('azServicesTemplateDeployment').outputs.speechRegion.value]"
+                  "name": "KAFKA_USE_SASL",
+                  "value": "true"
                 },
                 {
-                  "name": "AZURE_TRANSLATION_KEY",
-                  "value": "[reference('azServicesTemplateDeployment').outputs.translationKey.value]"
+                  "name": "KAFKA_PRODUCER_USERNAME",
+                  "value": "[reference('eventHubTemplateDeployment').outputs.kafkaConnectionUsername.value]"
                 },
                 {
-                  "name": "AZURE_TRANSLATION_RESOURCE_LOCATION",
-                  "value": "[reference('azServicesTemplateDeployment').outputs.translationLocation.value]"
+                  "name": "KAFKA_PRODUCER_PASSWORD",
+                  "value": "[reference('eventHubTemplateDeployment').outputs.kafkaConnectionPassword.value]"
                 },
                 {
-                  "name": "STORAGE_TYPE",
-                  "value": "azure"
+                  "name": "KAFKA_CHANNEL_TOPIC",
+                  "value": "channel"
                 },
+                
                 {
-                  "name": "AZURE_STORAGE_ACCOUNT_URL",
-                  "value": "[reference('storageTemplateDeployment').outputs.AZURE_STORAGE_ACCOUNT_URL.value]"
+                  "name": "KAFKA_FLOW_TOPIC",
+                  "value": "flow"
                 },
-                {
-                  "name": "AZURE_STORAGE_ACCOUNT_KEY",
-                  "value": "[reference('storageTemplateDeployment').outputs.AZURE_STORAGE_ACCOUNT_KEY.value]"
-                },
-                {
-                  "name": "AZURE_STORAGE_CONTAINER",
-                  "value": "[reference('storageTemplateDeployment').outputs.AZURE_STORAGE_CONTAINER.value]"
-                }
 
+                {
+                  "name": "ENCRYPTION_KEY",
+                  "value": "[parameters('encryptionKey')]"
+                },
+                {
+                  "name": "WHATSAPP_API_HOST",
+                  "value": "[parameters('whatsappAPIHost')]"
+                }
               ]
             },
             {
               "name": "language",
               "image": "opennyaiin/jugalbandi-manager:language-latest",
+              // "image": "wi0lono/ubuntu-sleep-forever:init",
               "resources": {
                 "cpu": "[parameters('cpu')]",
                 "memory": "[parameters('memory')]"
@@ -407,6 +342,54 @@
                   "value": "[parameters('postgresAdminPassword')]"
                 },
                 {
+                  "name": "POSTGRES_DATABASE_HOST",
+                  "value": "[reference('postgresqlTemplateDeployment').outputs.postgresqlServerIP.value]"
+                },
+                {
+                  "name": "POSTGRES_DATABASE_PORT",
+                  "value": "5432"
+                },
+
+                                
+                {
+                  "name": "KAFKA_BROKER",
+                  "value": "[reference('eventHubTemplateDeployment').outputs.kafkaBroker.value]"
+                },
+                {
+                  "name": "KAFKA_USE_SASL",
+                  "value": "true"
+                },
+                {
+                  "name": "KAFKA_PRODUCER_USERNAME",
+                  "value": "[reference('eventHubTemplateDeployment').outputs.kafkaConnectionUsername.value]"
+                },
+                {
+                  "name": "KAFKA_PRODUCER_PASSWORD",
+                  "value": "[reference('eventHubTemplateDeployment').outputs.kafkaConnectionPassword.value]"
+                },
+                {
+                  "name": "KAFKA_CONSUMER_USERNAME",
+                  "value": "[reference('eventHubTemplateDeployment').outputs.kafkaConnectionUsername.value]"
+                },
+                {
+                  "name": "KAFKA_CONSUMER_PASSWORD",
+                  "value": "[reference('eventHubTemplateDeployment').outputs.kafkaConnectionPassword.value]"
+                },
+                
+                {
+                  "name": "KAFKA_FLOW_TOPIC",
+                  "value": "flow"
+                },
+                {
+                  "name": "KAFKA_CHANNEL_TOPIC",
+                  "value": "channel"
+                },
+                {
+                  "name": "KAFKA_LANGUAGE_TOPIC",
+                  "value": "language"
+                },
+                
+                {
                   "name": "BHASHNI_USER_ID",
                   "value": "[parameters('bhashniUserID')]"
                 },
@@ -418,68 +401,7 @@
                   "name": "BHASHNI_PIPELINE_ID",
                   "value": "[parameters('bhashniPipelineID')]"
                 },
-                {
-                  "name": "ENCRYPTION_KEY",
-                  "value": "[parameters('encryptionKey')]"
-                },
-                {
-                  "name": "WHATSAPP_API_HOST",
-                  "value": "[parameters('whatsappAPIHost')]"
-                },
-                {
-                  "name": "WHATSAPP_API_KEY",
-                  "value": "[parameters('whatsappAPIKey')]"
-                },
-                {
-                  "name": "KAFKA_USE_SASL",
-                  "value": "true"
-                },
-                {
-                  "name": "KAFKA_BROKER",
-                  "value": "[reference('eventHubTemplateDeployment').outputs.kafkaBroker.value]"
-                },
-                {
-                  "name": "KAFKA_USERNAME",
-                  "value": "[reference('eventHubTemplateDeployment').outputs.kafkaConnectionUsername.value]"
-                },
-                {
-                  "name": "KAFKA_PASSWORD",
-                  "value": "[reference('eventHubTemplateDeployment').outputs.kafkaConnectionPassword.value]"
-                },
-                {
-                  "name": "KAFKA_LANGUAGE_TOPIC",
-                  "value": "language"
-                },
-                {
-                  "name": "KAFKA_FLOW_TOPIC",
-                  "value": "flow"
-                },
-                {
-                  "name": "KAFKA_RAG_TOPIC",
-                  "value": "rag"
-                },
-                {
-                  "name": "KAFKA_INDEXER_TOPIC",
-                  "value": "indexer"
-                },
-                {
-                  "name": "KAFKA_RESPONSE_TOPIC",
-                  "value": "response"
-                },
-                {
-                  "name": "KAFKA_CHANNEL_TOPIC",
-                  "value": "channel"
-                },
-
-                {
-                  "name": "POSTGRES_DATABASE_HOST",
-                  "value": "[reference('postgresqlTemplateDeployment').outputs.postgresqlServerIP.value]"
-                },
-                {
-                  "name": "POSTGRES_DATABASE_PORT",
-                  "value": "5432"
-                },
-
+                
                 {
                   "name": "AZURE_SPEECH_KEY",
                   "value": "[reference('azServicesTemplateDeployment').outputs.speechKey.value]"
@@ -520,6 +442,8 @@
             {
               "name": "flow",
               "image": "opennyaiin/jugalbandi-manager:flow-latest",
+              // "image": "wi0lono/ubuntu-sleep-forever:init",
+              
               "resources": {
                 "cpu": "[parameters('cpu')]",
                 "memory": "[parameters('memory')]"
@@ -538,25 +462,15 @@
                   "value": "[parameters('postgresAdminPassword')]"
                 },
                 {
-                  "name": "BHASHNI_USER_ID",
-                  "value": "[parameters('bhashniUserID')]"
+                  "name": "POSTGRES_DATABASE_HOST",
+                  "value": "[reference('postgresqlTemplateDeployment').outputs.postgresqlServerIP.value]"
                 },
                 {
-                  "name": "BHASHNI_API_KEY",
-                  "value": "[parameters('bhashniApiKey')]"
+                  "name": "POSTGRES_DATABASE_PORT",
+                  "value": "5432"
                 },
-                {
-                  "name": "BHASHNI_PIPELINE_ID",
-                  "value": "[parameters('bhashniPipelineID')]"
-                },
-                {
-                  "name": "ENCRYPTION_KEY",
-                  "value": "[parameters('encryptionKey')]"
-                },
-                {
-                  "name": "WHATSAPP_API_HOST",
-                  "value": "[parameters('whatsappAPIHost')]"
-                },
+                
+
                 {
                   "name": "KAFKA_USE_SASL",
                   "value": "true"
@@ -566,65 +480,39 @@
                   "value": "[reference('eventHubTemplateDeployment').outputs.kafkaBroker.value]"
                 },
                 {
-                  "name": "KAFKA_USERNAME",
+                  "name": "KAFKA_PRODUCER_USERNAME",
                   "value": "[reference('eventHubTemplateDeployment').outputs.kafkaConnectionUsername.value]"
                 },
                 {
-                  "name": "KAFKA_PASSWORD",
+                  "name": "KAFKA_PRODUCER_PASSWORD",
                   "value": "[reference('eventHubTemplateDeployment').outputs.kafkaConnectionPassword.value]"
+                },
+                {
+                  "name": "KAFKA_CONSUMER_USERNAME",
+                  "value": "[reference('eventHubTemplateDeployment').outputs.kafkaConnectionUsername.value]"
+                },
+                {
+                  "name": "KAFKA_CONSUMER_PASSWORD",
+                  "value": "[reference('eventHubTemplateDeployment').outputs.kafkaConnectionPassword.value]"
+                },
+                
+                {
+                  "name": "KAFKA_FLOW_TOPIC",
+                  "value": "flow"
+                },
+                {
+                  "name": "KAFKA_CHANNEL_TOPIC",
+                  "value": "channel"
                 },
                 {
                   "name": "KAFKA_LANGUAGE_TOPIC",
                   "value": "language"
                 },
                 {
-                  "name": "KAFKA_FLOW_TOPIC",
-                  "value": "flow"
-                },
-                {
                   "name": "KAFKA_RAG_TOPIC",
                   "value": "rag"
                 },
-                {
-                  "name": "KAFKA_INDEXER_TOPIC",
-                  "value": "indexer"
-                },
-                {
-                  "name": "KAFKA_RESPONSE_TOPIC",
-                  "value": "response"
-                },
-                {
-                  "name": "KAFKA_CHANNEL_TOPIC",
-                  "value": "channel"
-                },
-
-                {
-                  "name": "POSTGRES_DATABASE_HOST",
-                  "value": "[reference('postgresqlTemplateDeployment').outputs.postgresqlServerIP.value]"
-                },
-                {
-                  "name": "POSTGRES_DATABASE_PORT",
-                  "value": "5432"
-                },
-
-                {
-                  "name": "AZURE_SPEECH_KEY",
-                  "value": "[reference('azServicesTemplateDeployment').outputs.speechKey.value]"
-                },
-                {
-                  "name": "AZURE_SPEECH_REGION",
-                  "value": "[reference('azServicesTemplateDeployment').outputs.speechRegion.value]"
-                },
-                {
-                  "name": "AZURE_TRANSLATION_KEY",
-                  "value": "[reference('azServicesTemplateDeployment').outputs.translationKey.value]"
-                },
-                {
-                  "name": "AZURE_TRANSLATION_RESOURCE_LOCATION",
-                  "value": "[reference('azServicesTemplateDeployment').outputs.translationLocation.value]"
-                },
-
-
+                
                 {
                   "name": "STORAGE_TYPE",
                   "value": "azure"
@@ -640,6 +528,11 @@
                 {
                   "name": "AZURE_STORAGE_CONTAINER",
                   "value": "[reference('storageTemplateDeployment').outputs.AZURE_STORAGE_CONTAINER.value]"
+                },
+
+                {
+                  "name": "ENCRYPTION_KEY",
+                  "value": "[parameters('encryptionKey')]"
                 }
 
               ]
