@@ -22,3 +22,8 @@ repos:
         entry: bash -c 'cd language && poetry run pytest'
         language: system
         types: [python]
+    -   id: run-tests-api
+        name: Run Tests in api
+        entry: bash -c 'cd api && poetry run pytest'
+        language: system
+        types: [python]
