@@ -16,3 +16,11 @@ frontend/dist
 dist/
 plugins/
 media/
+docs/_site/
+docs/_build/
+docs/_static/
+docs/_templates/
+docs/_sources/
+docs/_images/
+docs/_downloads/
+docs/Gemfile.lock
