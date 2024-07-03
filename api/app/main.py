@@ -98,7 +98,7 @@ async def activate_bot(bot_id: str, request_body: JBBotActivate):
 async def get_bot(bot_id: str):
     bot_data = {"status": "inactive", "phone_number": None, "channels": None}
     updated_info = await handle_update_bot(bot_id, bot_data)
-    if not updated_info["status"] == "error":
+    if updated_info["status"] == "error":
         raise HTTPException(status_code=404, detail=updated_info["message"])
     updated_bot = updated_info["bot"]
     return updated_bot
@@ -108,7 +108,7 @@ async def get_bot(bot_id: str):
 async def delete_bot(bot_id: str):
     bot_data = {"status": "deleted", "phone_number": None, "channels": None}
     updated_info = await handle_update_bot(bot_id, bot_data)
-    if not updated_info["status"] == "error":
+    if updated_info["status"] == "error":
         raise HTTPException(status_code=404, detail=updated_info["message"])
     return {"status": "success"}
 
