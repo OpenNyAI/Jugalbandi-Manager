@@ -19,15 +19,15 @@ mock_encryption_handler.encrypt_dict = mock_encrypt_dict
 async def test_handle_update_bot_with_config_env(mock_update_bot, mock_get_bot_by_id):
     mock_encryption_handler.reset_mock()
     bot_id = "test_bot_id"
-    config_env = {"key": "value"}
+    credentials = {"key": "value"}
     bot_data = {
         "name": "Test Bot",
-        "config_env": config_env,
+        "credentials": credentials,
     }
 
     response = await handle_update_bot(bot_id, bot_data)
 
-    mock_encrypt_dict.assert_called_once_with(config_env)
+    mock_encrypt_dict.assert_called_once_with(credentials)
     mock_get_bot_by_id.assert_called_once_with(bot_id)
     mock_update_bot.assert_called_once_with(bot_id, bot_data)
 

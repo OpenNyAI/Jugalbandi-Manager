@@ -117,9 +117,6 @@ async def delete_bot(bot_id: str):
 @app.post("/bot/{bot_id}/configure")
 async def add_bot_configuraton(bot_id: str, request: Request):
     request_body = await request.json()
-    bot: JBBot = await get_bot_by_id(bot_id)
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
     credentials = request_body.get("credentials")
     config_env = request_body.get("config_env")
     if credentials is None and config_env is None:
@@ -128,11 +125,12 @@ async def add_bot_configuraton(bot_id: str, request: Request):
         )
     bot_data = {}
     if credentials is not None:
-        encrypted_credentials = EncryptionHandler.encrypt_dict(credentials)
-        bot_data["credentials"] = encrypted_credentials
+        bot_data["credentials"] = credentials
     if config_env is not None:
         bot_data["config_env"] = config_env
-    await update_bot(bot_id, bot_data)
+    updated_info = await handle_update_bot(bot_id, bot_data)
+    if not updated_info["status"] == "error":
+        raise HTTPException(status_code=404, detail=updated_info["message"])
     return {"status": "success"}
 
 

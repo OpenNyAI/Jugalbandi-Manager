@@ -63,11 +63,10 @@ async def handle_activate_bot(bot_id: str, request_body: JBBotActivate):
 
 
 async def handle_update_bot(bot_id: str, bot_data: Dict):
-    print(bot_data)
-    if "config_env" in bot_data:
-        print("encrypting config env")
-        print(EncryptionHandler.encrypt_dict)
-        bot_data["config_env"] = EncryptionHandler.encrypt_dict(bot_data["config_env"])
+    if "credentials" in bot_data:
+        bot_data["credentials"] = EncryptionHandler.encrypt_dict(
+            bot_data["credentials"]
+        )
     bot = await get_bot_by_id(bot_id)
     if not bot:
         return {"status": "error", "message": "Bot not found"}
