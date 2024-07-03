@@ -69,18 +69,13 @@ async def handle_input(
 async def handle_output(
     preferred_language: Language,
     language_input: LanguageInput,
-    turn_type: MessageType,
 ):
     logger.info("Preferred Language %s", preferred_language)
     logger.info("Language Input %s", language_input)
-    logger.info("Turn Type %s", turn_type)
-    turn_type = MessageType.__members__.get(turn_type.upper(), MessageType.TEXT)
 
     media_output_url = None
     channel_inputs = []
     if language_input.data.message_type == MessageType.TEXT:
-        # if turn_type == MessageType.AUDIO:
-        logger.info("Turn Type == AUDIO")
         vernacular_text = await translator.translate_text(
             language_input.data.message_data.message_text,
             Language.EN,
@@ -167,7 +162,7 @@ async def handle_output(
             language_input.data.footer = await translator.translate_text(
                 language_input.data.footer, Language.EN, preferred_language
             )
-        
+
         for option in language_input.data.options_list:
             option.title = await translator.translate_text(
                 option.title, Language.EN, preferred_language

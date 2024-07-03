@@ -1,4 +1,5 @@
 """Main module for language service."""
+
 import asyncio
 import json
 import os
@@ -61,7 +62,9 @@ async def handle_incoming_message(
     if preferred_language_code is None:
         preferred_language = Language.EN
     else:
-        preferred_language = Language.__members__.get(preferred_language_code.upper(), Language.EN)
+        preferred_language = Language.__members__.get(
+            preferred_language_code.upper(), Language.EN
+        )
     logger.info("User Preferred Language: %s", preferred_language)
 
     if message_intent == LanguageIntent.LANGUAGE_IN:
@@ -77,7 +80,6 @@ async def handle_incoming_message(
         channel_inputs: List[ChannelInput] = await handle_output(
             preferred_language=preferred_language,
             language_input=language_input,
-            turn_type=turn_info.turn_type,
         )
         for channel_input in channel_inputs:
             callback(channel_input)
