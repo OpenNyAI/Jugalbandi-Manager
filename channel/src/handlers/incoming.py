@@ -25,7 +25,7 @@ logging.basicConfig()
 logger = logging.getLogger("channel")
 logger.setLevel(logging.INFO)
 
-storage = StorageHandler.get_instance()
+storage = StorageHandler.get_async_instance()
 
 
 async def process_incoming_messages(message: ChannelInput):
