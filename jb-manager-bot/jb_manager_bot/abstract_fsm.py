@@ -137,7 +137,7 @@ class AbstractFSM(ABC):
         fsm_state = {
             "state": self.state,
             "status": self.status.value,
-            "variables": self.variables.dict(),
+            "variables": self.variables.model_dump(),
         }
         plugin_states = {
             plugin: plugin_obj._save_state()
@@ -411,6 +411,7 @@ class AbstractFSM(ABC):
             azure_openai_api_key=self.credentials["AZURE_OPENAI_API_KEY"],
             azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
             openai_api_key=self.credentials["OPENAI_API_KEY"],
+            model=self.credentials["FAST_MODEL"],
         )
         if options:
             result = result["id"]
