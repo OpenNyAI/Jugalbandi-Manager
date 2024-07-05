@@ -19,13 +19,13 @@ class AzureAsyncStorage(AsyncStorage):
         account_key = os.getenv("AZURE_STORAGE_ACCOUNT_KEY")
         if not account_key or not account_url:
             raise ValueError(
-                "AzureStorage client not initialized. Missing account_url or account_key"
+                "AzureAsyncStorage client not initialized. Missing account_url or account_key"
             )
         self.__account_key__ = account_key
         self.__container_name__ = os.getenv("AZURE_STORAGE_CONTAINER")
         if not self.__container_name__:
             raise ValueError(
-                "AzureStorage client not initialized. Missing container_name"
+                "AzureAsyncStorage client not initialized. Missing container_name"
             )
         self.__client__ = BlobServiceClient(
             account_url=account_url, credential=account_key
@@ -39,7 +39,7 @@ class AzureAsyncStorage(AsyncStorage):
         mime_type: Optional[str] = None,
     ):
         if not self.__client__:
-            raise Exception("AzureStorage client not initialized")
+            raise Exception("AzureAsyncStorage client not initialized")
 
         blob_name = f"{file_path}"
         blob_client = self.__client__.get_blob_client(
@@ -60,7 +60,7 @@ class AzureAsyncStorage(AsyncStorage):
         self, file_path: Union[str, os.PathLike]
     ) -> Union[str, os.PathLike]:
         if not self.__client__:
-            raise Exception("AzureStorage client not initialized")
+            raise Exception("AzureAsyncStorage client not initialized")
         blob_name = f"{file_path}"
         blob_client = self.__client__.get_blob_client(
             self.__container_name__, blob_name
@@ -75,7 +75,7 @@ class AzureAsyncStorage(AsyncStorage):
 
     async def public_url(self, file_path: str) -> str:
         if not self.__client__:
-            raise Exception("AzureStorage client not initialized")
+            raise Exception("AzureAsyncStorage client not initialized")
 
         blob_name = f"{file_path}"
         blob_client = self.__client__.get_blob_client(

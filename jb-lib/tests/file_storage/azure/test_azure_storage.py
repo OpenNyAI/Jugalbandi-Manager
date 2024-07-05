@@ -8,7 +8,7 @@ from azure.storage.blob import (
 from lib.file_storage import AzureAsyncStorage
 
 
-class TestAzureStorage:
+class TestAzureAsyncStorage:
 
     @patch("lib.file_storage.azure.azure_storage.os.makedirs")
     @patch("lib.file_storage.azure.azure_storage.os.getenv")
