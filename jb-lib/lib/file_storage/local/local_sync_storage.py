@@ -1,12 +1,12 @@
 import os
 import logging
 from typing import Union, Optional
-from ..storage import AsyncStorage
+from ..storage import SyncStorage
 
 logger = logging.getLogger("storage")
 
 
-class LocalAsyncStorage(AsyncStorage):
+class LocalSyncStorage(SyncStorage):
     tmp_folder = "/mnt/jb_files"
 
     def __init__(self):
@@ -17,7 +17,7 @@ class LocalAsyncStorage(AsyncStorage):
             raise ValueError("PUBLIC_URL_PREFIX not set")
         os.makedirs(self.tmp_folder, exist_ok=True)
 
-    async def write_file(
+    def write_file(
         self,
         file_path: str,
         file_content: Union[str, bytes],
@@ -32,12 +32,12 @@ class LocalAsyncStorage(AsyncStorage):
         with open(os.path.join(self.tmp_folder, file_path), mode=mode) as fp:
             fp.write(file_content)
 
-    async def _download_file_to_temp_storage(
+    def _download_file_to_temp_storage(
         self, file_path: Union[str, os.PathLike]
     ) -> Union[str, os.PathLike]:
         return os.path.join(self.tmp_folder, file_path)
 
-    async def public_url(self, file_path: str) -> str:
+    def public_url(self, file_path: str) -> str:
         if self.public_url_prefix:
             return f"{self.public_url_prefix}/{file_path}"
         else:

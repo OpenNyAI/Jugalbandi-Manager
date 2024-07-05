@@ -21,7 +21,8 @@ mock_encryption_handler = MagicMock()
 mock_encryption_handler.decrypt_dict = MagicMock(return_value={"whatsapp": "api_key"})
 
 with patch(
-    "lib.file_storage.StorageHandler.get_instance", return_value=mock_storage_instance
+    "lib.file_storage.StorageHandler.get_async_instance",
+    return_value=mock_storage_instance,
 ):
     with patch("lib.encryption_handler.EncryptionHandler", mock_encryption_handler):
         import src.handlers.outgoing

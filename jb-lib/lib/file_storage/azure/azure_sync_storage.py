@@ -2,14 +2,14 @@ import os
 from typing import Union, Optional
 from datetime import datetime, timedelta, timezone
 import logging
-from azure.storage.blob.aio import BlobServiceClient
+from azure.storage.blob import BlobServiceClient
 from azure.storage.blob import generate_blob_sas, BlobSasPermissions, ContentSettings
-from ..storage import AsyncStorage
+from ..storage import SyncStorage
 
 logger = logging.getLogger("storage")
 
 
-class AzureAsyncStorage(AsyncStorage):
+class AzureSyncStorage(SyncStorage):
     __client__ = None
     tmp_folder = "/tmp/jb_files"
 
@@ -19,27 +19,27 @@ class AzureAsyncStorage(AsyncStorage):
         account_key = os.getenv("AZURE_STORAGE_ACCOUNT_KEY")
         if not account_key or not account_url:
             raise ValueError(
-                "AzureAsyncStorage client not initialized. Missing account_url or account_key"
+                "AzureSyncStorage client not initialized. Missing account_url or account_key"
             )
         self.__account_key__ = account_key
         self.__container_name__ = os.getenv("AZURE_STORAGE_CONTAINER")
         if not self.__container_name__:
             raise ValueError(
-                "AzureAsyncStorage client not initialized. Missing container_name"
+                "AzureSyncStorage client not initialized. Missing container_name"
             )
         self.__client__ = BlobServiceClient(
             account_url=account_url, credential=account_key
         )
         os.makedirs(self.tmp_folder, exist_ok=True)
 
-    async def write_file(
+    def write_file(
         self,
         file_path: str,
         file_content: Union[str, bytes],
         mime_type: Optional[str] = None,
     ):
         if not self.__client__:
-            raise Exception("AzureAsyncStorage client not initialized")
+            raise Exception("AzureSyncStorage client not initialized")
 
         blob_name = f"{file_path}"
         blob_client = self.__client__.get_blob_client(
@@ -52,15 +52,15 @@ class AzureAsyncStorage(AsyncStorage):
                 else "application/octet-stream"
             )
         content_settings = ContentSettings(content_type=mime_type)
-        await blob_client.upload_blob(
+        blob_client.upload_blob(
             file_content, overwrite=True, content_settings=content_settings
         )
 
-    async def _download_file_to_temp_storage(
+    def _download_file_to_temp_storage(
         self, file_path: Union[str, os.PathLike]
     ) -> Union[str, os.PathLike]:
         if not self.__client__:
-            raise Exception("AzureAsyncStorage client not initialized")
+            raise Exception("AzureSyncStorage client not initialized")
         blob_name = f"{file_path}"
         blob_client = self.__client__.get_blob_client(
             self.__container_name__, blob_name
@@ -68,14 +68,14 @@ class AzureAsyncStorage(AsyncStorage):
 
         tmp_file_path = os.path.join(self.tmp_folder, file_path)
         with open(tmp_file_path, "wb") as my_blob:
-            stream = await blob_client.download_blob()
-            data = await stream.readall()
+            stream = blob_client.download_blob()
+            data = stream.readall()
             my_blob.write(data)
         return tmp_file_path
 
-    async def public_url(self, file_path: str) -> str:
+    def public_url(self, file_path: str) -> str:
         if not self.__client__:
-            raise Exception("AzureAsyncStorage client not initialized")
+            raise Exception("AzureSyncStorage client not initialized")
 
         blob_name = f"{file_path}"
         blob_client = self.__client__.get_blob_client(
