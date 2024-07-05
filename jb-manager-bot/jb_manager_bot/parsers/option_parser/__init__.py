@@ -37,10 +37,12 @@ class OptionParser:
         azure_openai_api_key=None,
         azure_openai_api_version=None,
         azure_endpoint=None,
-        model="gpt-3.5-turbo"
+        model=None
     ):
         """Parse the user input and return the most appropriate option ID based on the user's response."""
-
+        if model is None:
+            raise ValueError("Model is required")
+        
         for option in options:
             if "id" not in option and not hasattr(option, "id"):
                 raise ValueError("Option ID is required")
@@ -79,9 +81,8 @@ class Parser:
         azure_endpoint=None,
         model="gpt-3.5-turbo"
     ):
-        
-        if model == "gpt-3.5-turbo" and azure_openai_api_key is not None:
-            model = model.replace(".", "")
+        if model is None:
+            raise ValueError("Model is required")
 
         if options is None:
             result = LLMManager.llm(
