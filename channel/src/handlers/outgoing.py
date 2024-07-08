@@ -1,7 +1,7 @@
 import logging
 from ..crud import (
     get_user_by_session_id,
-    get_bot_by_session_id,
+    get_channel_by_session_id,
     create_message,
 )
 from lib.data_models import (
@@ -22,17 +22,22 @@ async def send_message_to_user(message: ChannelInput):
     session_id = message.session_id
     bot_output: BotOutput = message.data
     user = await get_user_by_session_id(session_id=session_id)
-    wa_bnumber, bot_channel_credentials = await get_bot_by_session_id(
-        session_id=session_id
-    )
-    bot_channel_credentials = EncryptionHandler.decrypt_dict(bot_channel_credentials)
-    wa_api_key = bot_channel_credentials["whatsapp"]
+    if not user:
+        logger.error("User not found")
+        return None
+    user_identifier: str = user.identifier
+    channel_details = await get_channel_by_session_id(session_id=session_id)
+    if not channel_details:
+        logger.error("Channel details not found")
+        return None
+    wa_bnumber, wa_api_key = channel_details
+    wa_api_key = EncryptionHandler.decrypt_text(wa_api_key)
 
     if message.dialog == "language":
         channel_id = WhatsappHelper.wa_send_text_message(
             wa_bnumber=wa_bnumber,
             wa_api_key=wa_api_key,
-            user_tele=user.phone_number,
+            user_tele=user_identifier,
             text=bot_output.message_data.message_text,
         )
         await create_message(
@@ -46,7 +51,7 @@ async def send_message_to_user(message: ChannelInput):
         channel_id = WhatsappHelper.wa_send_interactive_message(
             wa_bnumber=wa_bnumber,
             wa_api_key=wa_api_key,
-            user_tele=user.phone_number,
+            user_tele=user_identifier,
             message="Please select your preferred language",
             header="Language",
             body="Choose a Language",
@@ -81,7 +86,7 @@ async def send_message_to_user(message: ChannelInput):
             channel_id = WhatsappHelper.wa_send_text_message(
                 wa_bnumber=wa_bnumber,
                 wa_api_key=wa_api_key,
-                user_tele=user.phone_number,
+                user_tele=user_identifier,
                 text=message_text,
             )
             await create_message(
@@ -97,7 +102,7 @@ async def send_message_to_user(message: ChannelInput):
             channel_id = WhatsappHelper.wa_send_audio_message(
                 wa_bnumber=wa_bnumber,
                 wa_api_key=wa_api_key,
-                user_tele=user.phone_number,
+                user_tele=user_identifier,
                 audio_url=media_url,
             )
             await create_message(
@@ -112,7 +117,7 @@ async def send_message_to_user(message: ChannelInput):
             channel_id = WhatsappHelper.wa_send_interactive_message(
                 wa_bnumber=wa_bnumber,
                 wa_api_key=wa_api_key,
-                user_tele=user.phone_number,
+                user_tele=user_identifier,
                 message=message_text,
                 header=bot_output.header,
                 body=message_text,
@@ -138,7 +143,7 @@ async def send_message_to_user(message: ChannelInput):
             channel_id = WhatsappHelper.wa_send_image(
                 wa_bnumber=wa_bnumber,
                 wa_api_key=wa_api_key,
-                user_tele=user.phone_number,
+                user_tele=user_identifier,
                 message=message_text,
                 header=bot_output.header,
                 body=message_text,
@@ -165,7 +170,7 @@ async def send_message_to_user(message: ChannelInput):
             channel_id = WhatsappHelper.wa_send_document(
                 wa_bnumber=wa_bnumber,
                 wa_api_key=wa_api_key,
-                user_tele=user.phone_number,
+                user_tele=user_identifier,
                 document_url=bot_output.message_data.media_url,
                 document_name=bot_output.message_data.message_text,
             )
@@ -182,7 +187,7 @@ async def send_message_to_user(message: ChannelInput):
             channel_id = WhatsappHelper.wa_send_form(
                 wa_bnumber=wa_bnumber,
                 wa_api_key=wa_api_key,
-                user_tele=user.phone_number,
+                user_tele=user_identifier,
                 flow_id=bot_output.wa_flow_id,
                 screen_id=bot_output.wa_screen_id,
                 body=bot_output.message_data.message_text,

@@ -1,39 +1,42 @@
 import uuid
+from typing import Tuple
 from sqlalchemy import select, update
+from sqlalchemy.orm import joinedload
 
 from lib.db_session_handler import DBSessionHandler
 
-from lib.models import JBSession, JBUser, JBMessage, JBBot
+from lib.models import JBSession, JBUser, JBMessage, JBChannel
 
 
-async def get_user_by_session_id(session_id: str):
-    # TODO: have to make it as single query
-    query = select(JBSession).where(JBSession.id == session_id)
+async def get_user_by_session_id(session_id: str) -> JBUser | None:
+    query = (
+        select(JBSession)
+        .options(joinedload(JBSession.user))
+        .where(JBSession.id == session_id)
+    )
     async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             result = await session.execute(query)
             s = result.scalars().first()
             if s is not None:
-                query = select(JBUser).where(JBUser.id == s.pid)
-                result = await session.execute(query)
-                user = result.scalars().first()
+                user = s.user
                 return user
     return None
 
 
-async def get_bot_by_session_id(session_id: str):
-    # TODO: have to make it as single query
-    query = select(JBSession).where(JBSession.id == session_id)
+async def get_channel_by_session_id(session_id: str) -> Tuple[str, str] | None:
+    query = (
+        select(JBSession)
+        .options(joinedload(JBSession.channel))
+        .where(JBSession.id == session_id)
+    )
     async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             result = await session.execute(query)
             s = result.scalars().first()
             if s is not None:
-                query = select(JBBot).where(JBBot.id == s.bot_id)
-                result = await session.execute(query)
-                bot = result.scalars().first()
-                return bot.phone_number, bot.channels
-    return None
+                channel: JBChannel = s.channel
+                return channel.app_id, channel.key
 
 
 async def set_user_language(session_id: str, language: str):

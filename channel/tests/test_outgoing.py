@@ -19,6 +19,7 @@ mock_storage_instance.public_url = mock_public_url
 
 mock_encryption_handler = MagicMock()
 mock_encryption_handler.decrypt_dict = MagicMock(return_value={"whatsapp": "api_key"})
+mock_encryption_handler.decrypt_text = MagicMock(return_value="api_key")
 
 with patch(
     "lib.file_storage.StorageHandler.get_async_instance",
@@ -33,9 +34,9 @@ with patch(
 @pytest.mark.asyncio
 async def test_send_text_message():
     mock_get_user_by_session_id = AsyncMock(
-        return_value=MagicMock(phone_number="1234567890")
+        return_value=MagicMock(identifier="1234567890")
     )
-    mock_get_bot_by_session_id = AsyncMock(
+    mock_get_channel_by_session_id = AsyncMock(
         return_value=("test_number", "encrypted_credentials")
     )
     mock_wa_send_text_message = MagicMock(return_value="test_channel_id")
@@ -45,7 +46,8 @@ async def test_send_text_message():
         "src.handlers.outgoing.get_user_by_session_id", mock_get_user_by_session_id
     ):
         with patch(
-            "src.handlers.outgoing.get_bot_by_session_id", mock_get_bot_by_session_id
+            "src.handlers.outgoing.get_channel_by_session_id",
+            mock_get_channel_by_session_id,
         ):
             with patch(
                 "lib.whatsapp.WhatsappHelper.wa_send_text_message",
@@ -76,9 +78,9 @@ async def test_send_text_message():
 @pytest.mark.asyncio
 async def test_send_audio_message():
     mock_get_user_by_session_id = AsyncMock(
-        return_value=MagicMock(phone_number="1234567890")
+        return_value=MagicMock(identifier="1234567890")
     )
-    mock_get_bot_by_session_id = AsyncMock(
+    mock_get_channel_by_session_id = AsyncMock(
         return_value=("test_number", "encrypted_credentials")
     )
     mock_wa_send_audio_message = MagicMock(return_value="test_channel_id")
@@ -88,7 +90,8 @@ async def test_send_audio_message():
         "src.handlers.outgoing.get_user_by_session_id", mock_get_user_by_session_id
     ):
         with patch(
-            "src.handlers.outgoing.get_bot_by_session_id", mock_get_bot_by_session_id
+            "src.handlers.outgoing.get_channel_by_session_id",
+            mock_get_channel_by_session_id,
         ):
             with patch(
                 "lib.whatsapp.WhatsappHelper.wa_send_audio_message",
@@ -121,9 +124,9 @@ async def test_send_audio_message():
 @pytest.mark.asyncio
 async def test_send_interactive_message():
     mock_get_user_by_session_id = AsyncMock(
-        return_value=MagicMock(phone_number="1234567890")
+        return_value=MagicMock(identifier="1234567890")
     )
-    mock_get_bot_by_session_id = AsyncMock(
+    mock_get_channel_by_session_id = AsyncMock(
         return_value=("test_number", "encrypted_credentials")
     )
     mock_wa_send_interactive_message = MagicMock(return_value="test_channel_id")
@@ -133,7 +136,8 @@ async def test_send_interactive_message():
         "src.handlers.outgoing.get_user_by_session_id", mock_get_user_by_session_id
     ):
         with patch(
-            "src.handlers.outgoing.get_bot_by_session_id", mock_get_bot_by_session_id
+            "src.handlers.outgoing.get_channel_by_session_id",
+            mock_get_channel_by_session_id,
         ):
             with patch(
                 "lib.whatsapp.WhatsappHelper.wa_send_interactive_message",
@@ -167,9 +171,9 @@ async def test_send_interactive_message():
 @pytest.mark.asyncio
 async def test_send_image_message():
     mock_get_user_by_session_id = AsyncMock(
-        return_value=MagicMock(phone_number="1234567890")
+        return_value=MagicMock(identifier="1234567890")
     )
-    mock_get_bot_by_session_id = AsyncMock(
+    mock_get_channel_by_session_id = AsyncMock(
         return_value=("test_number", "encrypted_credentials")
     )
     mock_wa_send_image = MagicMock(return_value="test_channel_id")
@@ -179,7 +183,8 @@ async def test_send_image_message():
         "src.handlers.outgoing.get_user_by_session_id", mock_get_user_by_session_id
     ):
         with patch(
-            "src.handlers.outgoing.get_bot_by_session_id", mock_get_bot_by_session_id
+            "src.handlers.outgoing.get_channel_by_session_id",
+            mock_get_channel_by_session_id,
         ):
             with patch("lib.whatsapp.WhatsappHelper.wa_send_image", mock_wa_send_image):
                 with patch("src.handlers.outgoing.create_message", mock_create_message):
@@ -222,9 +227,9 @@ async def test_send_image_message():
 @pytest.mark.asyncio
 async def test_send_document_message():
     mock_get_user_by_session_id = AsyncMock(
-        return_value=MagicMock(phone_number="1234567890")
+        return_value=MagicMock(identifier="1234567890")
     )
-    mock_get_bot_by_session_id = AsyncMock(
+    mock_get_channel_by_session_id = AsyncMock(
         return_value=("test_number", "encrypted_credentials")
     )
     mock_wa_send_document = MagicMock(return_value="test_channel_id")
@@ -234,7 +239,8 @@ async def test_send_document_message():
         "src.handlers.outgoing.get_user_by_session_id", mock_get_user_by_session_id
     ):
         with patch(
-            "src.handlers.outgoing.get_bot_by_session_id", mock_get_bot_by_session_id
+            "src.handlers.outgoing.get_channel_by_session_id",
+            mock_get_channel_by_session_id,
         ):
             with patch(
                 "lib.whatsapp.WhatsappHelper.wa_send_document",
@@ -270,9 +276,9 @@ async def test_send_document_message():
 @pytest.mark.asyncio
 async def test_send_form_message():
     mock_get_user_by_session_id = AsyncMock(
-        return_value=MagicMock(phone_number="1234567890")
+        return_value=MagicMock(identifier="1234567890")
     )
-    mock_get_bot_by_session_id = AsyncMock(
+    mock_get_channel_by_session_id = AsyncMock(
         return_value=("test_number", "encrypted_credentials")
     )
     mock_wa_send_form = MagicMock(return_value="test_channel_id")
@@ -282,7 +288,8 @@ async def test_send_form_message():
         "src.handlers.outgoing.get_user_by_session_id", mock_get_user_by_session_id
     ):
         with patch(
-            "src.handlers.outgoing.get_bot_by_session_id", mock_get_bot_by_session_id
+            "src.handlers.outgoing.get_channel_by_session_id",
+            mock_get_channel_by_session_id,
         ):
             with patch("lib.whatsapp.WhatsappHelper.wa_send_form", mock_wa_send_form):
                 with patch("src.handlers.outgoing.create_message", mock_create_message):
@@ -319,9 +326,9 @@ async def test_send_form_message():
 @pytest.mark.asyncio
 async def test_send_language_message():
     mock_get_user_by_session_id = AsyncMock(
-        return_value=MagicMock(phone_number="1234567890")
+        return_value=MagicMock(identifier="1234567890")
     )
-    mock_get_bot_by_session_id = AsyncMock(
+    mock_get_channel_by_session_id = AsyncMock(
         return_value=("test_number", "encrypted_credentials")
     )
     mock_wa_send_text_message = MagicMock(return_value="test_channel_id")
@@ -332,7 +339,8 @@ async def test_send_language_message():
         "src.handlers.outgoing.get_user_by_session_id", mock_get_user_by_session_id
     ):
         with patch(
-            "src.handlers.outgoing.get_bot_by_session_id", mock_get_bot_by_session_id
+            "src.handlers.outgoing.get_channel_by_session_id",
+            mock_get_channel_by_session_id,
         ):
             with patch(
                 "lib.whatsapp.WhatsappHelper.wa_send_text_message",

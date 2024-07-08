@@ -24,6 +24,7 @@ mock_storage_instance.public_url = mock_public_url
 
 mock_encryption_handler = MagicMock()
 mock_encryption_handler.decrypt_dict = MagicMock(return_value={"whatsapp": "api_key"})
+mock_encryption_handler.decrypt_text = MagicMock(return_value="api_key")
 
 with patch(
     "lib.file_storage.StorageHandler.get_async_instance",
@@ -38,9 +39,6 @@ with patch(
 @pytest.mark.asyncio
 async def test_process_incoming_text_message():
     mock_update_message = AsyncMock()
-    mock_get_bot_by_session_id = AsyncMock(
-        return_value=("test_number", "encrypted_credentials")
-    )
     with patch("src.handlers.incoming.update_message", mock_update_message):
         message = ChannelInput(
             source="api",
@@ -73,17 +71,17 @@ async def test_process_incoming_text_message():
 @pytest.mark.asyncio
 async def test_process_incoming_audio_message():
     mock_update_message = AsyncMock()
-    mock_get_bot_by_session_id = AsyncMock(
+    mock_get_channel_by_session_id = AsyncMock(
         return_value=("test_number", "encrypted_credentials")
     )
-    mock_decrypt_credentials = MagicMock(return_value={"whatsapp": "api_key"})
     mock_wa_get_user_audio = MagicMock(
         return_value=MagicMock(content=base64.b64encode(b"audio_bytes").decode("utf-8"))
     )
 
     with patch("src.handlers.incoming.update_message", mock_update_message):
         with patch(
-            "src.handlers.incoming.get_bot_by_session_id", mock_get_bot_by_session_id
+            "src.handlers.incoming.get_channel_by_session_id",
+            mock_get_channel_by_session_id,
         ):
             with patch(
                 "lib.whatsapp.WhatsappHelper.wa_get_user_audio",

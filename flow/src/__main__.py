@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 
 
 from . import crud
+
 # from .extensions import save_file
 from lib.kafka_utils import KafkaConsumer, KafkaProducer
 from lib.data_models import (
@@ -138,13 +139,13 @@ async def flow_loop():
             session_id = flow_input.session_id
             message_id = flow_input.message_id
             path = ""
-            session_details = await crud.get_session_with_bot(flow_input.session_id)
             callback_input = None
             msg_text = None
-            if session_details is None:
+            if flow_input.bot_config is not None:
                 bot_id = flow_input.bot_config.bot_id
             else:
-                bot_id = session_details.bot_id
+                bot = await crud.get_bot_by_session_id(session_id)
+                bot_id = bot.id
             if flow_input.source == "language":
                 msg_text = flow_input.message_text
             elif flow_input.source == "api":

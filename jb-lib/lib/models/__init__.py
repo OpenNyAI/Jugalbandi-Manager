@@ -256,7 +256,7 @@ class JBFSMState(Base):
         nullable=False,
         onupdate=func.now(),
     )
-    pid = Column(String)  # , ForeignKey('jb_users.id'))
+    session_id = Column(String)
     state = Column(String)
     variables = Column(JSON)
     message = Column(String)
