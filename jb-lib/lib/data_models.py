@@ -140,8 +140,8 @@ class FSMOutput(BaseModel):
     menu_title: Optional[str] = None
     form_token: Optional[str] = None
     plugin_uuid: Optional[str] = None
-    retriever_collection_name: str = "KB_Law_Files"
-    retriever_chunk_size: int = 5
+    retriever_collection_name: str
+    retriever_top_k_value: int = 5
 
 
 class RAGResponse(BaseModel):

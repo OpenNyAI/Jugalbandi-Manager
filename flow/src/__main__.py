@@ -254,7 +254,7 @@ async def flow_loop():
                         turn_id=flow_input.turn_id,
                         collection_name=fsm_output.retriever_collection_name,
                         query=msg_text,
-                        top_chunk_k_value=fsm_output.retriever_chunk_size,
+                        top_chunk_k_value=fsm_output.retriever_top_k_value,
                     )
                     logger.info("FLOW -- %s --> %s", rag_topic, rag_input)
                     producer.send_message(rag_topic, rag_input.model_dump_json())
