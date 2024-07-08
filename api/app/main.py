@@ -1,30 +1,21 @@
-"""
-"""
-
 import os
 import logging
-from typing import Dict
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from confluent_kafka import KafkaException
-from lib.kafka_utils import KafkaProducer
+from lib.kafka_utils import KafkaProducer, KafkaException
 
-from lib.models import JBBot
-from lib.encryption_handler import EncryptionHandler
-from .jb_schema import JBBotUpdate, JBBotCode, JBBotActivate
+from .jb_schema import JBBotCode, JBBotActivate
 from .handlers import handle_callback, handle_webhook
-from .bot_handlers import handle_install_bot, handle_activate_bot, handle_update_bot
-
-from .crud import (
-    get_bot_by_id,
-    get_bot_by_phone_number,
-    get_chat_history,
-    get_bot_list,
-    get_bot_chat_sessions,
-    update_bot,
-    create_bot,
+from .bot_handlers import (
+    handle_delete_bot,
+    handle_install_bot,
+    handle_activate_bot,
+    handle_update_bot,
+    handle_deactivate_bot,
 )
+
+from .crud import get_chat_history, get_bot_list, get_bot_chat_sessions
 
 load_dotenv()
 
@@ -63,17 +54,15 @@ def read_root():
 @app.get("/bots")
 async def get_bots():
     bots = await get_bot_list()
+    for bot in bots:
+        status = "inactive"
+        channels = bot.channels
+        for channel in channels:
+            if channel.status == "active":
+                status = "active"
+                break
+        bot.status = status
     return bots
-
-
-@app.patch("/bot/{bot_id}")
-async def update_bot_data(bot_id: str, update_fields: JBBotUpdate):
-    bot_data = update_fields.model_dump(exclude_unset=True)
-    updated_info = await handle_update_bot(bot_id, bot_data)
-    if not updated_info["status"] == "error":
-        raise HTTPException(status_code=404, detail=updated_info["message"])
-    updated_bot = updated_info["bot"]
-    return updated_bot
 
 
 @app.post("/bot/install")
@@ -96,18 +85,15 @@ async def activate_bot(bot_id: str, request_body: JBBotActivate):
 
 @app.get("/bot/{bot_id}/deactivate")
 async def get_bot(bot_id: str):
-    bot_data = {"status": "inactive", "phone_number": None, "channels": None}
-    updated_info = await handle_update_bot(bot_id, bot_data)
+    updated_info = await handle_deactivate_bot(bot_id)
     if updated_info["status"] == "error":
         raise HTTPException(status_code=404, detail=updated_info["message"])
-    updated_bot = updated_info["bot"]
-    return updated_bot
+    return {"status": "success"}
 
 
 @app.delete("/bot/{bot_id}")
 async def delete_bot(bot_id: str):
-    bot_data = {"status": "deleted", "phone_number": None, "channels": None}
-    updated_info = await handle_update_bot(bot_id, bot_data)
+    updated_info = await handle_delete_bot(bot_id)
     if updated_info["status"] == "error":
         raise HTTPException(status_code=404, detail=updated_info["message"])
     return {"status": "success"}
@@ -129,7 +115,7 @@ async def add_bot_configuraton(bot_id: str, request: Request):
     if config_env is not None:
         bot_data["config_env"] = config_env
     updated_info = await handle_update_bot(bot_id, bot_data)
-    if not updated_info["status"] == "error":
+    if updated_info["status"] == "error":
         raise HTTPException(status_code=404, detail=updated_info["message"])
     return {"status": "success"}
 

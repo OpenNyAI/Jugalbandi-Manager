@@ -13,7 +13,7 @@ from lib.data_models import (
     FlowInput,
 )
 from .crud import (
-    get_bot_by_phone_number,
+    get_active_channel_by_identifier,
     get_user_by_number,
     create_user,
     create_session,
@@ -33,10 +33,8 @@ async def handle_webhook(webhook_data: str) -> AsyncGenerator[FlowInput, None]:
     if not plugin_uuid:
         raise ValueError("Plugin UUID not found in webhook data")
     logger.info("Plugin UUID: %s", plugin_uuid)
-    print(get_plugin_reference)
     plugin_reference = await get_plugin_reference(plugin_uuid)
     logger.info("Webhook Data: %s", webhook_data)
-    print("Plugin Reference: ", plugin_reference)
     flow_input = FlowInput(
         source="api",
         session_id=plugin_reference.session_id,
@@ -48,22 +46,24 @@ async def handle_webhook(webhook_data: str) -> AsyncGenerator[FlowInput, None]:
 
 async def handle_callback(callback_data: Dict) -> AsyncGenerator[ChannelInput, None]:
     bot_number = WhatsappHelper.extract_whatsapp_business_number(callback_data)
-    bot = await get_bot_by_phone_number(bot_number)
-    if bot is None:
-        logger.error("Bot not found for number %s", bot_number)
-        raise ValueError(f"Bot not found for number {bot_number}")
-    bot_id: str = bot.id
+    channel = await get_active_channel_by_identifier(bot_number, "whatsapp")
+    if channel is None:
+        logger.error("Active channel not found for number %s", bot_number)
+        raise ValueError("Active channel not found")
 
+    channel_id: str = channel.id
     for message in WhatsappHelper.process_messsage(callback_data):
         contact_number = message["from"]
-        user = await get_user_by_number(contact_number, bot_id)
+        user = await get_user_by_number(contact_number, channel_id)
         turn_id = str(uuid.uuid4())
 
         if user is None:
             # register user
             logger.info("Registering user")
             contact_name = message["name"]
-            user = await create_user(bot_id, contact_number, contact_name, contact_name)
+            user = await create_user(
+                channel_id, contact_number, contact_name, contact_name
+            )
         user_id: str = user.id
 
         create_new_session = False
@@ -76,13 +76,13 @@ async def handle_callback(callback_data: Dict) -> AsyncGenerator[ChannelInput, N
         if create_new_session:
             # create session
             logger.info("Creating session")
-            session = await create_session(user_id, bot_id)
+            session = await create_session(user_id, channel_id)
         else:
-            session = await get_user_session(bot_id, user_id, 24 * 60 * 60 * 1000)
+            session = await get_user_session(channel_id, user_id, 24 * 60 * 60 * 1000)
             if session is None:
                 # create session
                 logger.info("Creating session")
-                session = await create_session(user_id, bot_id)
+                session = await create_session(user_id, channel_id)
             else:
                 await update_session(session.id)
         session_id: str = session.id
@@ -97,7 +97,7 @@ async def handle_callback(callback_data: Dict) -> AsyncGenerator[ChannelInput, N
 
         turn_id = await create_turn(
             session_id=session_id,
-            bot_id=bot_id,
+            channel_id=channel_id,
             turn_type=message_type,
             channel="WA",
         )
