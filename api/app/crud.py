@@ -291,7 +291,7 @@ async def get_active_channel_by_identifier(
         .where(
             JBChannel.app_id == identifier,
             JBChannel.type == channel_type,
-            JBChannel.status != "active",
+            JBChannel.status == "active",
         )
     )
     async with DBSessionHandler.get_async_session() as session:
