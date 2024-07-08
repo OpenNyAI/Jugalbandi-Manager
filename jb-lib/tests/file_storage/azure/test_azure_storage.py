@@ -5,10 +5,10 @@ from azure.storage.blob import (
     BlobClient,
 )
 
-from lib.file_storage import AzureStorage
+from lib.file_storage import AzureAsyncStorage
 
 
-class TestAzureStorage:
+class TestAzureAsyncStorage:
 
     @patch("lib.file_storage.azure.azure_storage.os.makedirs")
     @patch("lib.file_storage.azure.azure_storage.os.getenv")
@@ -24,7 +24,7 @@ class TestAzureStorage:
         mock_blob_service_client_instance = MagicMock(spec=BlobServiceClient)
         mock_blob_service_client.return_value = mock_blob_service_client_instance
 
-        storage = AzureStorage()
+        storage = AzureAsyncStorage()
         assert storage.__client__ is not None
         mock_makedirs.assert_called_once_with("/tmp/jb_files", exist_ok=True)
 
@@ -38,7 +38,7 @@ class TestAzureStorage:
             }.get(key, None)
         )
         with pytest.raises(ValueError):
-            AzureStorage()
+            AzureAsyncStorage()
 
         # Test missing container name
         mock_getenv.side_effect = lambda key: (
@@ -50,7 +50,7 @@ class TestAzureStorage:
             }.get(key, None)
         )
         with pytest.raises(ValueError):
-            AzureStorage()
+            AzureAsyncStorage()
 
     @patch("azure.storage.blob.BlobClient")
     @patch("lib.file_storage.azure.azure_storage.ContentSettings")
@@ -76,7 +76,7 @@ class TestAzureStorage:
                 mock_blob_client_instance
             )
 
-            storage = AzureStorage()
+            storage = AzureAsyncStorage()
             print("Writing file")
 
             await storage.write_file("test.txt", b"content")
@@ -105,7 +105,7 @@ class TestAzureStorage:
 
             mock_blob_service_client_instance = MagicMock(spec=BlobServiceClient)
             mock_blob_service_client.return_value = mock_blob_service_client_instance
-            storage = AzureStorage()
+            storage = AzureAsyncStorage()
 
             mock_blob_client_instance = MagicMock(spec=BlobClient)
             mock_blob_client_instance.download_blob = AsyncMock()
@@ -140,7 +140,7 @@ class TestAzureStorage:
 
             mock_blob_service_client_instance = MagicMock(spec=BlobServiceClient)
             mock_blob_service_client.return_value = mock_blob_service_client_instance
-            storage = AzureStorage()
+            storage = AzureAsyncStorage()
 
             mock_blob_client_instance = MagicMock(spec=BlobClient)
             mock_blob_client_instance.account_name = "test_account"

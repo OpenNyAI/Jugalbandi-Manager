@@ -1,42 +1,22 @@
 """
 """
 
-import json
 import os
 import logging
 from typing import Dict
-import uuid
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from confluent_kafka import KafkaException
 from lib.kafka_utils import KafkaProducer
-from lib.whatsapp import WhatsappHelper
 
-from lib.data_models import (
-    BotInput,
-    ChannelData,
-    ChannelInput,
-    ChannelIntent,
-    FlowInput,
-    MessageType,
-    MessageData,
-    BotConfig,
-)
 from lib.models import JBBot
 from lib.encryption_handler import EncryptionHandler
 from .jb_schema import JBBotUpdate, JBBotCode, JBBotActivate
-from .utils import extract_reference_id
+from .handlers import handle_callback, handle_webhook
+from .bot_handlers import handle_install_bot, handle_activate_bot, handle_update_bot
 
 from .crud import (
-    create_turn,
-    create_user,
-    get_plugin_reference,
-    get_user_by_number,
-    get_user_session,
-    create_session,
-    update_session,
-    create_message,
     get_bot_by_id,
     get_bot_by_phone_number,
     get_chat_history,
@@ -88,34 +68,17 @@ async def get_bots():
 
 @app.patch("/bot/{bot_id}")
 async def update_bot_data(bot_id: str, update_fields: JBBotUpdate):
-    bot = await get_bot_by_id(bot_id)
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
-    data = update_fields.dict(exclude_unset=True)
-
-    # encrypt config_env
-    if "config_env" in data:
-        data["config_env"] = EncryptionHandler.encrypt_dict(data["config_env"])
-
-    await update_bot(bot_id, data)
-    return bot
+    bot_data = update_fields.model_dump(exclude_unset=True)
+    updated_info = await handle_update_bot(bot_id, bot_data)
+    if not updated_info["status"] == "error":
+        raise HTTPException(status_code=404, detail=updated_info["message"])
+    updated_bot = updated_info["bot"]
+    return updated_bot
 
 
 @app.post("/bot/install")
 async def install_bot(install_content: JBBotCode):
-    bot_data = install_content.model_dump()
-    bot = await create_bot(bot_data)
-    flow_input = FlowInput(
-        source="api",
-        bot_config=BotConfig(
-            bot_id=bot.id,
-            bot_name=install_content.name,
-            bot_fsm_code=install_content.code,
-            bot_requirements_txt=install_content.requirements,
-            index_urls=install_content.index_urls,
-            bot_version=install_content.version,
-        ),
-    )
+    flow_input = await handle_install_bot(install_content)
     produce_message(flow_input.model_dump_json(), topic=flow_topic)
     return {"status": "success"}
 
@@ -123,62 +86,30 @@ async def install_bot(install_content: JBBotCode):
 # endpoint to activate bot and link it with a phone number
 @app.post("/bot/{bot_id}/activate")
 async def activate_bot(bot_id: str, request_body: JBBotActivate):
-    phone_number: str = request_body.phone_number
-    if not phone_number:
-        raise HTTPException(status_code=400, detail="No phone number provided")
-    channels: Dict[str, str] = request_body.channels.model_dump()
-    if not channels:
-        raise HTTPException(status_code=400, detail="No channels provided")
-    if not "whatsapp" in channels:
-        raise HTTPException(status_code=400, detail="Bot must have a whatsapp channel")
-    bot: JBBot = await get_bot_by_id(bot_id)
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
-    if bot.status == "active":
-        raise HTTPException(status_code=400, detail="Bot already active")
-    existing_bot = await get_bot_by_phone_number(phone_number)
-    if existing_bot and existing_bot.id != bot_id:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Phone number {phone_number} already in use by bot {existing_bot.name}",
-        )
-    required_credentials = bot.required_credentials
-    current_credentials = bot.credentials if bot.credentials else {}
-    missing_credentials = [
-        name for name in required_credentials if name not in current_credentials
-    ]
-    if missing_credentials:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Bot missing required credentials: {', '.join(missing_credentials)}",
-        )
-    logger.error(f"{channels} :: {type(channels)}")
-    channels = EncryptionHandler.encrypt_dict(channels)
-    bot_data = {}
-    bot_data["phone_number"] = phone_number
-    bot_data["channels"] = channels
-    bot_data["status"] = "active"
-    await update_bot(bot_id, bot_data)
+    activate_bot_response = await handle_activate_bot(
+        bot_id=bot_id, request_body=request_body
+    )
+    if activate_bot_response["status"] == "error":
+        raise HTTPException(status_code=400, detail=activate_bot_response["message"])
     return {"status": "success"}
 
 
 @app.get("/bot/{bot_id}/deactivate")
 async def get_bot(bot_id: str):
-    bot = await get_bot_by_id(bot_id)
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
     bot_data = {"status": "inactive", "phone_number": None, "channels": None}
-    await update_bot(bot_id, bot_data)
-    return bot
+    updated_info = await handle_update_bot(bot_id, bot_data)
+    if updated_info["status"] == "error":
+        raise HTTPException(status_code=404, detail=updated_info["message"])
+    updated_bot = updated_info["bot"]
+    return updated_bot
 
 
 @app.delete("/bot/{bot_id}")
 async def delete_bot(bot_id: str):
-    bot = await get_bot_by_id(bot_id)
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
     bot_data = {"status": "deleted", "phone_number": None, "channels": None}
-    await update_bot(bot_id, bot_data)
+    updated_info = await handle_update_bot(bot_id, bot_data)
+    if updated_info["status"] == "error":
+        raise HTTPException(status_code=404, detail=updated_info["message"])
     return {"status": "success"}
 
 
@@ -186,9 +117,6 @@ async def delete_bot(bot_id: str):
 @app.post("/bot/{bot_id}/configure")
 async def add_bot_configuraton(bot_id: str, request: Request):
     request_body = await request.json()
-    bot: JBBot = await get_bot_by_id(bot_id)
-    if not bot:
-        raise HTTPException(status_code=404, detail="Bot not found")
     credentials = request_body.get("credentials")
     config_env = request_body.get("config_env")
     if credentials is None and config_env is None:
@@ -197,11 +125,12 @@ async def add_bot_configuraton(bot_id: str, request: Request):
         )
     bot_data = {}
     if credentials is not None:
-        encrypted_credentials = EncryptionHandler.encrypt_dict(credentials)
-        bot_data["credentials"] = encrypted_credentials
+        bot_data["credentials"] = credentials
     if config_env is not None:
         bot_data["config_env"] = config_env
-    await update_bot(bot_id, bot_data)
+    updated_info = await handle_update_bot(bot_id, bot_data)
+    if not updated_info["status"] == "error":
+        raise HTTPException(status_code=404, detail=updated_info["message"])
     return {"status": "success"}
 
 
@@ -227,89 +156,9 @@ async def get_chats(bot_id: str) -> list:
 
 @app.post("/callback")
 async def callback(request: Request):
-    # if whatsapp parse with whatsapp library
-    # if telegram parse with telegram library:
     data = await request.json()
 
-    # TODO - write code to differentiate channel and identify helper to use
-
-    bot_number = WhatsappHelper.extract_whatsapp_business_number(data)
-    bot = await get_bot_by_phone_number(bot_number)
-    bot_id = bot.id
-    if bot_id is None:
-        logger.error(f"Bot not found for number {bot_number}")
-        return 404
-
-    for message in WhatsappHelper.process_messsage(data):
-        contact_number = message["from"]
-        contact_name = message["name"]  # Set to Dummy at the moment
-        user = await get_user_by_number(contact_number, bot_id)
-        turn_id = str(uuid.uuid4())
-
-        if user is None:
-            # register user
-            logger.info("Registering user")
-            user = await create_user(bot_id, contact_number, contact_name, contact_name)
-
-        create_new_session = False
-        message_type = message["type"]
-        if message_type == "text":
-            message_text = message[message_type]["body"]
-            if message_text.lower() == "hi":
-                create_new_session = True
-
-        if create_new_session:
-            # create session
-            logger.info("Creating session")
-            session = await create_session(user.id, bot_id)
-        else:
-            session = await get_user_session(bot_id, user.id, 24 * 60 * 60 * 1000)
-            if session is None:
-                # create session
-                logger.info("Creating session")
-                session = await create_session(user.id, bot_id)
-            else:
-                await update_session(session.id)
-
-        message_type = message["type"]
-        if message_type == "interactive":
-            message_type = (
-                "form" if message[message_type]["type"] == "nfm_reply" else message_type
-            )
-            message["type"] = message_type
-            message[message_type] = message.pop("interactive")
-
-        turn_id = await create_turn(
-            session_id=session.id,
-            bot_id=bot_id,
-            turn_type=message_type,
-            channel="WA",
-        )
-        msg_id = await create_message(
-            turn_id=turn_id,
-            message_type=message_type,
-            channel="WA",
-            channel_id=message["id"],
-            is_user_sent=True,
-        )
-
-        # remove mobile number
-        message.pop("from")
-
-        channel_input = ChannelInput(
-            source="api",
-            session_id=session.id,
-            message_id=msg_id,
-            turn_id=turn_id,
-            intent=ChannelIntent.BOT_IN,
-            channel_data=ChannelData(**message),
-            data=BotInput(
-                message_type=MessageType.TEXT,
-                message_data=MessageData(message_text="dummy"),
-            ),
-        )
-
-        # write to channel
+    async for channel_input in handle_callback(data):
         produce_message(channel_input.model_dump_json())
 
     return 200
@@ -319,19 +168,9 @@ async def callback(request: Request):
 async def plugin_webhook(request: Request):
     webhook_data = await request.body()
     webhook_data = webhook_data.decode("utf-8")
-    plugin_uuid = extract_reference_id(webhook_data)
-    if not plugin_uuid:
-        raise HTTPException(
-            status_code=400, detail="Plugin UUID not found in webhook data"
-        )
-    logger.info(f"Plugin UUID: {plugin_uuid}")
-    plugin_reference = await get_plugin_reference(plugin_uuid)
-    logger.info(f"Webhook Data: {webhook_data}")
-    flow_input = FlowInput(
-        source="api",
-        session_id=plugin_reference.session_id,
-        turn_id=plugin_reference.turn_id,
-        plugin_input=json.loads(webhook_data),
-    )
-    produce_message(flow_input.model_dump_json(), topic=flow_topic)
+    try:
+        async for flow_input in handle_webhook(webhook_data):
+            produce_message(flow_input.model_dump_json(), topic=flow_topic)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
     return 200
