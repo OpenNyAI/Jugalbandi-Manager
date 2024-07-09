@@ -25,6 +25,8 @@ services:
         - "9092:19092"
       volumes:
         - "kafka_data:/bitnami"
+        - ./scripts/create-all-topics.sh:/usr/bin/create-topics.sh
+      command: "sh -c './run.sh & /usr/bin/create-topics.sh && tail -f /dev/null'"
       environment:        
         - KAFKA_CFG_NODE_ID=0
         - KAFKA_CFG_PROCESS_ROLES=controller,broker
@@ -183,6 +185,7 @@ services:
     #   POSTGRES_DB: postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./dump.sql:/docker-entrypoint-initdb.d/db_dump.sql
   postgres-adminer:
     image: adminer
     restart: always
