@@ -72,7 +72,7 @@ async def test_process_incoming_text_message():
 async def test_process_incoming_audio_message():
     mock_update_message = AsyncMock()
     mock_get_channel_by_session_id = AsyncMock(
-        return_value=("test_number", "encrypted_credentials")
+        return_value=MagicMock(app_id="test_number", key="encrypted_credentials")
     )
     mock_wa_get_user_audio = MagicMock(
         return_value=MagicMock(content=base64.b64encode(b"audio_bytes").decode("utf-8"))

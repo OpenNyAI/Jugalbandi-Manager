@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload
 
 from lib.db_session_handler import DBSessionHandler
 
-from lib.models import JBSession, JBUser, JBMessage, JBChannel
+from lib.models import JBSession, JBUser, JBMessage, JBChannel, JBForm
 
 
 async def get_user_by_session_id(session_id: str) -> JBUser | None:
@@ -24,7 +24,7 @@ async def get_user_by_session_id(session_id: str) -> JBUser | None:
     return None
 
 
-async def get_channel_by_session_id(session_id: str) -> Tuple[str, str] | None:
+async def get_channel_by_session_id(session_id: str) -> JBChannel | None:
     query = (
         select(JBSession)
         .options(joinedload(JBSession.channel))
@@ -36,7 +36,7 @@ async def get_channel_by_session_id(session_id: str) -> Tuple[str, str] | None:
             s = result.scalars().first()
             if s is not None:
                 channel: JBChannel = s.channel
-                return channel.app_id, channel.key
+                return channel
 
 
 async def set_user_language(session_id: str, language: str):
@@ -93,4 +93,17 @@ async def create_message(
             )
             await session.commit()
             return message_id
+    return None
+
+
+async def get_form_parameters(channel_id, form_id):
+    async with DBSessionHandler.get_async_session() as session:
+        async with session.begin():
+            result = await session.execute(
+                select(JBForm.parameters)
+                .where(JBForm.channel_id == channel_id)
+                .where(JBForm.form_uid == form_id)
+            )
+            s = result.scalars().first()
+            return s
     return None

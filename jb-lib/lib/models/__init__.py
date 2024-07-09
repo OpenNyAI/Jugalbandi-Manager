@@ -279,6 +279,24 @@ class JBPluginUUID(Base):
     )
 
 
+class JBForm(Base):
+    __tablename__ = "jb_form"
+
+    id = Column(String, primary_key=True)
+    form_uid = Column(String)
+    channel_id = Column(String, ForeignKey("jb_channel.id"))
+    parameters = Column(JSON)
+    created_at = Column(
+        TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at = Column(
+        TIMESTAMP(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+        onupdate=func.now(),
+    )
+
+
 # class LangchainPgCollection(Base):
 #     __tablename__ = 'langchain_pg_collection'
 

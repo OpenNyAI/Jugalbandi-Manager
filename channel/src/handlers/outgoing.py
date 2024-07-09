@@ -1,5 +1,6 @@
 import logging
 from ..crud import (
+    get_form_parameters,
     get_user_by_session_id,
     get_channel_by_session_id,
     create_message,
@@ -30,7 +31,9 @@ async def send_message_to_user(message: ChannelInput):
     if not channel_details:
         logger.error("Channel details not found")
         return None
-    wa_bnumber, wa_api_key = channel_details
+    channel_id = channel_details.id
+    wa_bnumber: str = channel_details.app_id
+    wa_api_key: str = channel_details.key
     wa_api_key = EncryptionHandler.decrypt_text(wa_api_key)
 
     if message.dialog == "language":
@@ -184,15 +187,17 @@ async def send_message_to_user(message: ChannelInput):
                 media_url=bot_output.message_data.media_url,
             )
         elif bot_output.message_type == MessageType.FORM:
+            form_id = bot_output.form_id
+            form_parameters = await get_form_parameters(
+                channel_id=channel_id, form_id=form_id
+            )
             channel_id = WhatsappHelper.wa_send_form(
                 wa_bnumber=wa_bnumber,
                 wa_api_key=wa_api_key,
                 user_tele=user_identifier,
-                flow_id=bot_output.wa_flow_id,
-                screen_id=bot_output.wa_screen_id,
                 body=bot_output.message_data.message_text,
                 footer=bot_output.footer,
-                token=bot_output.form_token,
+                form_parameters=form_parameters,
             )
             await create_message(
                 turn_id=message.turn_id,

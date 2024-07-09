@@ -46,7 +46,8 @@ async def process_incoming_messages(message: ChannelInput):
         if not channel_details:
             logger.error("Channel details not found")
             return None
-        wa_bnumber, wa_api_key = channel_details
+        wa_bnumber: str = channel_details.app_id
+        wa_api_key: str = channel_details.key
         wa_api_key = EncryptionHandler.decrypt_text(wa_api_key)
         recieved_message = WhatsappHelper.wa_get_user_audio(
             wa_bnumber=wa_bnumber, wa_api_key=wa_api_key, msg_obj=bot_input
