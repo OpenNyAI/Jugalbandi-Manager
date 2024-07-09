@@ -18,3 +18,5 @@ plugins/
 media/
 
 mainTemplate.parameters.json
+docs/_site/
+docs/Gemfile.lock
