@@ -51,7 +51,7 @@ def read_root():
     return {"Hello": "World"}
 
 
-@app.get("/bots")
+@app.get("/v1/bots")
 async def get_bots():
     bots = await get_bot_list()
     for bot in bots:
@@ -65,7 +65,7 @@ async def get_bots():
     return bots
 
 
-@app.post("/bot/install")
+@app.post("/v1/bot/install")
 async def install_bot(install_content: JBBotCode):
     flow_input = await handle_install_bot(install_content)
     produce_message(flow_input.model_dump_json(), topic=flow_topic)
@@ -73,7 +73,7 @@ async def install_bot(install_content: JBBotCode):
 
 
 # endpoint to activate bot and link it with a phone number
-@app.post("/bot/{bot_id}/activate")
+@app.post("/v1/bot/{bot_id}/activate")
 async def activate_bot(bot_id: str, request_body: JBBotActivate):
     activate_bot_response = await handle_activate_bot(
         bot_id=bot_id, request_body=request_body
@@ -83,7 +83,7 @@ async def activate_bot(bot_id: str, request_body: JBBotActivate):
     return {"status": "success"}
 
 
-@app.get("/bot/{bot_id}/deactivate")
+@app.get("/v1/bot/{bot_id}/deactivate")
 async def get_bot(bot_id: str):
     updated_info = await handle_deactivate_bot(bot_id)
     if updated_info["status"] == "error":
@@ -91,7 +91,7 @@ async def get_bot(bot_id: str):
     return {"status": "success"}
 
 
-@app.delete("/bot/{bot_id}")
+@app.delete("/v1/bot/{bot_id}")
 async def delete_bot(bot_id: str):
     updated_info = await handle_delete_bot(bot_id)
     if updated_info["status"] == "error":
@@ -100,7 +100,7 @@ async def delete_bot(bot_id: str):
 
 
 # endpoint to add (config)credentials for a bot to connect to things
-@app.post("/bot/{bot_id}/configure")
+@app.post("/v1/bot/{bot_id}/configure")
 async def add_bot_configuraton(bot_id: str, request: Request):
     request_body = await request.json()
     credentials = request_body.get("credentials")
@@ -121,20 +121,20 @@ async def add_bot_configuraton(bot_id: str, request: Request):
 
 
 # get all messages related to a session
-@app.get("/chats/{bot_id}/sessions/{session_id}")
+@app.get("/v1/chats/{bot_id}/sessions/{session_id}")
 async def get_session(bot_id: str, session_id: str):
     sessions = await get_bot_chat_sessions(bot_id, session_id)
     return sessions
 
 
 # get all chats related to a bot
-@app.get("/chats/{bot_id}")
+@app.get("/v1/chats/{bot_id}")
 async def get_chats(bot_id: str, skip: int = 0, limit: int = 100):
     chats = await get_chat_history(bot_id, skip, limit)
     return chats
 
 
-@app.get("/chats")
+@app.get("/v1/chats")
 async def get_chats(bot_id: str) -> list:
     chats = await get_chat_history(bot_id)
     return chats

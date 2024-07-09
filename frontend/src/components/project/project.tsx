@@ -79,7 +79,7 @@ function Project(props: IProjectProps) {
     const pauseBot = () => {
         if (confirm(`Are you sure want to pause this ${name}?`)) {
             sendRequest({
-                url: `${APIHOST}/bot/${id}/deactivate`,
+                url: `${APIHOST}/v1/bot/${id}/deactivate`,
                 method: "GET"
             }).then((response:any) => {
                 console.log(response);
@@ -91,7 +91,7 @@ function Project(props: IProjectProps) {
     const deleteBot = () => {
         if (confirm(`Are you sure want to delete this ${name}?`)) {
             sendRequest({
-                url: `${APIHOST}/bot/${id}`,
+                url: `${APIHOST}/v1/bot/${id}`,
                 method: "DELETE"
             }).then((response:any) => {
                 console.log(response);
