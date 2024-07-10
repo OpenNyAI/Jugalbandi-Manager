@@ -510,7 +510,7 @@
                 },
                 {
                   "name": "KAFKA_RETRIEVER_TOPIC",
-                  "value": "rag"
+                  "value": "retriever"
                 },
                 
                 {
