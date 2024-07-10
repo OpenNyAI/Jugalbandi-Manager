@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request
 from ...crud import get_chat_history, get_bot_list, get_bot_chat_sessions
-from ...bot_handlers import (
+from ...handlers.v1 import handle_callback, handle_webhook
+from ...handlers.v1.bot_handlers import (
     handle_activate_bot,
     handle_deactivate_bot,
     handle_delete_bot,
@@ -107,3 +108,25 @@ async def get_chats(bot_id: str, skip: int = 0, limit: int = 100):
 async def get_chats(bot_id: str) -> list:
     chats = await get_chat_history(bot_id)
     return chats
+
+
+@router.post("/callback")
+async def callback(request: Request):
+    data = await request.json()
+
+    async for channel_input in handle_callback(data):
+        produce_message(channel_input.model_dump_json())
+
+    return 200
+
+
+@router.post("/webhook")
+async def plugin_webhook(request: Request):
+    webhook_data = await request.body()
+    webhook_data = webhook_data.decode("utf-8")
+    try:
+        async for flow_input in handle_webhook(webhook_data):
+            produce_message(flow_input.model_dump_json(), topic=flow_topic)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    return 200
