@@ -317,3 +317,12 @@ async def update_channel(channel_id: str, data):
             await session.execute(stmt)
             await session.commit()
             return channel_id
+
+
+async def update_channel_by_bot_id(bot_id: str, data):
+    async with DBSessionHandler.get_async_session() as session:
+        async with session.begin():
+            stmt = update(JBChannel).where(JBChannel.bot_id == bot_id).values(**data)
+            await session.execute(stmt)
+            await session.commit()
+            return bot_id

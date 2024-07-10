@@ -45,3 +45,14 @@ class JBBotCode(BaseModel):
     required_credentials: Optional[List[str]] = Field(default_factory=list)
 
     model_config = {"from_attributes": True}
+
+
+class JBChannelContent(BaseModel):
+    name: str
+    type: str
+    url: str
+    app_id: str
+    key: str
+    status: str = "inactive"
+
+    model_config = {"from_attributes": True}
