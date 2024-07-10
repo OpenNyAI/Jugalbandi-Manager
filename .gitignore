@@ -16,6 +16,3 @@ frontend/dist
 dist/
 plugins/
 media/
-
-docs/_site/
-docs/Gemfile.lock
