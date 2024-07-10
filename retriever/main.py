@@ -18,7 +18,7 @@ load_dotenv()
 print("Inside Retriever", file=sys.stderr)
 
 kafka_broker = os.getenv("KAFKA_BROKER")
-rag_topic = os.getenv("KAFKA_RAG_TOPIC")
+rag_topic = os.getenv("KAFKA_RETRIEVER_TOPIC")
 flow_topic = os.getenv("KAFKA_FLOW_TOPIC")
 
 print("Connecting", file=sys.stderr)

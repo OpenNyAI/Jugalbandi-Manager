@@ -37,7 +37,7 @@ logger.info("Starting Listening")
 
 kafka_broker = os.getenv("KAFKA_BROKER")
 flow_topic = os.getenv("KAFKA_FLOW_TOPIC")
-rag_topic = os.getenv("KAFKA_RAG_TOPIC")
+rag_topic = os.getenv("KAFKA_RETRIEVER_TOPIC")
 language_topic = os.getenv("KAFKA_LANGUAGE_TOPIC")
 channel_topic = os.getenv("KAFKA_CHANNEL_TOPIC")
 
