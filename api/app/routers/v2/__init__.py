@@ -4,6 +4,7 @@ from .channel import router as channel_router
 
 router = APIRouter(
     prefix="/v2",
+    tags=["v2"],
 )
 router.include_router(bot_router)
 router.include_router(channel_router)
