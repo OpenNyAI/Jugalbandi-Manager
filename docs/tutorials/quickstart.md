@@ -71,21 +71,12 @@ PUBLIC_URL_PREFIX= # Set Tunnel URL if using local storage
 7. Start the `kafka` and `postgres` container.
 ```bash
 $ bash scripts/run.sh kafka postgres
-```
+``` 
+This will start the kafka and postgres container and create the required topics and databases. 
 
-8. Start a new shell session and create the relevant postgres tables.
-```bash
-$ bash scripts/upgrade-db.sh
-```
+**Note**: Wait for the services to start and then proceed to the next step in new shell session.
 
-9. Create relevant kafka topics.
-```bash
-$ bash scripts/create-topic.sh channel
-$ bash scripts/create-topic.sh flow
-$ bash scripts/create-topic.sh language
-```
-
-10. Start JB Manager
+8.  Start JB Manager
 ```bash
 $ bash scripts/run.sh --stage api channel language flow frontend
 ```
