@@ -38,7 +38,6 @@ ALTER TABLE public.alembic_version OWNER TO postgres;
 CREATE TABLE public.jb_bot (
     id character varying NOT NULL,
     name character varying,
-    phone_number character varying,
     version character varying NOT NULL,
     status character varying NOT NULL,
     config_env json,
@@ -49,12 +48,30 @@ CREATE TABLE public.jb_bot (
     requirements character varying,
     credentials json,
     index_urls character varying[],
-    required_credentials character varying[],
-    channels json
+    required_credentials character varying[]
 );
 
 
 ALTER TABLE public.jb_bot OWNER TO postgres;
+
+--
+-- Name: jb_channel; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.jb_channel (
+    id character varying NOT NULL,
+    bot_id character varying,
+    status character varying NOT NULL,
+    name character varying,
+    type character varying,
+    key character varying,
+    app_id character varying,
+    url character varying,
+    created_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.jb_channel OWNER TO postgres;
 
 --
 -- Name: jb_chat_history; Type: TABLE; Schema: public; Owner: postgres
@@ -94,6 +111,22 @@ CREATE TABLE public.jb_document_store_log (
 ALTER TABLE public.jb_document_store_log OWNER TO postgres;
 
 --
+-- Name: jb_form; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.jb_form (
+    id character varying NOT NULL,
+    form_uid character varying,
+    channel_id character varying,
+    parameters json,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.jb_form OWNER TO postgres;
+
+--
 -- Name: jb_fsm_state; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -101,10 +134,10 @@ CREATE TABLE public.jb_fsm_state (
     id character varying NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    pid character varying,
     state character varying,
     variables json,
-    message character varying
+    message character varying,
+    session_id character varying
 );
 
 
@@ -177,9 +210,9 @@ ALTER TABLE public.jb_qa_log OWNER TO postgres;
 CREATE TABLE public.jb_session (
     id character varying NOT NULL,
     pid character varying,
-    bot_id character varying,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL
+    updated_at timestamp with time zone DEFAULT now() NOT NULL,
+    channel_id character varying
 );
 
 
@@ -251,9 +284,9 @@ ALTER TABLE public.jb_tts_log OWNER TO postgres;
 CREATE TABLE public.jb_turn (
     id character varying NOT NULL,
     session_id character varying,
-    bot_id character varying,
     turn_type character varying,
-    channel character varying
+    channel character varying,
+    channel_id character varying
 );
 
 
@@ -265,12 +298,12 @@ ALTER TABLE public.jb_turn OWNER TO postgres;
 
 CREATE TABLE public.jb_users (
     id character varying NOT NULL,
-    bot_id character varying,
     first_name character varying,
     last_name character varying,
-    phone_number character varying,
     language_preference character varying,
-    created_at timestamp with time zone DEFAULT now() NOT NULL
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    channel_id character varying,
+    identifier character varying
 );
 
 
@@ -281,7 +314,7 @@ ALTER TABLE public.jb_users OWNER TO postgres;
 --
 
 COPY public.alembic_version (version_num) FROM stdin;
-159ddccc1ed1
+fd76a381bc20
 \.
 
 
@@ -289,7 +322,15 @@ COPY public.alembic_version (version_num) FROM stdin;
 -- Data for Name: jb_bot; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.jb_bot (id, name, phone_number, version, status, config_env, created_at, dsl, updated_at, code, requirements, credentials, index_urls, required_credentials, channels) FROM stdin;
+COPY public.jb_bot (id, name, version, status, config_env, created_at, dsl, updated_at, code, requirements, credentials, index_urls, required_credentials) FROM stdin;
+\.
+
+
+--
+-- Data for Name: jb_channel; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.jb_channel (id, bot_id, status, name, type, key, app_id, url, created_at) FROM stdin;
 \.
 
 
@@ -310,10 +351,18 @@ COPY public.jb_document_store_log (uuid, bot_id, documents_list, total_file_size
 
 
 --
+-- Data for Name: jb_form; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public.jb_form (id, form_uid, channel_id, parameters, created_at, updated_at) FROM stdin;
+\.
+
+
+--
 -- Data for Name: jb_fsm_state; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.jb_fsm_state (id, created_at, updated_at, pid, state, variables, message) FROM stdin;
+COPY public.jb_fsm_state (id, created_at, updated_at, state, variables, message, session_id) FROM stdin;
 \.
 
 
@@ -345,7 +394,7 @@ COPY public.jb_qa_log (id, pid, bot_id, document_uuid, input_language, query, au
 -- Data for Name: jb_session; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.jb_session (id, pid, bot_id, created_at, updated_at) FROM stdin;
+COPY public.jb_session (id, pid, created_at, updated_at, channel_id) FROM stdin;
 \.
 
 
@@ -377,7 +426,7 @@ COPY public.jb_tts_log (id, qa_log_id, text, model_name, audio_output_bytes, sta
 -- Data for Name: jb_turn; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.jb_turn (id, session_id, bot_id, turn_type, channel) FROM stdin;
+COPY public.jb_turn (id, session_id, turn_type, channel, channel_id) FROM stdin;
 \.
 
 
@@ -385,7 +434,7 @@ COPY public.jb_turn (id, session_id, bot_id, turn_type, channel) FROM stdin;
 -- Data for Name: jb_users; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.jb_users (id, bot_id, first_name, last_name, phone_number, language_preference, created_at) FROM stdin;
+COPY public.jb_users (id, first_name, last_name, language_preference, created_at, channel_id, identifier) FROM stdin;
 \.
 
 
@@ -398,19 +447,19 @@ ALTER TABLE ONLY public.alembic_version
 
 
 --
--- Name: jb_bot jb_bot_phone_number_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.jb_bot
-    ADD CONSTRAINT jb_bot_phone_number_key UNIQUE (phone_number);
-
-
---
 -- Name: jb_bot jb_bot_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.jb_bot
     ADD CONSTRAINT jb_bot_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: jb_channel jb_channel_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.jb_channel
+    ADD CONSTRAINT jb_channel_pkey PRIMARY KEY (id);
 
 
 --
@@ -427,6 +476,14 @@ ALTER TABLE ONLY public.jb_chat_history
 
 ALTER TABLE ONLY public.jb_document_store_log
     ADD CONSTRAINT jb_document_store_log_pkey PRIMARY KEY (uuid);
+
+
+--
+-- Name: jb_form jb_form_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.jb_form
+    ADD CONSTRAINT jb_form_pkey PRIMARY KEY (id);
 
 
 --
@@ -510,6 +567,22 @@ ALTER TABLE ONLY public.jb_users
 
 
 --
+-- Name: jb_channel jb_channel_bot_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.jb_channel
+    ADD CONSTRAINT jb_channel_bot_id_fkey FOREIGN KEY (bot_id) REFERENCES public.jb_bot(id);
+
+
+--
+-- Name: jb_form jb_form_channel_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.jb_form
+    ADD CONSTRAINT jb_form_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES public.jb_channel(id);
+
+
+--
 -- Name: jb_message jb_message_turn_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -518,11 +591,11 @@ ALTER TABLE ONLY public.jb_message
 
 
 --
--- Name: jb_session jb_session_bot_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: jb_session jb_session_channel_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.jb_session
-    ADD CONSTRAINT jb_session_bot_id_fkey FOREIGN KEY (bot_id) REFERENCES public.jb_bot(id);
+    ADD CONSTRAINT jb_session_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES public.jb_channel(id);
 
 
 --
@@ -534,11 +607,11 @@ ALTER TABLE ONLY public.jb_session
 
 
 --
--- Name: jb_turn jb_turn_bot_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: jb_turn jb_turn_channel_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.jb_turn
-    ADD CONSTRAINT jb_turn_bot_id_fkey FOREIGN KEY (bot_id) REFERENCES public.jb_bot(id);
+    ADD CONSTRAINT jb_turn_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES public.jb_channel(id);
 
 
 --
@@ -550,11 +623,11 @@ ALTER TABLE ONLY public.jb_turn
 
 
 --
--- Name: jb_users jb_users_bot_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+-- Name: jb_users jb_users_channel_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.jb_users
-    ADD CONSTRAINT jb_users_bot_id_fkey FOREIGN KEY (bot_id) REFERENCES public.jb_bot(id);
+    ADD CONSTRAINT jb_users_channel_id_fkey FOREIGN KEY (channel_id) REFERENCES public.jb_channel(id);
 
 
 --
