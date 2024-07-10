@@ -68,18 +68,11 @@ Copy the tunnel url from the loophole shell and add it to `PUBLIC_URL_PREFIX` in
 PUBLIC_URL_PREFIX= # Set Tunnel URL if using local storage
 ```
 
-7. Start the `kafka` and `postgres` container.
-```bash
-$ bash scripts/run.sh kafka postgres
-``` 
-This will start the kafka and postgres container and create the required topics and databases. 
-
-**Note**: Wait for the services to start and then proceed to the next step in new shell session.
-
-8.  Start JB Manager
+7.  Start JB Manager
 ```bash
 $ bash scripts/run.sh --stage api channel language flow frontend
 ```
+8. Once the services are up and running, you can access the JB Manager UI at [http://localhost:4173](http://localhost:4173).
 
 ## Bot Installation and Go Live
 
