@@ -24,7 +24,7 @@
     "start": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "serve": "serve -s dist -p 4173"
+    "serve": "serve -s dist -p 4179"
   },
   "eslintConfig": {
     "extends": [

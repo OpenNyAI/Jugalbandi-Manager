@@ -21,5 +21,5 @@ RUN npm install -g serve
 
 COPY --from=builder /app/frontend/dist ./dist
 
-CMD ["serve", "-s", "dist", "-p", "4173"]
+CMD ["serve", "-s", "dist", "-p", "4179"]
 
