@@ -37,7 +37,7 @@ logger.info("Starting Listening")
 
 kafka_broker = os.getenv("KAFKA_BROKER")
 flow_topic = os.getenv("KAFKA_FLOW_TOPIC")
-rag_topic = os.getenv("KAFKA_RETRIEVER_TOPIC")
+retriever_topic = os.getenv("KAFKA_RETRIEVER_TOPIC")
 language_topic = os.getenv("KAFKA_LANGUAGE_TOPIC")
 channel_topic = os.getenv("KAFKA_CHANNEL_TOPIC")
 
@@ -255,8 +255,8 @@ async def flow_loop():
                         query=msg_text,
                         top_chunk_k_value=5,
                     )
-                    logger.info("FLOW -- %s --> %s", rag_topic, rag_input)
-                    producer.send_message(rag_topic, rag_input.model_dump_json())
+                    logger.info("FLOW -- %s --> %s", retriever_topic, rag_input)
+                    producer.send_message(retriever_topic, rag_input.model_dump_json())
                 elif fsm_output.dest == "channel":
                     channel_input = ChannelInput(
                         source="flow",

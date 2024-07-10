@@ -18,7 +18,7 @@ load_dotenv()
 print("Inside Retriever", file=sys.stderr)
 
 kafka_broker = os.getenv("KAFKA_BROKER")
-rag_topic = os.getenv("KAFKA_RETRIEVER_TOPIC")
+retriever_topic = os.getenv("KAFKA_RETRIEVER_TOPIC")
 flow_topic = os.getenv("KAFKA_FLOW_TOPIC")
 
 print("Connecting", file=sys.stderr)
@@ -98,7 +98,7 @@ async def querying_with_langchain(
 while True:
     try:
         # will keep trying until non-null message is received
-        message = consumer.receive_message(rag_topic, timeout=1.0)
+        message = consumer.receive_message(retriever_topic, timeout=1.0)
         data = json.loads(message)
         data = RAGInput(**data)
         retriver_input = data.model_dump(
