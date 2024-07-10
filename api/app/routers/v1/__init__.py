@@ -13,6 +13,7 @@ from ...extensions import flow_topic, produce_message
 
 router = APIRouter(
     prefix="/v1",
+    tags=["v1"],
 )
 
 
