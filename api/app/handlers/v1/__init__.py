@@ -12,7 +12,7 @@ from lib.data_models import (
     MessageData,
     FlowInput,
 )
-from .crud import (
+from ...crud import (
     get_active_channel_by_identifier,
     get_user_by_number,
     create_user,
@@ -23,7 +23,7 @@ from .crud import (
     create_message,
     get_plugin_reference,
 )
-from .utils import extract_reference_id
+from ...utils import extract_reference_id
 
 logger = logging.getLogger("jb-manager-api")
 

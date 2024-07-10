@@ -2,7 +2,7 @@ import json
 from unittest.mock import patch, MagicMock
 import pytest
 
-from app.handlers import handle_webhook
+from app.handlers.v1 import handle_webhook
 
 
 # Test cases
@@ -12,7 +12,7 @@ async def test_handle_webhook_valid_data():
 
     # Mocking the extract_reference_id function
     with patch(
-        "app.handlers.get_plugin_reference",
+        "app.handlers.v1.get_plugin_reference",
         return_value=MagicMock(session_id="1234", turn_id="5678"),
     ):
         flow_input_generator = handle_webhook(webhook_data)

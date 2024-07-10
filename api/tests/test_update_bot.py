@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch, Mock
 import pytest
-from app.bot_handlers import handle_update_bot
+from app.handlers.v1.bot_handlers import handle_update_bot
 
 mock_encryption_handler = MagicMock()
 mock_encrypt_dict = Mock(
@@ -11,11 +11,11 @@ mock_encryption_handler.encrypt_dict = mock_encrypt_dict
 
 @pytest.mark.asyncio
 @patch(
-    "app.bot_handlers.get_bot_by_id",
+    "app.handlers.v1.bot_handlers.get_bot_by_id",
     return_value={"id": "test_bot_id", "name": "Test Bot"},
 )
-@patch("app.bot_handlers.update_bot", return_value=True)
-@patch("app.bot_handlers.EncryptionHandler", mock_encryption_handler)
+@patch("app.handlers.v1.bot_handlers.update_bot", return_value=True)
+@patch("app.handlers.v1.bot_handlers.EncryptionHandler", mock_encryption_handler)
 async def test_handle_update_bot_with_config_env(mock_update_bot, mock_get_bot_by_id):
     mock_encryption_handler.reset_mock()
     bot_id = "test_bot_id"
@@ -40,10 +40,10 @@ async def test_handle_update_bot_with_config_env(mock_update_bot, mock_get_bot_b
 
 @pytest.mark.asyncio
 @patch(
-    "app.bot_handlers.get_bot_by_id",
+    "app.handlers.v1.bot_handlers.get_bot_by_id",
     return_value={"id": "test_bot_id", "name": "Test Bot"},
 )
-@patch("app.bot_handlers.update_bot", return_value=True)
+@patch("app.handlers.v1.bot_handlers.update_bot", return_value=True)
 async def test_handle_update_bot_without_config_env(
     mock_update_bot, mock_get_bot_by_id
 ):
@@ -65,7 +65,7 @@ async def test_handle_update_bot_without_config_env(
 
 
 @pytest.mark.asyncio
-@patch("app.bot_handlers.get_bot_by_id", return_value=None)
+@patch("app.handlers.v1.bot_handlers.get_bot_by_id", return_value=None)
 async def test_handle_update_bot_bot_not_found(mock_get_bot_by_id):
     bot_id = "test_bot_id"
     bot_data = {

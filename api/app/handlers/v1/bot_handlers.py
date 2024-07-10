@@ -3,8 +3,8 @@ from typing import Dict
 from lib.models import JBBot
 from lib.data_models import FlowInput, BotConfig
 from lib.encryption_handler import EncryptionHandler
-from .jb_schema import JBBotActivate, JBBotCode
-from .crud import (
+from ...jb_schema import JBBotActivate, JBBotCode
+from ...crud import (
     create_bot,
     create_channel,
     get_bot_by_id,

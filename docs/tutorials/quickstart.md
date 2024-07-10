@@ -98,7 +98,7 @@ $ ./loophole http 8000
 ```
 7. Copy the tunnel url from the loophole shell.
 ![](../assets/quickstart-loophole-8000.png)
-8. Add this url to register the callback URL for Whatsapp service provider. Your callback url will look like this `<Tunnel URL>/callback`. 
+8. Add this url to register the callback URL for Whatsapp service provider. Your callback url will look like this `<Tunnel URL>/v1/callback`. 
 
     For this tutorial, we are using the shell script to add the callback URL. Run the script on a new shell session with the appropriate values to register the callback URL.
 

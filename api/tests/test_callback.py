@@ -6,18 +6,18 @@ from lib.data_models import (
     ChannelIntent,
 )
 
-from app.handlers import handle_callback
+from app.handlers.v1 import handle_callback
 
 
 @pytest.mark.asyncio
-@patch("app.handlers.get_active_channel_by_identifier")
-@patch("app.handlers.get_user_by_number")
-@patch("app.handlers.create_user")
-@patch("app.handlers.create_session")
-@patch("app.handlers.get_user_session")
-@patch("app.handlers.update_session")
-@patch("app.handlers.create_turn")
-@patch("app.handlers.create_message")
+@patch("app.handlers.v1.get_active_channel_by_identifier")
+@patch("app.handlers.v1.get_user_by_number")
+@patch("app.handlers.v1.create_user")
+@patch("app.handlers.v1.create_session")
+@patch("app.handlers.v1.get_user_session")
+@patch("app.handlers.v1.update_session")
+@patch("app.handlers.v1.create_turn")
+@patch("app.handlers.v1.create_message")
 async def test_text_message(
     mock_create_message,
     mock_create_turn,
@@ -104,14 +104,14 @@ async def test_text_message(
 
 
 @pytest.mark.asyncio
-@patch("app.handlers.get_active_channel_by_identifier")
-@patch("app.handlers.get_user_by_number")
-@patch("app.handlers.create_user")
-@patch("app.handlers.create_session")
-@patch("app.handlers.get_user_session")
-@patch("app.handlers.update_session")
-@patch("app.handlers.create_turn")
-@patch("app.handlers.create_message")
+@patch("app.handlers.v1.get_active_channel_by_identifier")
+@patch("app.handlers.v1.get_user_by_number")
+@patch("app.handlers.v1.create_user")
+@patch("app.handlers.v1.create_session")
+@patch("app.handlers.v1.get_user_session")
+@patch("app.handlers.v1.update_session")
+@patch("app.handlers.v1.create_turn")
+@patch("app.handlers.v1.create_message")
 async def test_audio_message(
     mock_create_message,
     mock_create_turn,
@@ -206,14 +206,14 @@ async def test_audio_message(
 
 
 @pytest.mark.asyncio
-@patch("app.handlers.get_active_channel_by_identifier")
-@patch("app.handlers.get_user_by_number")
-@patch("app.handlers.create_user")
-@patch("app.handlers.create_session")
-@patch("app.handlers.get_user_session")
-@patch("app.handlers.update_session")
-@patch("app.handlers.create_turn")
-@patch("app.handlers.create_message")
+@patch("app.handlers.v1.get_active_channel_by_identifier")
+@patch("app.handlers.v1.get_user_by_number")
+@patch("app.handlers.v1.create_user")
+@patch("app.handlers.v1.create_session")
+@patch("app.handlers.v1.get_user_session")
+@patch("app.handlers.v1.update_session")
+@patch("app.handlers.v1.create_turn")
+@patch("app.handlers.v1.create_message")
 async def test_button_reply_message(
     mock_create_message,
     mock_create_turn,
@@ -312,14 +312,14 @@ async def test_button_reply_message(
 
 
 @pytest.mark.asyncio
-@patch("app.handlers.get_active_channel_by_identifier")
-@patch("app.handlers.get_user_by_number")
-@patch("app.handlers.create_user")
-@patch("app.handlers.create_session")
-@patch("app.handlers.get_user_session")
-@patch("app.handlers.update_session")
-@patch("app.handlers.create_turn")
-@patch("app.handlers.create_message")
+@patch("app.handlers.v1.get_active_channel_by_identifier")
+@patch("app.handlers.v1.get_user_by_number")
+@patch("app.handlers.v1.create_user")
+@patch("app.handlers.v1.create_session")
+@patch("app.handlers.v1.get_user_session")
+@patch("app.handlers.v1.update_session")
+@patch("app.handlers.v1.create_turn")
+@patch("app.handlers.v1.create_message")
 async def test_list_reply_message(
     mock_create_message,
     mock_create_turn,
