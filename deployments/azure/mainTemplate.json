@@ -509,8 +509,8 @@
                   "value": "language"
                 },
                 {
-                  "name": "KAFKA_RAG_TOPIC",
-                  "value": "rag"
+                  "name": "KAFKA_RETRIEVER_TOPIC",
+                  "value": "retriever"
                 },
                 
                 {

@@ -16,5 +16,3 @@ frontend/dist
 dist/
 plugins/
 media/
-
-mainTemplate.parameters.json
