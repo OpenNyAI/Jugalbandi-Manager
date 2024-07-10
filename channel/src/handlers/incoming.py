@@ -2,7 +2,7 @@ import json
 import logging
 import base64
 from ..crud import (
-    get_bot_by_session_id,
+    get_channel_by_session_id,
     set_user_language,
     update_message,
 )
@@ -42,13 +42,13 @@ async def process_incoming_messages(message: ChannelInput):
         recieved_message = WhatsappHelper.wa_get_user_text(bot_input)
         await update_message(msg_id, message_text=recieved_message.content)
     if message_type == MessageType.AUDIO:
-        wa_bnumber, bot_channel_credentials = await get_bot_by_session_id(
-            session_id=session_id
-        )
-        bot_channel_credentials = EncryptionHandler.decrypt_dict(
-            bot_channel_credentials
-        )
-        wa_api_key = bot_channel_credentials["whatsapp"]
+        channel_details = await get_channel_by_session_id(session_id=session_id)
+        if not channel_details:
+            logger.error("Channel details not found")
+            return None
+        wa_bnumber: str = channel_details.app_id
+        wa_api_key: str = channel_details.key
+        wa_api_key = EncryptionHandler.decrypt_text(wa_api_key)
         recieved_message = WhatsappHelper.wa_get_user_audio(
             wa_bnumber=wa_bnumber, wa_api_key=wa_api_key, msg_obj=bot_input
         )

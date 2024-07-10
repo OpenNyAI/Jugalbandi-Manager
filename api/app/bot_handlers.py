@@ -1,9 +1,18 @@
+import os
 from typing import Dict
 from lib.models import JBBot
 from lib.data_models import FlowInput, BotConfig
 from lib.encryption_handler import EncryptionHandler
 from .jb_schema import JBBotActivate, JBBotCode
-from .crud import create_bot, get_bot_by_id, get_bot_by_phone_number, update_bot
+from .crud import (
+    create_bot,
+    create_channel,
+    get_bot_by_id,
+    update_channel,
+    update_bot,
+    get_channels_by_identifier,
+    get_channel_by_id,
+)
 
 
 async def handle_install_bot(install_content: JBBotCode) -> FlowInput:
@@ -35,14 +44,24 @@ async def handle_activate_bot(bot_id: str, request_body: JBBotActivate):
     bot: JBBot = await get_bot_by_id(bot_id)
     if not bot:
         return {"status": "error", "message": "Bot not found"}
-    if bot.status == "active":
-        return {"status": "error", "message": "Bot already active"}
-    existing_bot = await get_bot_by_phone_number(phone_number)
-    if existing_bot and existing_bot.id != bot_id:
-        return {
-            "status": "error",
-            "message": f"Phone number {phone_number} already in use by bot {existing_bot.name}",
-        }
+    existing_channels = await get_channels_by_identifier(
+        identifier=phone_number, channel_type="whatsapp"
+    )
+    print(existing_channels)
+    if existing_channels:
+        for channel in existing_channels:
+            if channel.status == "active" and channel.bot_id != bot_id:
+                return {
+                    "status": "error",
+                    "message": f"Phone number {phone_number} already in use by bot {channel.bot.name}",
+                }
+            elif channel.status == "active" and channel.bot_id == bot_id:
+                return {"status": "error", "message": "Bot already active"}
+            elif channel.status == "inactive" and channel.bot_id == bot_id:
+                channel_key = EncryptionHandler.encrypt_text(channels["whatsapp"])
+                channel_data = {"status": "active", "key": channel_key}
+                await update_channel(channel.id, channel_data)
+                return {"status": "success"}
     required_credentials = bot.required_credentials
     current_credentials = bot.credentials if bot.credentials else {}
     missing_credentials = [
@@ -53,12 +72,16 @@ async def handle_activate_bot(bot_id: str, request_body: JBBotActivate):
             "status": "error",
             "message": f"Bot missing required credentials: {', '.join(missing_credentials)}",
         }
-    channels = EncryptionHandler.encrypt_dict(channels)
-    bot_data = {}
-    bot_data["phone_number"] = phone_number
-    bot_data["channels"] = channels
-    bot_data["status"] = "active"
-    await update_bot(bot_id, bot_data)
+    channel_key = EncryptionHandler.encrypt_text(channels["whatsapp"])
+    channel_data = {
+        "name": "whatsapp",
+        "type": "whatsapp",
+        "key": channel_key,
+        "app_id": phone_number,
+        "url": os.getenv("WA_API_HOST"),
+        "status": "active",
+    }
+    await create_channel(bot_id, channel_data)
     return {"status": "success"}
 
 
@@ -72,3 +95,35 @@ async def handle_update_bot(bot_id: str, bot_data: Dict):
         return {"status": "error", "message": "Bot not found"}
     await update_bot(bot_id, bot_data)
     return {"status": "success", "message": "Bot updated", "bot": bot}
+
+
+async def handle_update_channel(channel_id: str, channel_data: Dict):
+    if "key" in channel_data:
+        channel_data["key"] = EncryptionHandler.encrypt_text(channel_data["key"])
+    channel = await get_channel_by_id(channel_id)
+    if not channel:
+        return {"status": "error", "message": "Channel not found"}
+    await update_channel(channel_id, channel_data)
+    return {"status": "success", "message": "Channel updated", "channel": channel}
+
+
+async def handle_delete_bot(bot_id: str):
+    bot_data = {"status": "deleted"}
+    updated_info = await handle_update_bot(bot_id, bot_data)
+    if updated_info["status"] == "error":
+        return updated_info
+    updated_bot = updated_info["bot"]
+    for channel in updated_bot.channels:
+        channel_data = {"status": "deleted"}
+        await update_channel(channel.id, channel_data)
+    return {"status": "success", "message": "Bot deleted"}
+
+
+async def handle_deactivate_bot(bot_id: str):
+    bot = await get_bot_by_id(bot_id)
+    if not bot:
+        return {"status": "error", "message": "Bot not found"}
+    for channel in bot.channels:
+        channel_data = {"status": "inactive"}
+        await update_channel(channel.id, channel_data)
+    return {"status": "success", "message": "Bot deactivated"}

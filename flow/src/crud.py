@@ -1,12 +1,12 @@
 import uuid
-from sqlalchemy import select, update
+from sqlalchemy import join, select, update
 from sqlalchemy.orm import joinedload
 from lib.db_session_handler import DBSessionHandler
-from lib.models import JBFSMState, JBSession, JBPluginUUID, JBBot
+from lib.models import JBFSMState, JBSession, JBPluginUUID, JBBot, JBChannel
 
 
-async def get_state_by_pid(pid: str) -> JBFSMState:
-    query = select(JBFSMState).where(JBFSMState.pid == pid)
+async def get_state_by_pid(session_id: str) -> JBFSMState:
+    query = select(JBFSMState).where(JBFSMState.session_id == session_id)
     async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             result = await session.execute(query)
@@ -15,9 +15,13 @@ async def get_state_by_pid(pid: str) -> JBFSMState:
     return None
 
 
-async def insert_state(pid: str, state: str, variables: dict = dict()) -> JBFSMState:
+async def insert_state(
+    session_id: str, state: str, variables: dict = dict()
+) -> JBFSMState:
     state_id = str(uuid.uuid4())
-    state = JBFSMState(id=state_id, pid=pid, state=state, variables=variables)
+    state = JBFSMState(
+        id=state_id, session_id=session_id, state=state, variables=variables
+    )
     async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             session.add(state)
@@ -27,14 +31,14 @@ async def insert_state(pid: str, state: str, variables: dict = dict()) -> JBFSMS
 
 
 async def update_state_and_variables(
-    pid: str, state: str, variables: dict
+    session_id: str, state: str, variables: dict
 ) -> JBFSMState:
     async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             # await session.query(JBFSMState).filter(JBFSMState.pid == pid).update({"state": state, "variables": variables})
             stmt = (
                 update(JBFSMState)
-                .where(JBFSMState.pid == pid)
+                .where(JBFSMState.session_id == session_id)
                 .values(state=state, variables=variables)
             )
             await session.execute(stmt)
@@ -43,13 +47,16 @@ async def update_state_and_variables(
     return None
 
 
-async def get_session_with_bot(session_id: str):
+async def get_bot_by_session_id(session_id: str) -> JBBot | None:
     async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             result = await session.execute(
-                select(JBSession)
-                .options(joinedload(JBSession.bot))
-                .join(JBBot, JBSession.bot_id == JBBot.id)
+                select(JBBot)
+                .select_from(
+                    join(
+                        JBSession, JBChannel, JBSession.channel_id == JBChannel.id
+                    ).join(JBBot, JBChannel.bot_id == JBBot.id)
+                )
                 .where(JBSession.id == session_id)
             )
             s = result.scalars().first()
@@ -71,17 +78,6 @@ async def get_all_bots():
                 select(JBBot).where(JBBot.status != "deleted")
             )
             s = result.scalars().all()
-            return s
-
-
-async def get_pid_by_session_id(session_id: str):
-    # Create a query to select JBSession based on the provided session_id
-    query = select(JBSession.pid).where(JBSession.id == session_id)
-
-    async with DBSessionHandler.get_async_session() as session:
-        async with session.begin():
-            result = await session.execute(query)
-            s = result.scalars().first()
             return s
 
 

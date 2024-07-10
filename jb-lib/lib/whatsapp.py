@@ -7,7 +7,7 @@ import traceback
 from enum import Enum
 
 from dotenv import load_dotenv
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from lib.data_models import ChannelData, MessageType
 
@@ -16,6 +16,7 @@ load_dotenv()
 wa_api_host = os.getenv("WA_API_HOST")
 
 logger = logging.getLogger(__name__)
+
 
 class WAMsgType(int, Enum):
     text = 0
@@ -90,7 +91,9 @@ class WhatsappHelper:
         if msg_obj.type == MessageType.AUDIO:
             time_stp = msg_obj.timestamp
             data = msg_obj.audio["id"]
-            b64audio = WhatsappHelper.wa_download_audio(wa_bnumber=wa_bnumber,wa_api_key=wa_api_key,fileid=data)
+            b64audio = WhatsappHelper.wa_download_audio(
+                wa_bnumber=wa_bnumber, wa_api_key=wa_api_key, fileid=data
+            )
             return WAMsgInfo(WAMsgType.audio, time_stp, b64audio)
         return {}
 
@@ -153,7 +156,9 @@ class WhatsappHelper:
 
     # send text message
     @staticmethod
-    def wa_send_text_message(wa_bnumber: str, wa_api_key: str, user_tele: str, text: str) -> str:
+    def wa_send_text_message(
+        wa_bnumber: str, wa_api_key: str, user_tele: str, text: str
+    ) -> str:
         url = wa_api_host + "/v1/messages"
         headers = {
             "Content-type": "application/json",
@@ -182,7 +187,9 @@ class WhatsappHelper:
 
     # send audio message
     @staticmethod
-    def wa_send_audio_message(wa_bnumber: str, wa_api_key: str, user_tele: str, audio_url: str) -> str:
+    def wa_send_audio_message(
+        wa_bnumber: str, wa_api_key: str, user_tele: str, audio_url: str
+    ) -> str:
         url = wa_api_host + "/v1/messages"
         headers = {
             "Content-type": "application/json",
@@ -207,7 +214,9 @@ class WhatsappHelper:
 
             return None
         except Exception as e:
-            logger.error("Error in sending audio message: %s %s", e, traceback.format_exc())
+            logger.error(
+                "Error in sending audio message: %s %s", e, traceback.format_exc()
+            )
             return None
 
     # handle list
@@ -215,8 +224,8 @@ class WhatsappHelper:
 
     @staticmethod
     def wa_send_image(
-        wa_bnumber: str, 
-        wa_api_key: str, 
+        wa_bnumber: str,
+        wa_api_key: str,
         user_tele: str,
         message: str,
         header: str,
@@ -227,7 +236,7 @@ class WhatsappHelper:
         options: Optional[List[dict]],
         media_url: Optional[str] = None,
     ) -> str:
-        
+
         if options:
             return WhatsappHelper.wa_send_interactive_message(
                 wa_bnumber=wa_bnumber,
@@ -240,7 +249,7 @@ class WhatsappHelper:
                 menu_selector=menu_selector,
                 menu_title=menu_title,
                 options=options,
-                media_url=media_url
+                media_url=media_url,
             )
         else:
             url = wa_api_host + "/v1/messages"
@@ -269,16 +278,19 @@ class WhatsappHelper:
                     logger.error("Status Code: %s :: %s", r.status_code, json_output)
                 return None
             except Exception as e:
-                logger.error("Error in sending interactive message: %s, %s", e, traceback.format_exc())
+                logger.error(
+                    "Error in sending interactive message: %s, %s",
+                    e,
+                    traceback.format_exc(),
+                )
                 return None
-
 
     # handle interactive
     # send interactive
     @staticmethod
     def wa_send_interactive_message(
-        wa_bnumber: str, 
-        wa_api_key: str, 
+        wa_bnumber: str,
+        wa_api_key: str,
         user_tele: str,
         message: str,
         header: str,
@@ -360,13 +372,17 @@ class WhatsappHelper:
                 logger.error("Status Code: %s :: %s", r.status_code, json_output)
             return None
         except Exception as e:
-            logger.error("Error in sending interactive message: %s, %s", e, traceback.format_exc())
+            logger.error(
+                "Error in sending interactive message: %s, %s",
+                e,
+                traceback.format_exc(),
+            )
             return None
 
     @staticmethod
     def wa_send_document(
-        wa_bnumber: str, 
-        wa_api_key: str, 
+        wa_bnumber: str,
+        wa_api_key: str,
         user_tele: str,
         document_url: str,
         document_name: str,
@@ -404,8 +420,16 @@ class WhatsappHelper:
 
     @staticmethod
     def wa_send_form(
-        wa_bnumber: str, wa_api_key: str, user_tele: str, body: str, footer: str, token: str, flow_id: str, screen_id: str
+        wa_bnumber: str,
+        wa_api_key: str,
+        user_tele: str,
+        body: str,
+        footer: str,
+        form_parameters: Dict,
     ) -> str:
+        flow_id = form_parameters["flow_id"]
+        screen_id = form_parameters["screen_id"]
+        token = form_parameters["token"]
         url = wa_api_host + "/alpha/whatsappflows"
         headers = {
             "Content-type": "application/json",

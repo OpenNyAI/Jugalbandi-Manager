@@ -21,7 +21,7 @@ export const Home:React.FunctionComponent = (props:props) => {
     React.useEffect(() => {
         setLoading(true);
         sendRequest({
-            url: `${APIHOST}/bots`
+            url: `${APIHOST}/v1/bots`
          }).then((response:any) => {
             setProjects(response);
             setLoading(false);
