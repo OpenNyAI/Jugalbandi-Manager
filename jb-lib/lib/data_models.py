@@ -34,13 +34,11 @@ class BotOutput(BaseModel):
     message_data: MessageData
     options_list: Optional[List[OptionsListType]] = None
     document: Optional[Dict[str, Any]] = None
-    wa_screen_id: Optional[str] = None
-    wa_flow_id: Optional[str] = None
     header: Optional[str] = None
     footer: Optional[str] = None
     menu_selector: Optional[str] = None
     menu_title: Optional[str] = None
-    form_token: Optional[str] = None
+    form_id: Optional[str] = None
 
 
 class BotInput(BaseModel):
@@ -132,12 +130,10 @@ class FSMOutput(BaseModel):
     options_list: Optional[List[OptionsListType]] = None
     media_url: Optional[str] = None
     file: Optional[UploadFile] = None
-    whatsapp_flow_id: Optional[str] = None
-    whatsapp_screen_id: Optional[str] = None
     dialog: Optional[str] = None
     menu_selector: Optional[str] = None
     menu_title: Optional[str] = None
-    form_token: Optional[str] = None
+    form_id: Optional[str] = None
     plugin_uuid: Optional[str] = None
 
 

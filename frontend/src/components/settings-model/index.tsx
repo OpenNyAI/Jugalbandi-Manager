@@ -48,7 +48,7 @@ const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelT
     let data:any = {};
     let apiEndpoint = '';
     if (modelType === 'credentials') {
-        apiEndpoint = `${APIHOST}/bot/${botId}/configure`;
+        apiEndpoint = `${APIHOST}/v1/bot/${botId}/configure`;
         let credentials:any = {};
         for (let key in inputElements) {
           if (inputElements[key].required === true && !inputElements[key].value.toString().trim()) {
@@ -59,7 +59,7 @@ const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelT
         }
         data['credentials'] = { ...credentials };
     } else if (modelType === 'activate') {
-        apiEndpoint = `${APIHOST}/bot/${botId}/activate`;
+        apiEndpoint = `${APIHOST}/v1/bot/${botId}/activate`;
         if (inputElements['phone_number'].required === true && !inputElements['phone_number'].value.toString().trim()) {
             alert('Phone number is required');
             return;
@@ -72,7 +72,7 @@ const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelT
         data['channels'] = {};
         data['channels']['whatsapp'] = inputElements['whatsapp'].value;
     } else if (modelType === 'install') {
-        apiEndpoint = `${APIHOST}/bot/install`;
+        apiEndpoint = `${APIHOST}/v1/bot/install`;
         for (let key in inputElements) {
           if (inputElements[key].required === true && !inputElements[key].value.toString().trim()) {
             alert(`${key} is required`);

@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 
 
 from . import crud
+
 # from .extensions import save_file
 from lib.kafka_utils import KafkaConsumer, KafkaProducer
 from lib.data_models import (
@@ -36,7 +37,7 @@ logger.info("Starting Listening")
 
 kafka_broker = os.getenv("KAFKA_BROKER")
 flow_topic = os.getenv("KAFKA_FLOW_TOPIC")
-rag_topic = os.getenv("KAFKA_RAG_TOPIC")
+retriever_topic = os.getenv("KAFKA_RETRIEVER_TOPIC")
 language_topic = os.getenv("KAFKA_LANGUAGE_TOPIC")
 channel_topic = os.getenv("KAFKA_CHANNEL_TOPIC")
 
@@ -138,13 +139,13 @@ async def flow_loop():
             session_id = flow_input.session_id
             message_id = flow_input.message_id
             path = ""
-            session_details = await crud.get_session_with_bot(flow_input.session_id)
             callback_input = None
             msg_text = None
-            if session_details is None:
+            if flow_input.bot_config is not None:
                 bot_id = flow_input.bot_config.bot_id
             else:
-                bot_id = session_details.bot_id
+                bot = await crud.get_bot_by_session_id(session_id)
+                bot_id = bot.id
             if flow_input.source == "language":
                 msg_text = flow_input.message_text
             elif flow_input.source == "api":
@@ -242,8 +243,6 @@ async def flow_loop():
                         ),
                     )
                     logger.info("FLOW -- %s --> %s", language_topic, kafka_out_msg)
-
-                    logger.info("FLOW -- %s --> %s", language_topic, kafka_out_msg)
                     producer.send_message(
                         language_topic, kafka_out_msg.model_dump_json()
                     )
@@ -256,8 +255,8 @@ async def flow_loop():
                         query=msg_text,
                         top_chunk_k_value=5,
                     )
-                    logger.info("FLOW -- %s --> %s", rag_topic, rag_input)
-                    producer.send_message(rag_topic, rag_input.model_dump_json())
+                    logger.info("FLOW -- %s --> %s", retriever_topic, rag_input)
+                    producer.send_message(retriever_topic, rag_input.model_dump_json())
                 elif fsm_output.dest == "channel":
                     channel_input = ChannelInput(
                         source="flow",
@@ -268,8 +267,6 @@ async def flow_loop():
                         dialog=fsm_output.dialog,
                         data=BotOutput(
                             message_type=fsm_output.type,
-                            wa_flow_id=fsm_output.whatsapp_flow_id,
-                            wa_screen_id=fsm_output.whatsapp_screen_id,
                             message_data=MessageData(
                                 message_text=fsm_output.text,
                                 media_url=media_url if media_url else None,
@@ -279,7 +276,7 @@ async def flow_loop():
                             menu_selector=fsm_output.menu_selector,
                             menu_title=fsm_output.menu_title,
                             options_list=fsm_output.options_list,
-                            form_token=fsm_output.form_token,
+                            form_id=fsm_output.form_id,
                         ),
                     )
                     logger.info("FLOW -- %s --> %s", channel_topic, channel_input)

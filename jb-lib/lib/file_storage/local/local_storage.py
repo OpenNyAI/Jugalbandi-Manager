@@ -1,11 +1,12 @@
 import os
 import logging
 from typing import Union, Optional
-from ..storage import Storage
+from ..storage import AsyncStorage
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("storage")
 
-class LocalStorage(Storage):
+
+class LocalAsyncStorage(AsyncStorage):
     tmp_folder = "/mnt/jb_files"
 
     def __init__(self):
