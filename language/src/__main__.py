@@ -5,7 +5,7 @@ import json
 import os
 import logging
 import traceback
-from typing import List
+from typing import List, Callable
 from dotenv import load_dotenv
 
 from .crud import (
@@ -15,13 +15,13 @@ from .crud import (
 from .handlers import handle_input, handle_output
 
 from lib.data_models import (
-    ChannelInput,
-    FlowInput,
-    LanguageInput,
+    Channel,
+    Flow,
+    Language,
     LanguageIntent,
 )
 from lib.kafka_utils import KafkaConsumer, KafkaProducer
-from lib.model import Language
+from lib.model import LanguageCodes
 
 load_dotenv()
 
@@ -43,31 +43,30 @@ producer = KafkaProducer.from_env_vars()
 logger.info("Connected with topic: %s", language_topic)
 
 
-def send_message(data: FlowInput | ChannelInput):
+def send_message(data: Flow | Channel):
     """Sends message to Kafka topic"""
-    topic = flow_topic if isinstance(data, FlowInput) else channel_topic
+    topic = flow_topic if isinstance(data, Flow) else channel_topic
     msg = data.model_dump_json()
     logger.info("Sending message to %s topic: %s", topic, msg)
     producer.send_message(topic, msg)
 
 
-async def handle_incoming_message(
-    language_input: LanguageInput, callback: callable = None
-):
+async def handle_incoming_message(language_input: Language, callback: Callable):
     """Handler for Language Input"""
-    session_id = language_input.session_id
+    turn_id = language_input.turn_id
     message_intent = language_input.intent
 
-    preferred_language_code = await get_user_preferred_language(session_id)
+    preferred_language_code = await get_user_preferred_language(turn_id)
     if preferred_language_code is None:
-        preferred_language = Language.EN
+        preferred_language = LanguageCodes.EN
     else:
-        preferred_language = Language.__members__.get(
-            preferred_language_code.upper(), Language.EN
+        preferred_language = LanguageCodes.__members__.get(
+            preferred_language_code.upper(), LanguageCodes.EN
         )
     logger.info("User Preferred Language: %s", preferred_language)
 
     if message_intent == LanguageIntent.LANGUAGE_IN:
+        message = language_input.message
         flow_input = await handle_input(
             preferred_language=preferred_language,
             language_input=language_input,
@@ -77,7 +76,7 @@ async def handle_incoming_message(
     elif message_intent == LanguageIntent.LANGUAGE_OUT:
         turn_id = language_input.turn_id
         turn_info = await get_turn_information(turn_id)
-        channel_inputs: List[ChannelInput] = await handle_output(
+        channel_inputs: List[Channel] = await handle_output(
             preferred_language=preferred_language,
             language_input=language_input,
         )
@@ -92,7 +91,7 @@ async def start():
             msg = consumer.receive_message(language_topic)
             logger.info("Received message %s", msg)
             msg = json.loads(msg)
-            input_data = LanguageInput(**msg)
+            input_data = Language(**msg)
             logger.info("Received message %s", input_data)
             await handle_incoming_message(input_data, callback=send_message)
         except Exception as e:

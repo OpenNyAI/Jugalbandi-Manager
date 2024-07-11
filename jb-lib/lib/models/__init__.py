@@ -105,9 +105,13 @@ class JBTurn(Base):
 
     id = Column(String, primary_key=True)
     session_id = Column(String, ForeignKey("jb_session.id"))
+    bot_id = Column(String, ForeignKey("jb_bot.id"))
     channel_id = Column(String, ForeignKey("jb_channel.id"))
+    user_id = Column(String, ForeignKey("jb_users.id"))
     turn_type = Column(String)
-    channel = Column(String)
+    created_at = Column(
+        TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
+    )
 
     session = relationship("JBSession", back_populates="turns")
     messages = relationship("JBMessage", back_populates="turn")
