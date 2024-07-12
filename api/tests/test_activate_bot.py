@@ -2,7 +2,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from app.jb_schema import JBBotActivate, JBBotChannels
 from lib.models import JBBot, JBChannel
-from app.bot_handlers import handle_activate_bot
+from app.handlers.v1.bot_handlers import handle_activate_bot
 
 
 mock_encryption_handler = MagicMock()
@@ -22,7 +22,7 @@ async def test_handle_activate_bot_no_phone_number():
 
 
 @pytest.mark.asyncio
-@patch("app.bot_handlers.get_bot_by_id", new_callable=AsyncMock)
+@patch("app.handlers.v1.bot_handlers.get_bot_by_id", new_callable=AsyncMock)
 async def test_handle_activate_bot_bot_not_found(mock_get_bot_by_id):
     mock_get_bot_by_id.return_value = None
     request_body = JBBotActivate(
@@ -33,8 +33,10 @@ async def test_handle_activate_bot_bot_not_found(mock_get_bot_by_id):
 
 
 @pytest.mark.asyncio
-@patch("app.bot_handlers.get_bot_by_id", new_callable=AsyncMock)
-@patch("app.bot_handlers.get_channels_by_identifier", new_callable=AsyncMock)
+@patch("app.handlers.v1.bot_handlers.get_bot_by_id", new_callable=AsyncMock)
+@patch(
+    "app.handlers.v1.bot_handlers.get_channels_by_identifier", new_callable=AsyncMock
+)
 async def test_handle_activate_bot_bot_already_active(
     mock_get_channels_by_identifier, mock_get_bot_by_id
 ):
@@ -62,10 +64,12 @@ async def test_handle_activate_bot_bot_already_active(
 
 
 @pytest.mark.asyncio
-@patch("app.bot_handlers.get_bot_by_id", new_callable=AsyncMock)
-@patch("app.bot_handlers.get_channels_by_identifier", new_callable=AsyncMock)
-@patch("app.bot_handlers.update_channel", new_callable=AsyncMock)
-@patch("app.bot_handlers.EncryptionHandler", mock_encryption_handler)
+@patch("app.handlers.v1.bot_handlers.get_bot_by_id", new_callable=AsyncMock)
+@patch(
+    "app.handlers.v1.bot_handlers.get_channels_by_identifier", new_callable=AsyncMock
+)
+@patch("app.handlers.v1.bot_handlers.update_channel", new_callable=AsyncMock)
+@patch("app.handlers.v1.bot_handlers.EncryptionHandler", mock_encryption_handler)
 async def test_handle_activate_bot_existing_channel(
     mock_update_channel, mock_get_channels_by_identifier, mock_get_bot_by_id
 ):
@@ -97,9 +101,11 @@ async def test_handle_activate_bot_existing_channel(
 
 
 @pytest.mark.asyncio
-@patch("app.bot_handlers.get_bot_by_id", new_callable=AsyncMock)
-@patch("app.bot_handlers.get_channels_by_identifier", new_callable=AsyncMock)
-@patch("app.bot_handlers.update_bot", new_callable=AsyncMock)
+@patch("app.handlers.v1.bot_handlers.get_bot_by_id", new_callable=AsyncMock)
+@patch(
+    "app.handlers.v1.bot_handlers.get_channels_by_identifier", new_callable=AsyncMock
+)
+@patch("app.handlers.v1.bot_handlers.update_bot", new_callable=AsyncMock)
 async def test_handle_activate_bot_phone_number_in_use(
     mock_get_bot_by_id, mock_get_channels_by_identifier, mock_
 ):
@@ -130,8 +136,10 @@ async def test_handle_activate_bot_phone_number_in_use(
 
 
 @pytest.mark.asyncio
-@patch("app.bot_handlers.get_bot_by_id", new_callable=AsyncMock)
-@patch("app.bot_handlers.get_channels_by_identifier", new_callable=AsyncMock)
+@patch("app.handlers.v1.bot_handlers.get_bot_by_id", new_callable=AsyncMock)
+@patch(
+    "app.handlers.v1.bot_handlers.get_channels_by_identifier", new_callable=AsyncMock
+)
 async def test_handle_activate_bot_missing_credentials(
     mock_get_channels_by_identifier, mock_get_bot_by_id
 ):
@@ -150,11 +158,13 @@ async def test_handle_activate_bot_missing_credentials(
 
 
 @pytest.mark.asyncio
-@patch("app.bot_handlers.create_channel", new_callable=AsyncMock)
-@patch("app.bot_handlers.get_bot_by_id", new_callable=AsyncMock)
-@patch("app.bot_handlers.get_channels_by_identifier", new_callable=AsyncMock)
-@patch("app.bot_handlers.EncryptionHandler", mock_encryption_handler)
-@patch("app.bot_handlers.os.getenv", return_value="http://some.url")
+@patch("app.handlers.v1.bot_handlers.create_channel", new_callable=AsyncMock)
+@patch("app.handlers.v1.bot_handlers.get_bot_by_id", new_callable=AsyncMock)
+@patch(
+    "app.handlers.v1.bot_handlers.get_channels_by_identifier", new_callable=AsyncMock
+)
+@patch("app.handlers.v1.bot_handlers.EncryptionHandler", mock_encryption_handler)
+@patch("app.handlers.v1.bot_handlers.os.getenv", return_value="http://some.url")
 async def test_handle_activate_bot_success(
     mock_os_getenv,
     mock_get_channels_by_identifier,

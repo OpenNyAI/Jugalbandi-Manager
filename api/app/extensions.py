@@ -24,3 +24,8 @@ def produce_message(message: str, topic: str = channel_topic):
         producer.send_message(topic=topic, value=message)
     except KafkaException as e:
         return e
+
+
+channel_map = {
+    "whatsapp": "whatsapp",
+}
