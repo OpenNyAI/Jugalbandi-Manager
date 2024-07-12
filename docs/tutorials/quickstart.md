@@ -72,11 +72,11 @@ PUBLIC_URL_PREFIX= # Set Tunnel URL if using local storage
 ```bash
 $ bash scripts/run.sh --stage api channel language flow frontend
 ```
-8. Once the services are up and running, you can access the JB Manager UI at [http://localhost:4173](http://localhost:4173).
+8. Once the services are up and running, you can access the JB Manager UI at [http://localhost:4179](http://localhost:4179).
 
 ## Bot Installation and Go Live
 
-1. Go to [JB Manager UI](http://localhost:4173) 
+1. Go to [JB Manager UI](http://localhost:4179) 
 ![](../assets/quickstart-frontend.png)
 2. Click on install new bot and provide the required data to create your bot. ![](../assets/quickstart-botdetails.png)
 The detailed information about the fields are given below:

@@ -169,7 +169,7 @@ services:
       - ./media:/mnt/jb_files
   frontend:
     ports:
-      - "4173:4173"
+      - "4179:4179"
     environment:
       - VITE_SERVER_HOST=${SERVER_HOST}
     # depends_on:
