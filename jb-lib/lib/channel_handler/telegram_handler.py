@@ -38,7 +38,9 @@ class TelegramHandler(RestChannelHandler):
 
     @classmethod
     def is_valid_data(cls, data: Dict) -> bool:
-        return "message" in data or "edited_message" in data
+        if "update_id" in data and ("message" in data or "edited_message" in data or "channel_post" in data or "callback_query" in data):
+            return True
+        return False
 
     @classmethod
     def process_message(cls, data: Dict) -> Generator[ChannelData, None, None]:
@@ -102,7 +104,7 @@ class TelegramHandler(RestChannelHandler):
             file_bytes = base64.b64decode(file_content)
             file_name = f"{turn_id}.jpg"
             storage.write_file(file_name, file_bytes, "image/jpeg")
-            storage_url = storage.make_public(file_name)
+            storage_url = storage.public_url(file_name)
 
             return Message(
                 message_type=MessageType.IMAGE,

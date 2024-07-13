@@ -84,7 +84,7 @@ class PinnacleWhatsappHandler(RestChannelHandler):
             audio_bytes = base64.b64decode(audio_content)
             audio_file_name = f"{turn_id}.ogg"
             storage.write_file(audio_file_name, audio_bytes, "audio/ogg")
-            storage_url = storage.make_public(audio_file_name)
+            storage_url = storage.public_url(audio_file_name)
 
             return Message(
                 message_type=MessageType.AUDIO,
