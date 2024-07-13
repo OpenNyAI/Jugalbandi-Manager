@@ -7,10 +7,10 @@ import requests
 from sqlalchemy import select
 
 from lib.db_connection import sync_session
-from lib.azure_storage_sync import AzureStorageSync
-from lib.channel_handler.channel_handler import ChannelData, RestChannelHandler, User
-from lib.channel_handler.language import LanguageMapping, LanguageCodes
-from lib.data_models import (
+from ..file_storage.handler import StorageHandler
+from ..channel_handler.channel_handler import ChannelData, RestChannelHandler, User
+from ..channel_handler.language import LanguageMapping, LanguageCodes
+from ..data_models import (
     MessageType,
     Message,
     TextMessage,
@@ -28,16 +28,10 @@ from lib.data_models import (
     DialogOption,
     FormReplyMessage
 )
-from lib.models import JBChannel, JBUser, JBForm
+from ..models import JBChannel, JBUser, JBForm
 from lib.utils import EncryptionHandler
 
-azure_creds = {
-    "account_url": os.getenv("STORAGE_ACCOUNT_URL"),
-    "account_key": os.getenv("STORAGE_ACCOUNT_KEY"),
-    "container_name": os.getenv("STORAGE_AUDIOFILES_CONTAINER"),
-    "base_path": "input/",
-}
-storage = AzureStorageSync(**azure_creds)
+storage = StorageHandler.get_sync_instance()
 
 
 class TelegramHandler(RestChannelHandler):
@@ -351,7 +345,8 @@ class TelegramHandler(RestChannelHandler):
 
     @classmethod
     def send_message(cls, channel: JBChannel, user: JBUser, message: Message):
-        url = f'https://api.telegram.org/bot{channel.app_id}/sendMessage'
+        # url = f'https://api.telegram.org/bot{channel.app_id}/sendMessage'
+        url = channel.url
         headers = cls.generate_header(channel=channel)
         data = cls.parse_bot_output(message=message, channel=channel, user=user)
         import logging
