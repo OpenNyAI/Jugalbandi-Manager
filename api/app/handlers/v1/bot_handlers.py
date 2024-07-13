@@ -26,6 +26,7 @@ async def handle_install_bot(install_content: JBBotCode) -> FlowInput:
             bot_fsm_code=install_content.code,
             bot_requirements_txt=install_content.requirements,
             index_urls=install_content.index_urls,
+            bot_required_credentials=install_content.required_credentials,
             bot_version=install_content.version,
         ),
     )

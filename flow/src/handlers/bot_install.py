@@ -1,3 +1,4 @@
+from typing import List
 import os
 import shutil
 import logging
@@ -9,13 +10,10 @@ from ..crud import create_bot
 logger = logging.getLogger("flow")
 
 
-async def install_or_update_bot(bot_id: str, bot_config: BotConfig):
-    fsm_code = bot_config.bot_fsm_code
-    bot_requirements_txt: str = (
-        bot_config.bot_requirements_txt if bot_config.bot_requirements_txt else ""
-    )
+async def install_or_update_bot(
+    bot_id: str, bot_fsm_code: str, bot_requirements_txt: str, index_urls: List[str]
+):
     requirements_txt = "openai\ncryptography\njb-manager-bot\n" + bot_requirements_txt
-    index_urls = bot_config.index_urls if bot_config.index_urls else []
 
     bots_parent_directory = Path(__file__).parent.parent
     bots_root_directory = Path(os.path.join(bots_parent_directory, "bots"))
@@ -36,7 +34,7 @@ async def install_or_update_bot(bot_id: str, bot_config: BotConfig):
             shutil.copy2(item, bot_dir)
 
     bot_code_file = Path(os.path.join(bot_dir, "bot.py"))
-    bot_code_file.write_text(fsm_code)
+    bot_code_file.write_text(bot_fsm_code)
 
     # create a requirements.txt file in the bot's directory
     requirements_file = Path(os.path.join(bot_dir, "requirements.txt"))
@@ -55,7 +53,19 @@ async def install_or_update_bot(bot_id: str, bot_config: BotConfig):
 
 async def handle_bot_installation_or_update(bot_config: BotConfig):
     bot_id = bot_config.bot_id
-    await install_or_update_bot(bot_id=bot_id, bot_config=bot_config)
+    bot_fsm_code = bot_config.bot_fsm_code
+    if not bot_fsm_code:
+        raise ValueError("FSM code is required")
+    bot_requirements_txt = (
+        bot_config.bot_requirements_txt if bot_config.bot_requirements_txt else ""
+    )
+    index_urls = bot_config.index_urls if bot_config.index_urls else []
+    await install_or_update_bot(
+        bot_id=bot_id,
+        bot_fsm_code=bot_fsm_code,
+        bot_requirements_txt=bot_requirements_txt,
+        index_urls=index_urls,
+    )
     jb_bot = await create_bot(bot_id, bot_config.model_dump())
     if jb_bot:
         return jb_bot

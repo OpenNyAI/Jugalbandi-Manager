@@ -27,3 +27,8 @@ repos:
         entry: bash -c 'cd api && poetry run pytest'
         language: system
         types: [python]
+    -   id: run-tests-flow
+        name: Run Tests in flow
+        entry: bash -c 'cd flow && poetry run pytest'
+        language: system
+        types: [python]

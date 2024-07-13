@@ -1,4 +1,7 @@
 import logging
+import json
+import subprocess
+from pathlib import Path
 from lib.data_models import (
     FSMOutput,
     LanguageInput,
@@ -9,12 +12,19 @@ from lib.data_models import (
     LanguageIntent,
     ChannelIntent,
 )
+from ..crud import (
+    get_bot_by_session_id,
+    get_state_by_pid,
+    insert_state,
+    update_state_and_variables,
+)
+from ..extensions import produce_message
 
 logger = logging.getLogger("flow")
 
 
 def handle_bot_output(
-    fsm_output: FSMOutput, session_id: str, turn_id: str, message_id: str, msg_text: str
+    fsm_output: FSMOutput, session_id: str, turn_id: str, message_id: str
 ):
     media_url = None
     if fsm_output.media_url is not None:
@@ -61,7 +71,7 @@ def handle_bot_output(
             session_id=session_id,
             turn_id=turn_id,
             collection_name="KB_Law_Files",
-            query=msg_text,
+            query=fsm_output.text,
             top_chunk_k_value=5,
         )
         return rag_input
@@ -89,3 +99,74 @@ def handle_bot_output(
         )
         return channel_input
     return NotImplemented
+
+
+async def handle_bot_input(
+    session_id: str, turn_id: str, message_id: str, msg_text: str, callback_input: str
+):
+    state = await get_state_by_pid(session_id)
+    logger.info("State: %s", state)
+
+    if state is None:
+        # logging.info(f"pid {pid} not found in db, inserting")
+        state = await insert_state(session_id, "zero")
+
+    # get name from bot id
+    bot_details = await get_bot_by_session_id(session_id)
+    if not bot_details:
+        logger.error("Bot not found for session_id: %s", session_id)
+        return
+    bot_id: str = bot_details.id
+    bot_name: str = bot_details.name
+    config_env = bot_details.config_env
+    config_env = {} if config_env is None else config_env
+    credentials = bot_details.credentials
+    credentials = {} if credentials is None else credentials
+
+    path = Path(__file__).parent.parent / "bots" / bot_id
+
+    ## need to pass state json and msg_text to the bot
+    fsm_runner_input = {
+        "message_text": msg_text,
+        "callback_input": callback_input,
+        "state": state.variables,
+        "bot_name": bot_name,
+        "credentials": credentials,
+        "config_env": config_env,
+    }
+    completed_process = subprocess.run(
+        [
+            str(path / ".venv" / "bin" / "python"),
+            str(path / "fsm_wrapper.py"),
+            json.dumps(fsm_runner_input),
+        ],
+        capture_output=True,
+        text=True,
+    )
+
+    if completed_process.stderr:
+        logger.error("Error while running fsm: %s", completed_process.stderr)
+        return
+
+    # logger.error("Output from fsm: %s", completed_process.stdout)
+    for line in completed_process.stdout.split("\n"):
+        print(line)
+        if not line:
+            continue
+        # logger.error("Output from fsm: %s", line)
+        fsm_op = json.loads(line)
+        if "callback_message" in fsm_op:
+            logger.info("Callback message: %s", fsm_op["callback_message"])
+            # execute callback
+            output = handle_bot_output(
+                FSMOutput(**fsm_op["callback_message"]),
+                session_id=session_id,
+                turn_id=turn_id,
+                message_id=message_id,
+            )
+            logger.info("Output from callback: %s", output)
+            produce_message(output)
+        else:
+            # save new state to db
+            new_state_variables = fsm_op["new_state"]
+            await update_state_and_variables(session_id, "zerotwo", new_state_variables)
