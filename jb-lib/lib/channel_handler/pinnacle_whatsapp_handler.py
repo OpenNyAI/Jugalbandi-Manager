@@ -6,7 +6,7 @@ import requests
 
 from sqlalchemy import select
 
-from lib.db_connection import sync_session
+from lib.db_session_handler import DBSessionHandler
 from ..file_storage.handler import StorageHandler
 from ..channel_handler.channel_handler import ChannelData, RestChannelHandler, User
 from ..channel_handler.language import LanguageMapping, LanguageCodes
@@ -29,7 +29,7 @@ from ..data_models import (
     FormReplyMessage
 )
 from ..models import JBChannel, JBUser, JBForm
-from lib.utils import EncryptionHandler
+from lib.encryption_handler import EncryptionHandler
 
 storage = StorageHandler.get_sync_instance()
 
@@ -342,7 +342,7 @@ class PinnacleWhatsappHandler(RestChannelHandler):
     @classmethod
     def get_form_parameters(cls, form_id: str):
         # Create a query to insert a new row into JBPluginMapping
-        with sync_session() as session:
+        with DBSessionHandler() as session:
             with session.begin():
                 result = session.execute(select(JBForm).where(JBForm.id == form_id))
                 s = result.scalars().first()
