@@ -1,6 +1,6 @@
 import logging
 from fastapi import APIRouter, HTTPException, Request
-from ...extensions import flow_topic, produce_message, channel_map
+from ...extensions import produce_message, channel_map
 from ...handlers.v2.bot import install, delete, add_credentials, list_bots, add_channel
 from ...jb_schema import JBBotCode, JBChannelContent
 
@@ -20,7 +20,7 @@ async def get_all_bots():
 async def install_bot(install_content: JBBotCode):
     flow_input = await install(install_content)
     try:
-        produce_message(flow_input.model_dump_json(), topic=flow_topic)
+        produce_message(flow_input.model_dump_json())
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error producing message: {e}"

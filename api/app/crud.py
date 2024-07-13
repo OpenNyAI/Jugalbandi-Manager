@@ -91,22 +91,20 @@ async def update_session(session_id: str):
     return None
 
 
-async def create_turn(session_id: str, channel_id: str, turn_type: str, channel: str):
+async def create_turn(bot_id: str, channel_id: str, user_id: str):
     turn_id: str = str(uuid.uuid4())
     async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             session.add(
                 JBTurn(
                     id=turn_id,
-                    session_id=session_id,
+                    bot_id=bot_id,
                     channel_id=channel_id,
-                    turn_type=turn_type,
-                    channel=channel,
+                    user_id=user_id,
                 )
             )
             await session.commit()
             return turn_id
-    return None
 
 
 async def create_message(
