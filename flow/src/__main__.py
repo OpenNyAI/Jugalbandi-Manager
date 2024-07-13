@@ -1,18 +1,11 @@
 import asyncio
 import json
 import traceback
-import os
 import logging
 import subprocess
-import shutil
-from pathlib import Path
 from dotenv import load_dotenv
 
-
-from . import crud
-
 # from .extensions import save_file
-from lib.kafka_utils import KafkaConsumer, KafkaProducer
 from lib.data_models import (
     BotOutput,
     ChannelInput,
@@ -25,83 +18,25 @@ from lib.data_models import (
     ChannelIntent,
     BotConfig,
 )
+from .extensions import consumer, flow_topic, produce_message
+from .crud import (
+    get_all_bots,
+    get_bot_by_session_id,
+    get_state_by_pid,
+    insert_state,
+    update_state_and_variables,
+)
+from .handlers.bot import handle_bot_installation_or_update, install_or_update_bot
+from .handlers.callback import cb
 
 load_dotenv()
 
-logging.basicConfig()
 logger = logging.getLogger("flow")
-logger.setLevel(logging.INFO)
-
-
-logger.info("Starting Listening")
-
-kafka_broker = os.getenv("KAFKA_BROKER")
-flow_topic = os.getenv("KAFKA_FLOW_TOPIC")
-retriever_topic = os.getenv("KAFKA_RETRIEVER_TOPIC")
-language_topic = os.getenv("KAFKA_LANGUAGE_TOPIC")
-channel_topic = os.getenv("KAFKA_CHANNEL_TOPIC")
-
-logger.info("Connecting to topic %s", language_topic)
-
-consumer = KafkaConsumer.from_env_vars(
-    group_id="cooler_group_id", auto_offset_reset="latest"
-)
-producer = KafkaProducer.from_env_vars()
-
-logger.info("Connected to topic %s", language_topic)
-
-cache = {}
-
-
-async def install_or_update_bot(bot_config: BotConfig):
-    bot_id = bot_config.bot_id
-    bot_name = bot_config.bot_name
-    fsm_code = bot_config.bot_fsm_code
-    requirements_txt = (
-        "openai\ncryptography\njb-manager-bot\n" + bot_config.bot_requirements_txt
-    )
-    index_urls = bot_config.index_urls if bot_config.index_urls else []
-
-    bots_parent_directory = Path(__file__).parent.parent
-    bots_root_directory = Path(os.path.join(bots_parent_directory, "bots"))
-    bot_dir = Path(os.path.join(bots_root_directory, bot_id))
-
-    # remove directory if it already exists
-    if bot_dir.exists():
-        shutil.rmtree(bot_dir)
-
-    bot_dir.mkdir(exist_ok=True, parents=True)
-
-    # copy the contents of Path(__file__).parent/template into the bot's directory
-    template_dir = Path(os.path.join(bots_parent_directory, "template"))
-    for item in template_dir.iterdir():
-        if item.is_dir():
-            shutil.copytree(item, bot_dir / item.name)
-        else:
-            shutil.copy2(item, bot_dir)
-
-    bot_code_file = Path(os.path.join(bot_dir, "bot.py"))
-    bot_code_file.write_text(fsm_code)
-
-    # create a requirements.txt file in the bot's directory
-    requirements_file = Path(os.path.join(bot_dir, "requirements.txt"))
-    requirements_file.write_text(requirements_txt)
-
-    # create a venv inside the bot's directory
-    venv_dir = Path(os.path.join(bot_dir, ".venv"))
-    subprocess.run(["python3", "-m", "venv", venv_dir])
-    install_command = [str(venv_dir / "bin" / "pip"), "install"]
-    for index_url in index_urls:
-        install_command.extend(["--extra-index-url", index_url])
-    install_command.extend(["-r", requirements_file])
-    subprocess.run(install_command)
-    logger.info("Installed bot %s", bot_id)
 
 
 async def flow_init():
-    # install()
     # fetch all bots from db and install them
-    bots = await crud.get_all_bots()
+    bots = await get_all_bots()
     for bot in bots:
         try:
             real_bot_config = BotConfig(
@@ -112,7 +47,7 @@ async def flow_init():
                 bot_config_env=bot.config_env,
                 index_urls=bot.index_urls,
             )
-            await install_or_update_bot(real_bot_config)
+            await install_or_update_bot(bot_id=bot.id, bot_config=real_bot_config)
         except Exception as e:
             logger.error(
                 "Error while installing bot: %s :: %s", e, traceback.format_exc()
@@ -136,35 +71,15 @@ async def flow_loop():
             flow_input = FlowInput(**msg)
             # logging.info("FlowInput Pydantic:", flow_input)
 
-            session_id = flow_input.session_id
-            message_id = flow_input.message_id
-            path = ""
+            session_id: str = flow_input.session_id
+            message_id: str = flow_input.message_id
             callback_input = None
             msg_text = None
-            if flow_input.bot_config is not None:
-                bot_id = flow_input.bot_config.bot_id
-            else:
-                bot = await crud.get_bot_by_session_id(session_id)
-                bot_id = bot.id
             if flow_input.source == "language":
                 msg_text = flow_input.message_text
             elif flow_input.source == "api":
                 if flow_input.bot_config is not None:
-                    # TODO: install bot here
-                    # currently we are assuming the bot is already added to the JB_Bot table in api
-                    # in the future the bot data would ideally be passed via kafka message and
-                    # we would need to add the bot to the JB_Bot table from here
-                    jb_bot = await crud.get_bot_by_id(flow_input.bot_config.bot_id)
-
-                    real_bot_config = BotConfig(
-                        bot_id=jb_bot.id,
-                        bot_name=jb_bot.name,
-                        bot_fsm_code=jb_bot.code,
-                        bot_requirements_txt=jb_bot.requirements,
-                        index_urls=jb_bot.index_urls,
-                    )
-
-                    await install_or_update_bot(real_bot_config)
+                    await handle_bot_installation_or_update(flow_input.bot_config)
                     continue
                 if flow_input.plugin_input is not None:
                     callback_input = json.dumps(flow_input.plugin_input)
@@ -188,105 +103,15 @@ async def flow_loop():
 
             # logging.info(f"Message received from {source}: {msg_text}")
 
-            state = await crud.get_state_by_pid(session_id)
+            state = await get_state_by_pid(session_id)
             logger.info("State: %s", state)
 
             if state is None:
                 # logging.info(f"pid {pid} not found in db, inserting")
-                state = await crud.insert_state(session_id, "zero")
-
-            def generate_reference_id():
-                result = crud.insert_jb_plugin_uuid(
-                    flow_input.session_id, flow_input.turn_id
-                )
-                return result
-
-            def cb(fsm_output: FSMOutput):
-                media_url = None
-                if fsm_output.media_url is not None:
-                    media_url = fsm_output.media_url
-
-                # if fsm_output.file is not None:
-                #     upload_file = fsm_output.file
-
-                #     with open(upload_file.path, "rb") as f:
-                #         file_content = f.read()
-                #     media_url = save_file(
-                #         upload_file.filename, file_content, upload_file.mime_type
-                #     )
-                logger.info("FSM Output: %s", fsm_output)
-
-                if fsm_output.dest == "out":
-                    if fsm_output.options_list is not None:
-                        options_list = [
-                            {"id": option.id, "title": option.title}
-                            for option in fsm_output.options_list
-                        ]
-                    kafka_out_msg = LanguageInput(
-                        source="flow",
-                        session_id=session_id,
-                        turn_id=flow_input.turn_id,
-                        intent=LanguageIntent.LANGUAGE_OUT,
-                        data=BotOutput(
-                            message_type=fsm_output.type,
-                            message_data=MessageData(
-                                message_text=fsm_output.text,
-                                media_url=media_url if media_url else None,
-                            ),
-                            header=fsm_output.header,
-                            footer=fsm_output.footer,
-                            menu_selector=fsm_output.menu_selector,
-                            menu_title=fsm_output.menu_title,
-                            options_list=(
-                                options_list if fsm_output.options_list else None
-                            ),
-                        ),
-                    )
-                    logger.info("FLOW -- %s --> %s", language_topic, kafka_out_msg)
-                    producer.send_message(
-                        language_topic, kafka_out_msg.model_dump_json()
-                    )
-                elif fsm_output.dest == "rag":
-                    rag_input = RAGInput(
-                        source="flow",
-                        session_id=session_id,
-                        turn_id=flow_input.turn_id,
-                        collection_name="KB_Law_Files",
-                        query=msg_text,
-                        top_chunk_k_value=5,
-                    )
-                    logger.info("FLOW -- %s --> %s", retriever_topic, rag_input)
-                    producer.send_message(retriever_topic, rag_input.model_dump_json())
-                elif fsm_output.dest == "channel":
-                    channel_input = ChannelInput(
-                        source="flow",
-                        session_id=session_id,
-                        message_id=message_id,
-                        turn_id=flow_input.turn_id,
-                        intent=ChannelIntent.BOT_OUT,
-                        dialog=fsm_output.dialog,
-                        data=BotOutput(
-                            message_type=fsm_output.type,
-                            message_data=MessageData(
-                                message_text=fsm_output.text,
-                                media_url=media_url if media_url else None,
-                            ),
-                            footer=fsm_output.footer,
-                            header=fsm_output.header,
-                            menu_selector=fsm_output.menu_selector,
-                            menu_title=fsm_output.menu_title,
-                            options_list=fsm_output.options_list,
-                            form_id=fsm_output.form_id,
-                        ),
-                    )
-                    logger.info("FLOW -- %s --> %s", channel_topic, channel_input)
-
-                    producer.send_message(
-                        channel_topic, channel_input.model_dump_json()
-                    )
+                state = await insert_state(session_id, "zero")
 
             # get name from bot id
-            bot_details = await crud.get_bot_by_id(bot_id)
+            bot_details = await get_bot_by_session_id(session_id)
             bot_name = bot_details.name
             config_env = bot_details.config_env
             config_env = {} if config_env is None else config_env
@@ -327,11 +152,19 @@ async def flow_loop():
                 if "callback_message" in fsm_op:
                     logger.info("Callback message: %s", fsm_op["callback_message"])
                     # execute callback
-                    cb(FSMOutput(**fsm_op["callback_message"]))
+                    output = cb(
+                        FSMOutput(**fsm_op["callback_message"]),
+                        session_id=session_id,
+                        turn_id=flow_input.turn_id,
+                        message_id=message_id,
+                        msg_text=msg_text,
+                    )
+                    logger.info("Output from callback: %s", output)
+                    produce_message(output)
                 else:
                     # save new state to db
                     new_state_variables = fsm_op["new_state"]
-                    saved_state = await crud.update_state_and_variables(
+                    saved_state = await update_state_and_variables(
                         session_id, "zerotwo", new_state_variables
                     )
 

@@ -1,4 +1,5 @@
 import os
+import uuid
 from typing import Dict
 from lib.models import JBBot
 from lib.data_models import FlowInput, BotConfig
@@ -16,12 +17,11 @@ from ...crud import (
 
 
 async def handle_install_bot(install_content: JBBotCode) -> FlowInput:
-    bot_data = install_content.model_dump()
-    bot = await create_bot(bot_data)
+    bot_id = str(uuid.uuid4())
     flow_input = FlowInput(
         source="api",
         bot_config=BotConfig(
-            bot_id=bot.id,
+            bot_id=bot_id,
             bot_name=install_content.name,
             bot_fsm_code=install_content.code,
             bot_requirements_txt=install_content.requirements,
