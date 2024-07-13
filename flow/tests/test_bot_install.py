@@ -16,7 +16,9 @@ async def test_handle_flow_input_with_valid_bot_config():
         bot_fsm_code="test_bot_fsm_code",
         bot_requirements_txt="test_bot_requirements_txt",
         bot_config_env={"test_key": "test_value"},
+        bot_required_credentials=["API_KEY"],
         index_urls=["test_index_urls"],
+        bot_version="0.0.1",
     )
     flow_input = FlowInput(source="api", bot_config=bot_config)
 
@@ -50,7 +52,13 @@ async def test_handle_flow_input_with_valid_bot_config():
         index_urls=["test_index_urls"],
     )
     mock_create.assert_awaited_once_with(
-        "test_bot_id", flow_input.bot_config.model_dump()
+        bot_id="test_bot_id",
+        name="test_bot_name",
+        code="test_bot_fsm_code",
+        requirements="test_bot_requirements_txt",
+        index_urls=["test_index_urls"],
+        required_credentials=["API_KEY"],
+        version="0.0.1",
     )
 
 

@@ -25,15 +25,12 @@ async def flow_init():
     bots = await get_all_bots()
     for bot in bots:
         try:
-            bot_config = BotConfig(
+            await install_or_update_bot(
                 bot_id=bot.id,
-                bot_name=bot.name,
                 bot_fsm_code=bot.code,
                 bot_requirements_txt=bot.requirements,
-                bot_config_env=bot.config_env,
                 index_urls=bot.index_urls,
             )
-            await install_or_update_bot(bot_id=bot.id, bot_config=bot_config)
         except Exception as e:
             logger.error(
                 "Error while installing bot: %s :: %s", e, traceback.format_exc()

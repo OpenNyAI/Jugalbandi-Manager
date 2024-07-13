@@ -95,17 +95,17 @@ def insert_jb_plugin_uuid(session_id: str, turn_id: str):
     return False
 
 
-async def create_bot(bot_id, data):
-    bot_id = str(uuid.uuid4())
+async def create_bot(
+    bot_id, name, code, requirements, index_urls, required_credentials, version
+):
     bot = JBBot(
         id=bot_id,
-        name=data.get("name"),
-        dsl=data.get("dsl"),
-        code=data.get("code"),
-        requirements=data.get("requirements"),
-        index_urls=data.get("index_urls"),
-        required_credentials=data.get("required_credentials"),
-        version=data.get("version"),
+        name=name,
+        code=code,
+        requirements=requirements,
+        index_urls=index_urls,
+        required_credentials=required_credentials,
+        version=version,
     )
     async with DBSessionHandler.get_async_session() as session:
         async with session.begin():

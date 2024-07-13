@@ -15,7 +15,7 @@ async def install_or_update_bot(
 ):
     requirements_txt = "openai\ncryptography\njb-manager-bot\n" + bot_requirements_txt
 
-    bots_parent_directory = Path(__file__).parent.parent
+    bots_parent_directory = Path(__file__).parent.parent.parent
     bots_root_directory = Path(os.path.join(bots_parent_directory, "bots"))
     bot_dir = Path(os.path.join(bots_root_directory, bot_id))
 
@@ -66,6 +66,14 @@ async def handle_bot_installation_or_update(bot_config: BotConfig):
         bot_requirements_txt=bot_requirements_txt,
         index_urls=index_urls,
     )
-    jb_bot = await create_bot(bot_id, bot_config.model_dump())
+    jb_bot = await create_bot(
+        bot_id=bot_id,
+        name=bot_config.bot_name,
+        code=bot_fsm_code,
+        requirements=bot_requirements_txt,
+        index_urls=index_urls,
+        required_credentials=bot_config.bot_required_credentials,
+        version=bot_config.bot_version,
+    )
     if jb_bot:
         return jb_bot

@@ -123,7 +123,7 @@ async def handle_bot_input(
     credentials = bot_details.credentials
     credentials = {} if credentials is None else credentials
 
-    path = Path(__file__).parent.parent / "bots" / bot_id
+    path = Path(__file__).parent.parent.parent / "bots" / bot_id
 
     ## need to pass state json and msg_text to the bot
     fsm_runner_input = {
