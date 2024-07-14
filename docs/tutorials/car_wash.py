@@ -1,16 +1,19 @@
 from datetime import datetime
 import json
-from os import error
-import re
 from typing import Any, Dict, Type
 
-from jb_manager_bot import (
-    AbstractFSM,
+from jb_manager_bot import AbstractFSM
+from jb_manager_bot.data_models import (
     FSMOutput,
-    MessageData,
+    Message,
     MessageType,
-    OptionsListType,
     Status,
+    FSMIntent,
+    TextMessage,
+    ListMessage,
+    ButtonMessage,
+    Option,
+    ImageMessage,
 )
 from jb_manager_bot.parsers import OptionParser
 from jb_manager_bot.parsers.utils import LLMManager
@@ -279,32 +282,30 @@ class CarWashDealerFSM(AbstractFSM):
             message = (
                 "Sorry, I did not understand your question. Can you tell me again?"
             )
-        self.send_message(FSMOutput(message_data=MessageData(body=message)))
+        self.send_message(
+            FSMOutput(
+                intent=FSMIntent.SEND_MESSAGE,
+                message=Message(
+                    message_type=MessageType.TEXT, text=TextMessage(body=message)
+                ),
+            )
+        )
         self.status = Status.MOVE_FORWARD
 
     def on_enter_select_language(self):
         self.status = Status.WAIT_FOR_ME
-        self.send_message(
-            FSMOutput(
-                message_data=MessageData(
-                    body="Please select your preferred language.\nबंधु से संपर्क करने के लिए धन्यवाद!\nकृपया अपनी भाषा चुनें।"
-                ),
-                type=MessageType.TEXT,
-                dialog="language",
-                dest="channel",
-            )
-        )
+        self.send_message(FSMOutput(intent=FSMIntent.LANGUAGE_CHANGE))
         self.status = Status.WAIT_FOR_USER_INPUT
 
     def on_enter_welcome_message_display(self):
         self.status = Status.WAIT_FOR_ME
+        message = "Hello! Welcome to Car Wash Dealer. How can I assist you today?"
         self.send_message(
             FSMOutput(
-                message_data=MessageData(
-                    body="Hello! Welcome to Car Wash Dealer. How can I assist you today?"
+                intent=FSMIntent.SEND_MESSAGE,
+                message=Message(
+                    message_type=MessageType.TEXT, text=TextMessage(body=message)
                 ),
-                type=MessageType.TEXT,
-                dest="channel",
             )
         )
         self.status = Status.MOVE_FORWARD
@@ -314,19 +315,26 @@ class CarWashDealerFSM(AbstractFSM):
         message = "Would you like to buy a car, service your car, test drive, buy accessories or parts, or get a warranty and protection plan?"
 
         options = [
-            OptionsListType(id="1", title="Buy a Car"),
-            OptionsListType(id="2", title="Service Car"),
-            OptionsListType(id="3", title="Test Drive"),
-            OptionsListType(id="4", title="Buy Accessories or Parts"),
-            OptionsListType(id="5", title="Warranty and Protection Plan"),
+            Option(option_id="1", option_text="Buy a Car"),
+            Option(option_id="2", option_text="Service Car"),
+            Option(option_id="3", option_text="Test Drive"),
+            Option(option_id="4", option_text="Buy Accessories or Parts"),
+            Option(option_id="5", option_text="Warranty and Protection Plan"),
         ]
         self.send_message(
             FSMOutput(
-                type=MessageType.INTERACTIVE,
-                message_data=MessageData(body=message),
-                options_list=options,
-                menu_selector="Service Select",
-                menu_title="Service Select",
+                intent=FSMIntent.SEND_MESSAGE,
+                message=Message(
+                    message_type=MessageType.OPTION_LIST,
+                    list_message=ListMessage(
+                        body=message,
+                        header="",
+                        footer="",
+                        button_text="Service Select",
+                        list_title="Service Select",
+                        options=options,
+                    ),
+                ),
             )
         )
         self.status = Status.MOVE_FORWARD
@@ -338,11 +346,11 @@ class CarWashDealerFSM(AbstractFSM):
     def on_enter_service_selection_logic(self):
         self.status = Status.WAIT_FOR_ME
         options = [
-            OptionsListType(id="1", title="Buy a Car"),
-            OptionsListType(id="2", title="Service Car"),
-            OptionsListType(id="3", title="Test Drive"),
-            OptionsListType(id="4", title="Buy Accessories or Parts"),
-            OptionsListType(id="5", title="Warranty and Protection Plan"),
+            Option(option_id="1", option_text="Buy a Car"),
+            Option(option_id="2", option_text="Service Car"),
+            Option(option_id="3", option_text="Test Drive"),
+            Option(option_id="4", option_text="Buy Accessories or Parts"),
+            Option(option_id="5", option_text="Warranty and Protection Plan"),
         ]
         task = "The user is asked to select a service from the options."
 
@@ -353,7 +361,7 @@ class CarWashDealerFSM(AbstractFSM):
             azure_openai_api_key=self.credentials["AZURE_OPENAI_API_KEY"],
             azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
             azure_endpoint=self.credentials["AZURE_OPENAI_API_ENDPOINT"],
-            model=self.credentials["FAST_MODEL"]
+            model=self.credentials["FAST_MODEL"],
         )
         self.variables["service_id"] = result
         self.status = Status.MOVE_FORWARD
@@ -366,7 +374,14 @@ class CarWashDealerFSM(AbstractFSM):
     def on_enter_appointment_query_display(self):
         self.status = Status.WAIT_FOR_ME
         message = "Great choice! When would you like to book the appointment? Please provide the date you would be interested?"
-        self.send_message(FSMOutput(message_data=MessageData(body=message)))
+        self.send_message(
+            FSMOutput(
+                intent=FSMIntent.SEND_MESSAGE,
+                message=Message(
+                    message_type=MessageType.TEXT, text=TextMessage(body=message)
+                ),
+            )
+        )
         self.status = Status.MOVE_FORWARD
 
     def on_enter_date_input(self):
@@ -378,7 +393,8 @@ class CarWashDealerFSM(AbstractFSM):
         result = LLMManager.llm(
             messages=[
                 LLMManager.sm(
-                    "The user provides a date, convert it into a format of YYYY-MM-DD. If the date provided is wrong and could not be decided return None. Based on the user's input, return the output in json format. {'appointment_date': <date>}. Current time is " + str(datetime.now())
+                    "The user provides a date, convert it into a format of YYYY-MM-DD. If the date provided is wrong and could not be decided return None. Based on the user's input, return the output in json format. {'appointment_date': <date>}. Current time is "
+                    + str(datetime.now())
                 ),
                 LLMManager.um(self.current_input),
             ],
@@ -386,7 +402,7 @@ class CarWashDealerFSM(AbstractFSM):
             azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
             azure_endpoint=self.credentials["AZURE_OPENAI_API_ENDPOINT"],
             response_format={"type": "json_object"},
-            model=self.credentials["SLOW_MODEL"]
+            model=self.credentials["SLOW_MODEL"],
         )
         result = json.loads(result)
         self.variables["appointment_date"] = result["appointment_date"]
@@ -410,15 +426,22 @@ class CarWashDealerFSM(AbstractFSM):
         self.status = Status.WAIT_FOR_ME
         message = "What time of day would you prefer? Morning, afternoon, or evening?"
         slots = [
-            OptionsListType(id="1", title="Morning"),
-            OptionsListType(id="2", title="Afternoon"),
-            OptionsListType(id="3", title="Evening"),
+            Option(option_id="1", option_title="Morning"),
+            Option(option_id="2", option_title="Afternoon"),
+            Option(option_id="3", option_title="Evening"),
         ]
         self.send_message(
             FSMOutput(
-                type=MessageType.INTERACTIVE,
-                message_data=MessageData(body=message),
-                options_list=slots,
+                intent=FSMIntent.SEND_MESSAGE,
+                message=Message(
+                    message_type=MessageType.BUTTON,
+                    button=ButtonMessage(
+                        body=message,
+                        header="",
+                        footer="",
+                        options=slots,
+                    ),
+                ),
             )
         )
         self.status = Status.MOVE_FORWARD
@@ -431,9 +454,9 @@ class CarWashDealerFSM(AbstractFSM):
         self.status = Status.WAIT_FOR_ME
         valid_times = ["morning", "afternoon", "evening"]
         slots = [
-            OptionsListType(id="1", title="Morning"),
-            OptionsListType(id="2", title="Afternoon"),
-            OptionsListType(id="3", title="Evening"),
+            Option(option_id="1", option_title="Morning"),
+            Option(option_id="2", option_title="Afternoon"),
+            Option(option_id="3", option_title="Evening"),
         ]
         task = "The user is asked to select a time of day from the options."
         result = OptionParser.parse(
@@ -443,7 +466,7 @@ class CarWashDealerFSM(AbstractFSM):
             azure_openai_api_key=self.credentials["AZURE_OPENAI_API_KEY"],
             azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
             azure_endpoint=self.credentials["AZURE_OPENAI_API_ENDPOINT"],
-            model=self.credentials["FAST_MODEL"]
+            model=self.credentials["FAST_MODEL"],
         )
         self.variables["appointment_id"] = result
         self.status = Status.MOVE_FORWARD
@@ -459,9 +482,12 @@ class CarWashDealerFSM(AbstractFSM):
         self.status = Status.WAIT_FOR_ME
         self.send_message(
             FSMOutput(
-                type=MessageType.TEXT,
-                message_data=MessageData(
-                    body="Checking availability for the requested date and time..."
+                intent=FSMIntent.SEND_MESSAGE,
+                message=Message(
+                    message_type=MessageType.TEXT,
+                    text=TextMessage(
+                        body="Checking availability for the requested date and time..."
+                    ),
                 ),
             )
         )
@@ -484,9 +510,13 @@ class CarWashDealerFSM(AbstractFSM):
         message = f"Your appointment has been successfully booked for {self.variables['service_selection']} on {self.variables['appointment_date']} at {self.variables['time_in_hr']}."
         self.send_message(
             FSMOutput(
-                type=MessageType.IMAGE,
-                message_data=MessageData(body=message),
-                media_url=self.variables["appointment_image"],
+                intent=FSMIntent.SEND_MESSAGE,
+                message=Message(
+                    message_type=MessageType.IMAGE,
+                    image=ImageMessage(
+                        url=self.variables["appointment_image"], caption=message
+                    ),
+                ),
             )
         )
         self.status = Status.MOVE_FORWARD
@@ -494,21 +524,36 @@ class CarWashDealerFSM(AbstractFSM):
     def on_enter_alternative_appointment_display(self):
         self.status = Status.WAIT_FOR_ME
         message = "The requested date and time are not available. Please provide another date and time for your appointment."
-        self.send_message(FSMOutput(message_data=MessageData(body=message)))
+        self.send_message(
+            FSMOutput(
+                intent=FSMIntent.SEND_MESSAGE,
+                message=Message(
+                    message_type=MessageType.TEXT,
+                    text=TextMessage(body=message),
+                ),
+            )
+        )
         self.status = Status.WAIT_FOR_USER_INPUT
 
     def on_enter_further_assistance_display(self):
         self.status = Status.WAIT_FOR_ME
         message = "Is there anything else I can help you with today?"
         options = [
-            OptionsListType(id="1", title="Yes"),
-            OptionsListType(id="2", title="No"),
+            Option(option_id="1", option_text="Yes"),
+            Option(option_id="2", option_text="No"),
         ]
         self.send_message(
             FSMOutput(
-                type=MessageType.INTERACTIVE,
-                message_data=MessageData(body=message),
-                options_list=options,
+                intent=FSMIntent.SEND_MESSAGE,
+                message=Message(
+                    message_type=MessageType.BUTTON,
+                    button=ButtonMessage(
+                        body=message,
+                        header="",
+                        footer="",
+                        options=options,
+                    ),
+                ),
             )
         )
         self.status = Status.MOVE_FORWARD
@@ -520,8 +565,8 @@ class CarWashDealerFSM(AbstractFSM):
     def on_enter_process_further_assistance_logic(self):
         self.status = Status.WAIT_FOR_ME
         options = [
-            OptionsListType(id="1", title="Yes"),
-            OptionsListType(id="2", title="No"),
+            Option(option_id="1", option_text="Yes"),
+            Option(option_id="2", option_text="No"),
         ]
         result = OptionParser.parse(
             "The user provides a response to the 'Is there anything else I can help you with today?'.",
@@ -530,7 +575,7 @@ class CarWashDealerFSM(AbstractFSM):
             azure_openai_api_key=self.credentials["AZURE_OPENAI_API_KEY"],
             azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
             azure_endpoint=self.credentials["AZURE_OPENAI_API_ENDPOINT"],
-            model=self.credentials["FAST_MODEL"]
+            model=self.credentials["FAST_MODEL"],
         )
         if result == "1":
             self.variables["further_assistance"] = "yes"
@@ -546,7 +591,14 @@ class CarWashDealerFSM(AbstractFSM):
     def on_enter_conclusion_display(self):
         self.status = Status.WAIT_FOR_ME
         message = "Thank you for choosing Car Wash Dealer. Have a great day!"
-        self.send_message(FSMOutput(message_data=MessageData(body=message)))
+        self.send_message(
+            FSMOutput(
+                intent=FSMIntent.SEND_MESSAGE,
+                message=Message(
+                    message_type=MessageType.TEXT, text=TextMessage(body=message)
+                ),
+            )
+        )
         self.status = Status.MOVE_FORWARD
 
     def is_valid_service(self):
@@ -574,8 +626,7 @@ class CarWashDealerFSM(AbstractFSM):
     def is_valid_date(self):
         if self.variables["appointment_date"]:
             try:
-                datetime.strptime(
-                    self.variables["appointment_date"], "%Y-%m-%d")
+                datetime.strptime(self.variables["appointment_date"], "%Y-%m-%d")
                 return True
             except ValueError:
                 return False
@@ -606,8 +657,12 @@ class CarWashDealerFSM(AbstractFSM):
         self.status = Status.WAIT_FOR_ME
         self.send_message(
             FSMOutput(
-                message_data=MessageData(
-                    body="Sorry, I am unable to process your request at the moment, error while plugin call. Please try again later.\n Note this is expected behaviour as the plugin returns positive or negative values on random."
+                intent=FSMIntent.SEND_MESSAGE,
+                message=Message(
+                    message_type=MessageType.TEXT,
+                    text=TextMessage(
+                        body="Sorry, I am unable to process your request at the moment, error while plugin call. Please try again later.\n Note this is expected behaviour as the plugin returns positive or negative values on random."
+                    ),
                 ),
             )
         )
