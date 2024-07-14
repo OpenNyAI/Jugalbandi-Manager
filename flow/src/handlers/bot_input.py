@@ -109,13 +109,17 @@ def handle_bot_output(fsm_output: FSMOutput, turn_id: str):
 
 async def manage_session(turn_id: str, new_session: bool = False):
     if new_session:
+        logger.info("Creating new session for turn_id: %s", turn_id)
         session = await create_session(turn_id)
     else:
+        logger.info("Managing session for turn_id: %s", turn_id)
         session = await get_session_by_turn_id(turn_id)
         timeout = 60 * 60 * 24 * 1000  # 24 hours
         if not session:
+            logger.info("Session not found for turn_id: %s", turn_id)
             session = await create_session(turn_id)
         elif session.updated_at.timestamp() + timeout < datetime.now().timestamp():
+            logger.info("Session expired for turn_id: %s", turn_id)
             session = await create_session(turn_id)
         else:
             await update_session(session.id)

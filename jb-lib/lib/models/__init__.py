@@ -82,6 +82,8 @@ class JBSession(Base):
     __tablename__ = "jb_session"
 
     id = Column(String, primary_key=True)
+    user_id = Column(String, ForeignKey("jb_users.id"))
+    channel_id = Column(String, ForeignKey("jb_channel.id"))
     created_at = Column(
         TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
     )
@@ -120,16 +122,13 @@ class JBMessage(Base):
     id = Column(String, primary_key=True)
     turn_id = Column(String, ForeignKey("jb_turn.id"))
     message_type = Column(String)
-    media_url = Column(String)
-    message_text = Column(String)
-    channel = Column(String)
-    channel_id = Column(String)
+    message = Column(JSON)
     is_user_sent = Column(Boolean, nullable=False, default=True)
 
     turn = relationship("JBTurn", back_populates="messages")
 
     def __repr__(self):
-        return f"<JBMessage(id={self.id}, turn_id={self.turn_id}, message_type={self.message_type}, media_url={self.media_url}, message_text={self.message_text}, channel={self.channel}, channel_id={self.channel_id}, is_user_sent={self.is_user_sent})>"
+        return f"<JBMessage(id={self.id}, turn_id={self.turn_id}, message_type={self.message_type}, message={self.message}, is_user_sent={self.is_user_sent})>"
 
 
 class JBDocumentStoreLog(Base):

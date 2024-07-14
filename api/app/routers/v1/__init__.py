@@ -35,7 +35,7 @@ async def get_bots():
 async def install_bot(install_content: JBBotCode):
     flow_input = await handle_install_bot(install_content)
     try:
-        produce_message(flow_input.model_dump_json())
+        produce_message(flow_input)
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error producing message: {e}"
@@ -116,7 +116,7 @@ async def callback(request: Request):
     data = await request.json()
 
     async for channel_input in handle_callback(data, headers={}, query_params={}):
-        produce_message(channel_input.model_dump_json())
+        produce_message(channel_input)
 
     return 200
 
@@ -127,7 +127,7 @@ async def plugin_webhook(request: Request):
     webhook_data = webhook_data.decode("utf-8")
     try:
         async for flow_input in handle_webhook(webhook_data):
-            produce_message(flow_input.model_dump_json())
+            produce_message(flow_input)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     return 200

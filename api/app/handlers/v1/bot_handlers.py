@@ -6,7 +6,6 @@ from lib.data_models import Flow, BotConfig, FlowIntent, BotIntent, Bot
 from lib.encryption_handler import EncryptionHandler
 from ...jb_schema import JBBotActivate, JBBotCode
 from ...crud import (
-    create_bot,
     create_channel,
     get_bot_by_id,
     update_channel,

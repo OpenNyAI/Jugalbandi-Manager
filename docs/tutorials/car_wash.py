@@ -1,6 +1,6 @@
 from datetime import datetime
 import json
-from typing import Any, Dict, Type
+from typing import Any, Dict
 
 from jb_manager_bot import AbstractFSM
 from jb_manager_bot.data_models import (
@@ -326,7 +326,7 @@ class CarWashDealerFSM(AbstractFSM):
                 intent=FSMIntent.SEND_MESSAGE,
                 message=Message(
                     message_type=MessageType.OPTION_LIST,
-                    list_message=ListMessage(
+                    option_list=ListMessage(
                         body=message,
                         header="",
                         footer="",
@@ -426,9 +426,9 @@ class CarWashDealerFSM(AbstractFSM):
         self.status = Status.WAIT_FOR_ME
         message = "What time of day would you prefer? Morning, afternoon, or evening?"
         slots = [
-            Option(option_id="1", option_title="Morning"),
-            Option(option_id="2", option_title="Afternoon"),
-            Option(option_id="3", option_title="Evening"),
+            Option(option_id="1", option_text="Morning"),
+            Option(option_id="2", option_text="Afternoon"),
+            Option(option_id="3", option_text="Evening"),
         ]
         self.send_message(
             FSMOutput(
@@ -454,9 +454,9 @@ class CarWashDealerFSM(AbstractFSM):
         self.status = Status.WAIT_FOR_ME
         valid_times = ["morning", "afternoon", "evening"]
         slots = [
-            Option(option_id="1", option_title="Morning"),
-            Option(option_id="2", option_title="Afternoon"),
-            Option(option_id="3", option_title="Evening"),
+            Option(option_id="1", option_text="Morning"),
+            Option(option_id="2", option_text="Afternoon"),
+            Option(option_id="3", option_text="Evening"),
         ]
         task = "The user is asked to select a time of day from the options."
         result = OptionParser.parse(

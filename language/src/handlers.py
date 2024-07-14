@@ -210,14 +210,12 @@ async def handle_output(
             )
             for option in interactive_message.options
         ]
-        if interactive_message.header:
-            vernacular_header = await translator.translate_text(
-                interactive_message.header, LanguageCodes.EN, preferred_language
-            )
-        if interactive_message.footer:
-            vernacular_footer = await translator.translate_text(
-                interactive_message.footer, LanguageCodes.EN, preferred_language
-            )
+        vernacular_header = await translator.translate_text(
+            interactive_message.header, LanguageCodes.EN, preferred_language
+        )
+        vernacular_footer = await translator.translate_text(
+            interactive_message.footer, LanguageCodes.EN, preferred_language
+        )
         if message_type == MessageType.BUTTON:
             translated_interactive_message = ButtonMessage(
                 body=vernacular_body,

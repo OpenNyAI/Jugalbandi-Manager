@@ -13,7 +13,7 @@ logger = logging.getLogger("flow")
 async def install_bot(
     bot_id: str, bot_fsm_code: str, bot_requirements_txt: str, index_urls: List[str]
 ):
-    requirements_txt = "openai\ncryptography\njb-manager-bot\n" + bot_requirements_txt
+    requirements_txt = "openai\ncryptography\n" + bot_requirements_txt
 
     bots_parent_directory = Path(__file__).parent.parent.parent
     bots_root_directory = Path(os.path.join(bots_parent_directory, "bots"))

@@ -68,17 +68,17 @@ async def handle_incoming_message(language_input: Language, callback: Callable):
     if message_intent == LanguageIntent.LANGUAGE_IN:
         message = language_input.message
         flow_input = await handle_input(
+            turn_id=turn_id,
             preferred_language=preferred_language,
-            language_input=language_input,
+            message=message,
         )
         callback(flow_input)
 
     elif message_intent == LanguageIntent.LANGUAGE_OUT:
         turn_id = language_input.turn_id
-        turn_info = await get_turn_information(turn_id)
+        message = language_input.message
         channel_inputs: List[Channel] = await handle_output(
-            preferred_language=preferred_language,
-            language_input=language_input,
+            turn_id=turn_id, preferred_language=preferred_language, message=message
         )
         for channel_input in channel_inputs:
             callback(channel_input)
