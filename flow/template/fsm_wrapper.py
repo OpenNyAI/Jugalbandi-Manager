@@ -10,18 +10,16 @@ def decrypt_credentials(credentials: dict) -> dict:
     decrypted_credentials = {}
     for key in credentials:
         decrypted_credentials[key] = (
-            Fernet(os.getenv("ENCRYPTION_KEY")).decrypt(credentials[key].encode()).decode()
+            Fernet(os.getenv("ENCRYPTION_KEY"))
+            .decrypt(credentials[key].encode())
+            .decode()
         )
     return decrypted_credentials
 
 
 def callback_function(fsm_output: FSMOutput):
     output = json.loads(fsm_output.model_dump_json())
-    output["header"] = output["message_data"]["header"]
-    output["footer"] = output["message_data"]["footer"]
-    output["text"] = output["message_data"]["body"]
-    output.pop("message_data")
-    print(json.dumps({"callback_message": output}))
+    print(json.dumps({"fsm_output": output}))
 
 
 runner_input = json.loads(sys.argv[1])

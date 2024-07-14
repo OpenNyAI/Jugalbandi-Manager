@@ -61,7 +61,6 @@ class JBChannel(Base):
 
     bot = relationship("JBBot", back_populates="channels")
     users = relationship("JBUser", back_populates="channel")
-    sessions = relationship("JBSession", back_populates="channel")
 
 
 class JBUser(Base):
@@ -77,15 +76,12 @@ class JBUser(Base):
         TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
     )
     channel = relationship("JBChannel", back_populates="users")
-    sessions = relationship("JBSession", back_populates="user")
 
 
 class JBSession(Base):
     __tablename__ = "jb_session"
 
     id = Column(String, primary_key=True)
-    pid = Column(String, ForeignKey("jb_users.id"))
-    channel_id = Column(String, ForeignKey("jb_channel.id"))
     created_at = Column(
         TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
     )
@@ -95,8 +91,6 @@ class JBSession(Base):
         nullable=False,
         onupdate=func.now(),
     )
-    user = relationship("JBUser", back_populates="sessions")
-    channel = relationship("JBChannel", back_populates="sessions")
     turns = relationship("JBTurn", back_populates="session")
 
 

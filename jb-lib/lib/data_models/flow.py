@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import Optional, List, Dict
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, model_validator, Field
 from .message import Message, MessageType
 from .retriever import RAGResponse
 
@@ -21,7 +21,9 @@ class Bot(BaseModel):
     name: str
     fsm_code: str
     requirements_txt: str
-    index_urls: Optional[List[str]] = None
+    index_urls: Optional[List[str]] = Field(default_factory=list)
+    required_credentials: Optional[List[str]] = Field(default_factory=list)
+    version: str
 
 
 class BotConfig(BaseModel):
