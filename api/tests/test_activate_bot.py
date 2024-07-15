@@ -199,7 +199,7 @@ async def test_handle_activate_bot_success(
         "bot_id",
         {
             "name": "whatsapp",
-            "type": "whatsapp",
+            "type": "pinnacle_whatsapp",
             "key": "encrypted_value",
             "app_id": "1234567890",
             "url": "http://some.url",
