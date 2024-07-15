@@ -23,12 +23,12 @@ class OptionParser:
         azure_openai_api_key=None,
         azure_openai_api_version=None,
         azure_endpoint=None,
-        model="gpt-3.5-turbo"
+        model="gpt-3.5-turbo",
     ):
         """Parse the user input and return the most appropriate option ID based on the user's response."""
 
         for option in options:
-            if "id" not in option and not hasattr(option, "id"):
+            if "option_id" not in option and not hasattr(option, "option_id"):
                 raise ValueError("Option ID is required")
 
         result = LLMManager.llm(

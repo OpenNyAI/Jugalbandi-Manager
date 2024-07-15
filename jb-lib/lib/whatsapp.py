@@ -278,7 +278,8 @@ class WhatsappHelper:
 
         # force options title to be <= 20 chars
         for x in options:
-            x["title"] = x["title"][:20]
+            x["id"] = x.pop("option_id")
+            x["title"] = x.pop("option_text")[:20]
 
         if len(options) > 3:
             # send list
@@ -327,6 +328,7 @@ class WhatsappHelper:
         try:
             r = requests.post(url, data=json.dumps(data), headers=headers)
             json_output = r.json()
+            print(json_output)
             if json_output and json_output["messages"]:
                 return json_output["messages"][0]["id"]
             else:

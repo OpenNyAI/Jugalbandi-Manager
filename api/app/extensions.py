@@ -19,7 +19,7 @@ logger.info("Flow Topic: %s", flow_topic)
 producer = KafkaProducer.from_env_vars()
 
 
-def produce_message(message: str):
+def produce_message(message: Flow | Channel):
     if isinstance(message, Flow):
         topic = flow_topic
     elif isinstance(message, Channel):
@@ -28,7 +28,7 @@ def produce_message(message: str):
         raise ValueError("Invalid message type")
     try:
         logger.info("Sending msg to %s topic: %s", topic, message)
-        producer.send_message(topic=topic, value=message)
+        producer.send_message(topic=topic, value=message.model_dump_json())
     except KafkaException as e:
         return e
 

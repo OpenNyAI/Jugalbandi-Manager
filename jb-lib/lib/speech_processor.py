@@ -10,7 +10,7 @@ import azure.cognitiveservices.speech as speechsdk
 import httpx
 
 from .audio_converter import convert_wav_bytes_to_mp3_bytes
-from .model import InternalServerException, Language
+from .model import InternalServerException, LanguageCodes
 
 logger = logging.getLogger("speech_processor")
 
@@ -20,7 +20,7 @@ class SpeechProcessor(ABC):
     async def speech_to_text(
         self,
         wav_data: bytes,
-        input_language: Language,
+        input_language: LanguageCodes,
     ) -> str:
         pass
 
@@ -28,7 +28,7 @@ class SpeechProcessor(ABC):
     async def text_to_speech(
         self,
         text: str,
-        input_language: Language,
+        input_language: LanguageCodes,
     ) -> bytes:
         pass
 
@@ -89,7 +89,7 @@ class DhruvaSpeechProcessor(SpeechProcessor):
     async def speech_to_text(
         self,
         wav_data: bytes,
-        input_language: Language,
+        input_language: LanguageCodes,
     ) -> str:
         logger.info("Performing speech to text using Dhruva (Bhashini)")
         logger.info(f"Input Language: {input_language.name}")
@@ -173,7 +173,7 @@ class DhruvaSpeechProcessor(SpeechProcessor):
     async def text_to_speech(
         self,
         text: str,
-        input_language: Language,
+        input_language: LanguageCodes,
         gender="female",
     ) -> bytes:
         logger.info("Performing text to speech using Dhruva (Bhashini)")
@@ -295,7 +295,7 @@ class AzureSpeechProcessor(SpeechProcessor):
     async def speech_to_text(
         self,
         wav_data: bytes,
-        input_language: Language,
+        input_language: LanguageCodes,
     ) -> str:
         logger.info("Performing speech to text using Azure")
         logger.info(f"Input Language: {input_language.name}")
@@ -345,7 +345,7 @@ class AzureSpeechProcessor(SpeechProcessor):
     async def text_to_speech(
         self,
         text: str,
-        input_language: Language,
+        input_language: LanguageCodes,
     ) -> bytes:
         logger.info("Performing text to speech using Azure")
         logger.info(f"Input Language: {input_language.name}")
@@ -416,7 +416,7 @@ class CompositeSpeechProcessor(SpeechProcessor):
     async def speech_to_text(
         self,
         wav_data: bytes,
-        input_language: Language,
+        input_language: LanguageCodes,
     ) -> str:
         excs = []
         for speech_processor in self.speech_processors:
@@ -441,7 +441,7 @@ class CompositeSpeechProcessor(SpeechProcessor):
     async def text_to_speech(
         self,
         text: str,
-        input_language: Language,
+        input_language: LanguageCodes,
     ) -> bytes:
         excs = []
         for speech_processor in self.speech_processors:
