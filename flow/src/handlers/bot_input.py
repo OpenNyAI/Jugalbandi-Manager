@@ -32,6 +32,7 @@ from ..crud import (
     create_message,
     create_session,
     update_session,
+    update_turn,
     update_user_language,
 )
 from ..extensions import produce_message
@@ -122,7 +123,9 @@ async def manage_session(turn_id: str, new_session: bool = False):
             logger.info("Session expired for turn_id: %s", turn_id)
             session = await create_session(turn_id)
         else:
+            logger.info("Updating session for turn_id: %s", turn_id)
             await update_session(session.id)
+            await update_turn(session_id=session.id, turn_id=turn_id)
     return session
 
 

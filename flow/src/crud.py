@@ -56,6 +56,17 @@ async def update_session(session_id: str):
             return None
 
 
+async def update_turn(session_id: str, turn_id: str):
+    async with DBSessionHandler.get_async_session() as session:
+        async with session.begin():
+            stmt = (
+                update(JBTurn).where(JBTurn.id == turn_id).values(session_id=session_id)
+            )
+            await session.execute(stmt)
+            await session.commit()
+            return None
+
+
 async def insert_state(
     session_id: str, state: str, variables: dict = dict()
 ) -> JBFSMState:
@@ -117,6 +128,7 @@ async def get_session_by_turn_id(turn_id: str) -> JBSession | None:
                     ),
                 )
                 .where(JBTurn.id == turn_id)
+                .order_by(JBSession.updated_at.desc())
             )
             s = result.scalars().first()
             return s
