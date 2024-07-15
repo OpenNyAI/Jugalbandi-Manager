@@ -1,7 +1,6 @@
 import logging
-import uuid
-from typing import Dict, AsyncGenerator
-from lib.whatsapp import WhatsappHelper
+from typing import Dict, AsyncGenerator, Tuple, Optional
+from lib.channel_handler import ChannelHandler
 from lib.data_models import (
     Channel,
     ChannelIntent,
@@ -44,47 +43,47 @@ async def handle_webhook(webhook_data: str) -> AsyncGenerator[Flow, None]:
 
 
 async def handle_callback(
-    callback_data: Dict, headers: Dict, query_params: Dict
-) -> AsyncGenerator[Channel, None]:
-    bot_number = WhatsappHelper.extract_whatsapp_business_number(callback_data)
-    jb_channel = await get_active_channel_by_identifier(bot_number, "whatsapp")
-    if jb_channel is None:
-        logger.error("Active channel not found for number %s", bot_number)
-        raise ValueError("Active channel not found")
+    callback_data: Dict,
+    headers: Dict,
+    query_params: Dict,
+    chosen_channel: type[ChannelHandler],
+) -> AsyncGenerator[Tuple[Optional[ValueError], Optional[Channel]], None]:
+    for channel_data in chosen_channel.process_message(callback_data):
+        bot_identifier = channel_data.bot_identifier
+        user = channel_data.user
+        message_data = channel_data.message_data
 
-    channel_id: str = jb_channel.id
-    for message in WhatsappHelper.process_messsage(callback_data):
-        contact_number = message["from"]
-        jb_user = await get_user_by_number(contact_number, channel_id)
-        turn_id = str(uuid.uuid4())
+        jb_channel = await get_active_channel_by_identifier(
+            bot_identifier, chosen_channel.get_channel_name()
+        )
+        if jb_channel is None:
+            logger.error("Active channel not found for identifier %s", bot_identifier)
+            yield ValueError("Active channel not found"), None
 
+        bot_id: str = jb_channel.bot_id
+        channel_id: str = jb_channel.id
+
+        jb_user = await get_user_by_number(user.user_identifier, channel_id=channel_id)
         if jb_user is None:
             # register user
             logger.info("Registering user")
-            contact_name = message["name"]
             jb_user = await create_user(
-                channel_id, contact_number, contact_name, contact_name
+                channel_id, user.user_identifier, user.user_name, user.user_name
             )
-        user_id: str = jb_user.id
 
+        user_id: str = jb_user.id
         turn_id = await create_turn(
-            bot_id=jb_channel.bot.id, channel_id=channel_id, user_id=user_id
+            bot_id=bot_id, channel_id=channel_id, user_id=user_id
         )
-        msg_type = message["type"]
-        message = {
-            k: v for k, v in message.items() if k in ["type", "timestamp", msg_type]
-        }
         channel_input = Channel(
             source="api",
             turn_id=turn_id,
             intent=ChannelIntent.CHANNEL_IN,
             bot_input=RestBotInput(
-                channel_name="whatsapp",
+                channel_name=chosen_channel.get_channel_name(),
                 headers=headers,
-                data=message,
+                data=message_data,
                 query_params=query_params,
             ),
         )
-
-        # write to channel
-        yield channel_input
+        yield None, channel_input

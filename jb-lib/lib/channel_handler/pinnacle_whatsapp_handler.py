@@ -50,6 +50,7 @@ class PinnacleWhatsappHandler(RestChannelHandler):
                             whatsapp_number = metadata.get("display_phone_number")
                         if "messages" in change["value"]:
                             for message in change["value"]["messages"]:
+                                message.pop("id", None)
                                 user_identifier = message.pop("from")
                                 yield ChannelData(
                                     bot_identifier=whatsapp_number,
@@ -420,11 +421,8 @@ class PinnacleWhatsappHandler(RestChannelHandler):
         url = f"{channel.url}/v1/messages"
         headers = cls.generate_header(channel=channel)
         data = cls.parse_bot_output(message=message, channel=channel, user=user)
-        import logging
-
         r = requests.post(url, data=json.dumps(data), headers=headers)
         json_output = r.json()
-        logging.error(json_output)
         if json_output and json_output["messages"]:
             return json_output["messages"][0]["id"]
         return None

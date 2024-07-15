@@ -6,7 +6,19 @@ from lib.data_models import (
     ChannelIntent,
 )
 
-from app.handlers.v1 import handle_callback
+mock_sync_storage_instance = MagicMock()
+mock_sync_write_file = MagicMock()
+mock_sync_public_url = MagicMock(return_value="https://storage.url/test_audio.ogg")
+
+mock_sync_storage_instance.write_file = mock_sync_write_file
+mock_sync_storage_instance.public_url = mock_sync_public_url
+
+with patch(
+    "lib.file_storage.StorageHandler.get_sync_instance",
+    return_value=mock_sync_storage_instance,
+):
+    from lib.channel_handler import PinnacleWhatsappHandler
+    from app.handlers.v1 import handle_callback
 
 
 @pytest.mark.asyncio
@@ -21,7 +33,7 @@ async def test_text_message(
     mock_get_active_channel_by_identifier,
 ):
     mock_get_active_channel_by_identifier.return_value = MagicMock(
-        id="channel123", bot=MagicMock(id="bot123")
+        id="channel123", bot=MagicMock(id="bot123"), bot_id="bot123"
     )
     mock_get_user_by_number.return_value = None
     mock_create_user.return_value = MagicMock(id="user123")
@@ -62,29 +74,36 @@ async def test_text_message(
             }
         ],
     }
-    result = [msg async for msg in handle_callback(callback_data, {}, {})]
+    result = [
+        msg
+        async for msg in handle_callback(callback_data, {}, {}, PinnacleWhatsappHandler)
+    ]
     expected_message: Dict = callback_data["entry"][0]["changes"][0]["value"][
         "messages"
     ][0]
     expected_message.pop("context", None)
-    expected_message.pop("from")
-    expected_message.pop("id")
+    expected_message.pop("from", None)
+    expected_message.pop("id", None)
 
     # Assertions
     assert len(result) == 1
-    assert isinstance(result[0], Channel)
-    assert result[0].turn_id == "turn123"
-    assert result[0].intent == ChannelIntent.CHANNEL_IN
-    assert result[0].bot_input is not None
+    assert result[0][0] is None
+    result = result[0][1]
+    assert isinstance(result, Channel)
+    assert result.turn_id == "turn123"
+    assert result.intent == ChannelIntent.CHANNEL_IN
+    assert result.bot_input is not None
     assert (
-        result[0].bot_input.data
+        result.bot_input.data
         == callback_data["entry"][0]["changes"][0]["value"]["messages"][0]
     )
 
     mock_get_active_channel_by_identifier.assert_called_once_with(
-        "919876543210", "whatsapp"
+        "919876543210", PinnacleWhatsappHandler.get_channel_name()
     )
-    mock_get_user_by_number.assert_called_once_with("919999999999", "channel123")
+    mock_get_user_by_number.assert_called_once_with(
+        "919999999999", channel_id="channel123"
+    )
     mock_create_user.assert_called_once_with(
         "channel123", "919999999999", "Dummy", "Dummy"
     )
@@ -107,7 +126,7 @@ async def test_audio_message(
     mock_get_active_channel_by_identifier,
 ):
     mock_get_active_channel_by_identifier.return_value = MagicMock(
-        id="channel123", bot=MagicMock(id="bot123")
+        id="channel123", bot=MagicMock(id="bot123"), bot_id="bot123"
     )
     mock_get_user_by_number.return_value = None
     mock_create_user.return_value = MagicMock(id="user123")
@@ -153,29 +172,35 @@ async def test_audio_message(
             }
         ],
     }
-    result = [msg async for msg in handle_callback(callback_data, {}, {})]
+    result = [
+        msg
+        async for msg in handle_callback(callback_data, {}, {}, PinnacleWhatsappHandler)
+    ]
     expected_message: Dict = callback_data["entry"][0]["changes"][0]["value"][
         "messages"
     ][0]
-    expected_message.pop("context", None)
-    expected_message.pop("from")
-    expected_message.pop("id")
+    expected_message.pop("from", None)
+    expected_message.pop("id", None)
 
     # Assertions
     assert len(result) == 1
-    assert isinstance(result[0], Channel)
-    assert result[0].turn_id == "turn123"
-    assert result[0].intent == ChannelIntent.CHANNEL_IN
-    assert result[0].bot_input is not None
+    assert result[0][0] is None
+    result = result[0][1]
+    assert isinstance(result, Channel)
+    assert result.turn_id == "turn123"
+    assert result.intent == ChannelIntent.CHANNEL_IN
+    assert result.bot_input is not None
     assert (
-        result[0].bot_input.data
+        result.bot_input.data
         == callback_data["entry"][0]["changes"][0]["value"]["messages"][0]
     )
 
     mock_get_active_channel_by_identifier.assert_called_once_with(
-        "919876543210", "whatsapp"
+        "919876543210", PinnacleWhatsappHandler.get_channel_name()
     )
-    mock_get_user_by_number.assert_called_once_with("919999999999", "channel123")
+    mock_get_user_by_number.assert_called_once_with(
+        "919999999999", channel_id="channel123"
+    )
     mock_create_user.assert_called_once_with(
         "channel123", "919999999999", "Dummy", "Dummy"
     )
@@ -198,7 +223,7 @@ async def test_button_reply_message(
     mock_get_active_channel_by_identifier,
 ):
     mock_get_active_channel_by_identifier.return_value = MagicMock(
-        id="channel123", bot=MagicMock(id="bot123")
+        id="channel123", bot=MagicMock(id="bot123"), bot_id="bot123"
     )
     mock_get_user_by_number.return_value = None
     mock_create_user.return_value = MagicMock(id="user123")
@@ -246,29 +271,35 @@ async def test_button_reply_message(
             }
         ],
     }
-    result = [msg async for msg in handle_callback(callback_data, {}, {})]
+    result = [
+        msg
+        async for msg in handle_callback(callback_data, {}, {}, PinnacleWhatsappHandler)
+    ]
     expected_message: Dict = callback_data["entry"][0]["changes"][0]["value"][
         "messages"
     ][0]
-    expected_message.pop("context", None)
-    expected_message.pop("from")
-    expected_message.pop("id")
+    expected_message.pop("from", None)
+    expected_message.pop("id", None)
 
     # Assertions
     assert len(result) == 1
-    assert isinstance(result[0], Channel)
-    assert result[0].turn_id == "turn123"
-    assert result[0].intent == ChannelIntent.CHANNEL_IN
-    assert result[0].bot_input is not None
+    assert result[0][0] is None
+    result = result[0][1]
+    assert isinstance(result, Channel)
+    assert result.turn_id == "turn123"
+    assert result.intent == ChannelIntent.CHANNEL_IN
+    assert result.bot_input is not None
     assert (
-        result[0].bot_input.data
+        result.bot_input.data
         == callback_data["entry"][0]["changes"][0]["value"]["messages"][0]
     )
 
     mock_get_active_channel_by_identifier.assert_called_once_with(
-        "919876543210", "whatsapp"
+        "919876543210", PinnacleWhatsappHandler.get_channel_name()
     )
-    mock_get_user_by_number.assert_called_once_with("919999999999", "channel123")
+    mock_get_user_by_number.assert_called_once_with(
+        "919999999999", channel_id="channel123"
+    )
     mock_create_user.assert_called_once_with(
         "channel123", "919999999999", "Dummy", "Dummy"
     )
@@ -291,7 +322,7 @@ async def test_list_reply_message(
     mock_get_active_channel_by_identifier,
 ):
     mock_get_active_channel_by_identifier.return_value = MagicMock(
-        id="channel123", bot=MagicMock(id="bot123")
+        id="channel123", bot=MagicMock(id="bot123"), bot_id="bot123"
     )
     mock_get_user_by_number.return_value = None
     mock_create_user.return_value = MagicMock(id="user123")
@@ -342,29 +373,35 @@ async def test_list_reply_message(
             }
         ],
     }
-    result = [msg async for msg in handle_callback(callback_data, {}, {})]
+    result = [
+        msg
+        async for msg in handle_callback(callback_data, {}, {}, PinnacleWhatsappHandler)
+    ]
     expected_message: Dict = callback_data["entry"][0]["changes"][0]["value"][
         "messages"
     ][0]
-    expected_message.pop("context", None)
-    expected_message.pop("from")
-    expected_message.pop("id")
+    expected_message.pop("from", None)
+    expected_message.pop("id", None)
 
     # Assertions
     assert len(result) == 1
-    assert isinstance(result[0], Channel)
-    assert result[0].turn_id == "turn123"
-    assert result[0].intent == ChannelIntent.CHANNEL_IN
-    assert result[0].bot_input is not None
+    assert result[0][0] is None
+    result = result[0][1]
+    assert isinstance(result, Channel)
+    assert result.turn_id == "turn123"
+    assert result.intent == ChannelIntent.CHANNEL_IN
+    assert result.bot_input is not None
     assert (
-        result[0].bot_input.data
+        result.bot_input.data
         == callback_data["entry"][0]["changes"][0]["value"]["messages"][0]
     )
 
     mock_get_active_channel_by_identifier.assert_called_once_with(
-        "919876543210", "whatsapp"
+        "919876543210", PinnacleWhatsappHandler.get_channel_name()
     )
-    mock_get_user_by_number.assert_called_once_with("919999999999", "channel123")
+    mock_get_user_by_number.assert_called_once_with(
+        "919999999999", channel_id="channel123"
+    )
     mock_create_user.assert_called_once_with(
         "channel123", "919999999999", "Dummy", "Dummy"
     )

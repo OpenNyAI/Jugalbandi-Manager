@@ -1,4 +1,5 @@
 import base64
+from unittest import mock
 from unittest.mock import patch, AsyncMock, MagicMock, Mock
 import pytest
 
@@ -15,12 +16,19 @@ from lib.data_models import (
 )
 
 # Patch StorageHandler.get_async_instance before importing the module
-mock_storage_instance = MagicMock()
-mock_write_file = AsyncMock()
-mock_public_url = AsyncMock(return_value="https://storage.url/test_audio.ogg")
+mock_async_storage_instance = MagicMock()
+mock_async_write_file = AsyncMock()
+mock_async_public_url = AsyncMock(return_value="https://storage.url/test_audio.ogg")
 
-mock_storage_instance.write_file = mock_write_file
-mock_storage_instance.public_url = mock_public_url
+mock_async_storage_instance.write_file = mock_async_write_file
+mock_async_storage_instance.public_url = mock_async_public_url
+
+mock_sync_storage_instance = MagicMock()
+mock_sync_write_file = MagicMock()
+mock_sync_public_url = MagicMock(return_value="https://storage.url/test_audio.ogg")
+
+mock_sync_storage_instance.write_file = mock_sync_write_file
+mock_sync_storage_instance.public_url = mock_sync_public_url
 
 mock_encryption_handler = MagicMock()
 mock_encryption_handler.decrypt_dict = Mock(
@@ -34,12 +42,16 @@ mock_encryption_handler.decrypt_text = Mock(
 
 with patch(
     "lib.file_storage.StorageHandler.get_async_instance",
-    return_value=mock_storage_instance,
+    return_value=mock_async_storage_instance,
 ):
-    with patch("lib.encryption_handler.EncryptionHandler", mock_encryption_handler):
-        import src.handlers.incoming
+    with patch(
+        "lib.file_storage.StorageHandler.get_sync_instance",
+        return_value=mock_sync_storage_instance,
+    ):
+        with patch("lib.encryption_handler.EncryptionHandler", mock_encryption_handler):
+            import src.handlers.incoming
 
-        process_incoming_messages = src.handlers.incoming.process_incoming_messages
+            process_incoming_messages = src.handlers.incoming.process_incoming_messages
 
 
 @pytest.mark.asyncio
@@ -51,7 +63,7 @@ async def test_process_incoming_text_message():
         "src.handlers.incoming.get_channel_by_turn_id", mock_get_channel_by_turn_id
     ):
         bot_input = RestBotInput(
-            channel_name="whatsapp",
+            channel_name="pinnacle_whatsapp",
             headers={},
             query_params={},
             data={
@@ -85,19 +97,17 @@ async def test_process_incoming_audio_message():
     mock_get_channel_by_turn_id = AsyncMock(
         return_value=MagicMock(channel_id="test_channel_id")
     )
-    mock_wa_get_user_audio = MagicMock(
-        return_value=base64.b64encode(b"audio_bytes").decode("utf-8")
-    )
+    mock_wa_get_user_audio = MagicMock(return_value=base64.b64encode(b"audio_bytes"))
 
     with patch(
         "src.handlers.incoming.get_channel_by_turn_id", mock_get_channel_by_turn_id
     ):
         with patch(
-            "lib.whatsapp.WhatsappHelper.wa_get_user_audio",
+            "lib.channel_handler.pinnacle_whatsapp_handler.PinnacleWhatsappHandler.wa_download_audio",
             mock_wa_get_user_audio,
         ):
             bot_input = RestBotInput(
-                channel_name="whatsapp",
+                channel_name="pinnacle_whatsapp",
                 headers={},
                 query_params={},
                 data={
@@ -120,10 +130,10 @@ async def test_process_incoming_audio_message():
             result = await process_incoming_messages(
                 turn_id=message.turn_id, bot_input=bot_input
             )
-        mock_write_file.assert_called_once_with(
+        mock_sync_write_file.assert_called_once_with(
             "test_turn_id.ogg", b"audio_bytes", "audio/ogg"
         )
-        mock_public_url.assert_called_once_with("test_turn_id.ogg")
+        mock_sync_public_url.assert_called_once_with("test_turn_id.ogg")
         assert result is not None
         assert isinstance(result, Language)
         assert result.intent == LanguageIntent.LANGUAGE_IN
@@ -136,7 +146,7 @@ async def test_process_incoming_audio_message():
 @pytest.mark.asyncio
 async def test_process_incoming_interactive_message():
     bot_input = RestBotInput(
-        channel_name="whatsapp",
+        channel_name="pinnacle_whatsapp",
         headers={},
         query_params={},
         data={
@@ -180,7 +190,7 @@ async def test_process_incoming_interactive_message():
 @pytest.mark.asyncio
 async def test_process_incoming_language_selection_message():
     bot_input = RestBotInput(
-        channel_name="whatsapp",
+        channel_name="pinnacle_whatsapp",
         headers={},
         query_params={},
         data={
@@ -228,7 +238,7 @@ async def test_process_incoming_language_selection_message():
 @pytest.mark.asyncio
 async def test_process_incoming_form_message():
     bot_input = RestBotInput(
-        channel_name="whatsapp",
+        channel_name="pinnacle_whatsapp",
         headers={},
         query_params={},
         data={

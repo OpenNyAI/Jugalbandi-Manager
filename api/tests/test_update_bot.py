@@ -1,6 +1,18 @@
 from unittest.mock import MagicMock, patch, Mock
 import pytest
-from app.handlers.v1.bot_handlers import handle_update_bot
+
+mock_sync_storage_instance = MagicMock()
+mock_sync_write_file = MagicMock()
+mock_sync_public_url = MagicMock(return_value="https://storage.url/test_audio.ogg")
+
+mock_sync_storage_instance.write_file = mock_sync_write_file
+mock_sync_storage_instance.public_url = mock_sync_public_url
+
+with patch(
+    "lib.file_storage.StorageHandler.get_sync_instance",
+    return_value=mock_sync_storage_instance,
+):
+    from app.handlers.v1.bot_handlers import handle_update_bot
 
 mock_encryption_handler = MagicMock()
 mock_encrypt_dict = Mock(

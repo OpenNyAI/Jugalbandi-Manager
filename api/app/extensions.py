@@ -2,6 +2,7 @@ import os
 import logging
 from lib.kafka_utils import KafkaProducer, KafkaException
 from lib.data_models import Flow, Channel
+from lib.channel_handler import PinnacleWhatsappHandler, TelegramHandler
 
 logger = logging.getLogger("jb-manager-api")
 
@@ -28,11 +29,8 @@ def produce_message(message: Flow | Channel):
         raise ValueError("Invalid message type")
     try:
         logger.info("Sending msg to %s topic: %s", topic, message)
-        producer.send_message(topic=topic, value=message.model_dump_json())
+        producer.send_message(
+            topic=topic, value=message.model_dump_json(exclude_none=True)
+        )
     except KafkaException as e:
         return e
-
-
-channel_map = {
-    "whatsapp": "whatsapp",
-}
