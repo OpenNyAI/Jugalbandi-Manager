@@ -153,8 +153,6 @@ class AbstractFSM(ABC):
     def _restore_state(self, state, status, variables, plugin_states):
         self.state = state
         self.status = Status(status)
-        print("Trying to Restore:")
-        print(variables)
         self.variables = self.variable_names(**variables)
         for plugin, plugin_state in plugin_states.items():
             state = plugin_state["main"]["state"]
@@ -451,7 +449,7 @@ class AbstractFSM(ABC):
         if options:
             result = result["id"]
             if result.isdigit():
-                result = options[int(result) - 1]
+                result = options[int(result) - 1].option_text
         else:
             result = result["result"]
         try:
@@ -569,7 +567,7 @@ class AbstractFSM(ABC):
                 FSMOutput(
                     intent=FSMIntent.SEND_MESSAGE,
                     message=Message(
-                        type=MessageType.TEXT,
+                        message_type=MessageType.TEXT,
                         text=TextMessage(body=message),
                     ),
                 )
