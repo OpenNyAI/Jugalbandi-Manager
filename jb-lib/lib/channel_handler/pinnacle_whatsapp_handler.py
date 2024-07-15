@@ -1,15 +1,14 @@
 import base64
 import json
-import os
 from typing import Any, Dict, Generator
 import requests
 
 from sqlalchemy import select
 
-from lib.db_session_handler import DBSessionHandler
+from ..db_session_handler import DBSessionHandler
 from ..file_storage.handler import StorageHandler
-from ..channel_handler.channel_handler import ChannelData, RestChannelHandler, User
-from ..channel_handler.language import LanguageMapping, LanguageCodes
+from .channel_handler import ChannelData, RestChannelHandler, User
+from .language import LanguageMapping, LanguageCodes
 from ..data_models import (
     MessageType,
     Message,
@@ -26,12 +25,13 @@ from ..data_models import (
     ButtonMessage,
     DialogMessage,
     DialogOption,
-    FormReplyMessage
+    FormReplyMessage,
 )
 from ..models import JBChannel, JBUser, JBForm
-from lib.encryption_handler import EncryptionHandler
+from ..encryption_handler import EncryptionHandler
 
 storage = StorageHandler.get_sync_instance()
+
 
 class PinnacleWhatsappHandler(RestChannelHandler):
 
@@ -105,13 +105,15 @@ class PinnacleWhatsappHandler(RestChannelHandler):
                     interactive_reply=InteractiveReplyMessage(options=options),
                 )
             elif interactive_type == "list_reply":
-                if (selected_language:=interactive_message_data["id"]).startswith("lang_"):
+                if (selected_language := interactive_message_data["id"]).startswith(
+                    "lang_"
+                ):
                     selected_language = selected_language.replace("lang_", "").upper()
                     return Message(
                         message_type=MessageType.DIALOG,
                         dialog=DialogMessage(
                             dialog_id=DialogOption.LANGUAGE_SELECTED,
-                            dialog_input=LanguageCodes[selected_language].value.lower()
+                            dialog_input=LanguageCodes[selected_language].value.lower(),
                         ),
                     )
                 options = [
@@ -127,7 +129,9 @@ class PinnacleWhatsappHandler(RestChannelHandler):
             elif interactive_type == "nfm_reply":
                 return Message(
                     message_type=MessageType.FORM_REPLY,
-                    form_reply=FormReplyMessage(form_data=interactive_message_data["response_json"])
+                    form_reply=FormReplyMessage(
+                        form_data=interactive_message_data["response_json"]
+                    ),
                 )
         return NotImplemented
 
@@ -152,9 +156,7 @@ class PinnacleWhatsappHandler(RestChannelHandler):
             )
         elif message_type == MessageType.OPTION_LIST:
             data = cls.parse_list_message(
-                channel=channel,
-                user=user,
-                message=message.option_list
+                channel=channel, user=user, message=message.option_list
             )
         elif message_type == MessageType.IMAGE:
             data = cls.parse_image_message(
@@ -342,7 +344,7 @@ class PinnacleWhatsappHandler(RestChannelHandler):
     @classmethod
     def get_form_parameters(cls, form_id: str):
         # Create a query to insert a new row into JBPluginMapping
-        with DBSessionHandler() as session:
+        with DBSessionHandler.get_sync_session() as session:
             with session.begin():
                 result = session.execute(select(JBForm).where(JBForm.id == form_id))
                 s = result.scalars().first()
@@ -385,7 +387,10 @@ class PinnacleWhatsappHandler(RestChannelHandler):
     ) -> Dict[str, Any]:
         if message.dialog_id == DialogOption.LANGUAGE_CHANGE:
             languages = [
-                Option(option_id=f"lang_{language.lower()}", option_text=representation.value)
+                Option(
+                    option_id=f"lang_{language.lower()}",
+                    option_text=representation.value,
+                )
                 for language, representation in LanguageMapping.__members__.items()
             ]
             language_message = ListMessage(
@@ -412,10 +417,11 @@ class PinnacleWhatsappHandler(RestChannelHandler):
 
     @classmethod
     def send_message(cls, channel: JBChannel, user: JBUser, message: Message):
-        url = f'{channel.url}/v1/messages'
+        url = f"{channel.url}/v1/messages"
         headers = cls.generate_header(channel=channel)
         data = cls.parse_bot_output(message=message, channel=channel, user=user)
         import logging
+
         r = requests.post(url, data=json.dumps(data), headers=headers)
         json_output = r.json()
         logging.error(json_output)
