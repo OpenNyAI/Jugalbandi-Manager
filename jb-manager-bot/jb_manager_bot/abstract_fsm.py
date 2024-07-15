@@ -7,10 +7,15 @@ from pydantic import BaseModel
 from transitions import Machine
 from jb_manager_bot.data_models import (
     FSMOutput,
-    MessageData,
+    Message,
     MessageType,
-    OptionsListType,
     Status,
+    FSMIntent,
+    TextMessage,
+    ListMessage,
+    ButtonMessage,
+    Option,
+    ImageMessage,
 )
 from jb_manager_bot.parsers import Parser
 
@@ -148,9 +153,9 @@ class AbstractFSM(ABC):
     def _restore_state(self, state, status, variables, plugin_states):
         self.state = state
         self.status = Status(status)
-        self.variables = self.variable_names(
-            **variables
-        )
+        print("Trying to Restore:")
+        print(variables)
+        self.variables = self.variable_names(**variables)
         for plugin, plugin_state in plugin_states.items():
             state = plugin_state["main"]["state"]
             status = Status(plugin_state["main"]["status"])
@@ -171,9 +176,7 @@ class AbstractFSM(ABC):
     def set_outputs(self):
         """Set the outputs of the FSM."""
         for key in self.output_variables:
-            self.outputs[key] = getattr(
-                self.variables, key, None
-            )
+            self.outputs[key] = getattr(self.variables, key, None)
 
     def on_enter_end(self):
         """Exit the FSM."""
@@ -259,12 +262,7 @@ class AbstractFSM(ABC):
         self.status = Status.WAIT_FOR_ME
         self.send_message(
             FSMOutput(
-                message_data=MessageData(
-                    body="Please select your preferred language.\nबंधु से संपर्क करने के लिए धन्यवाद!\nकृपया अपनी भाषा चुनें।"
-                ),
-                type=MessageType.TEXT,
-                dialog="language",
-                dest="channel",
+                intent=FSMIntent.LANGUAGE_CHANGE,
             )
         )
         self.status = Status.WAIT_FOR_USER_INPUT
@@ -341,28 +339,65 @@ class AbstractFSM(ABC):
 
         self.status = Status.WAIT_FOR_ME
         if options:
-            type = MessageType.INTERACTIVE
             options = [
-                OptionsListType(id=str(i + 1), title=option)
+                Option(option_id=str(i + 1), option_text=option)
                 for i, option in enumerate(options)
             ]
+            if len(options) <= 3:
+                options_payload = ButtonMessage(
+                    header="Header Text",  # Provide appropriate header text
+                    body="Body Text",  # Provide appropriate body text
+                    footer="Footer Text",  # Provide appropriate footer text
+                    options=options,
+                )
+                message_payload = FSMOutput(
+                    intent=FSMIntent.SEND_MESSAGE,
+                    message=Message(
+                        message_type=MessageType.BUTTON, button=options_payload
+                    ),
+                )
+            else:
+                # Ensure menu_title and menu_selector are provided and are valid strings
+                if not menu_title:
+                    menu_title = "Menu"
+                if not menu_selector:
+                    menu_selector = "Select an option"
+
+                options_payload = ListMessage(
+                    button_text=menu_title,
+                    list_title=menu_selector,
+                    options=options,
+                    header="Header Text",  # Provide appropriate header text
+                    body="Body Text",  # Provide appropriate body text
+                    footer="Footer Text",  # Provide appropriate footer text
+                )
+                message_payload = FSMOutput(
+                    intent=FSMIntent.SEND_MESSAGE,
+                    message=Message(
+                        message_type=MessageType.OPTION_LIST, option_list=options_payload
+                    ),
+                )
+
         elif media_url:
             type = MessageType.IMAGE
+            message_payload = FSMOutput(
+                intent=FSMIntent.SEND_MESSAGE,
+                message=Message(
+                    message_type=MessageType.IMAGE,
+                    image=ImageMessage(media_url=media_url, caption=message),
+                ),
+            )
         else:
             type = MessageType.TEXT
-
-        self.send_message(
-            FSMOutput(
-                message_data=MessageData(body=message),
-                options_list=options,
-                type=type,
-                dest=dest_channel,
-                dialog=dialog,
-                menu_selector=menu_selector,
-                menu_title=menu_title,
-                media_url=media_url,
+            message_payload = FSMOutput(
+                intent=FSMIntent.SEND_MESSAGE,
+                message=Message(
+                    message_type=MessageType.TEXT,
+                    text=TextMessage(body=message),
+                ),
             )
-        )
+
+        self.send_message(message_payload)
         self.status = Status.MOVE_FORWARD
 
     def _create_on_enter_display(
@@ -398,7 +433,7 @@ class AbstractFSM(ABC):
         if options:
             task = f"The user provides a response to the {message}."
             options = [
-                OptionsListType(id=str(i + 1), title=option)
+                Option(option_id=str(i + 1), option_text=option)
                 for i, option in enumerate(options)
             ]
         else:
@@ -416,7 +451,7 @@ class AbstractFSM(ABC):
         if options:
             result = result["id"]
             if result.isdigit():
-                result = options[int(result) - 1].title
+                result = options[int(result) - 1]
         else:
             result = result["result"]
         try:
@@ -532,15 +567,21 @@ class AbstractFSM(ABC):
         if message:
             self.send_message(
                 FSMOutput(
-                    message_data=MessageData(body=message),
-                    type=MessageType.TEXT,
-                    dest="out",
+                    intent=FSMIntent.SEND_MESSAGE,
+                    message=Message(
+                        type=MessageType.TEXT,
+                        text=TextMessage(body=message),
+                    ),
                 )
             )
 
         plugin_input = {
-            key: getattr(self.variables, value) if hasattr(self.variables, value) else value
-            for key, value in input_variables.items() 
+            key: (
+                getattr(self.variables, value)
+                if hasattr(self.variables, value)
+                else value
+            )
+            for key, value in input_variables.items()
         }
         plugin_output = plugin(**plugin_input)
 

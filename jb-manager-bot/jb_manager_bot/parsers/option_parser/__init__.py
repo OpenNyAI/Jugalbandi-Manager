@@ -101,7 +101,7 @@ class Parser:
             return result
         else:
             for option in options:
-                if "id" not in option and not hasattr(option, "id"):
+                if "option_id" not in option and not hasattr(option, "option_id"):
                     raise ValueError("Option ID is required")
 
             result = LLMManager.llm(
