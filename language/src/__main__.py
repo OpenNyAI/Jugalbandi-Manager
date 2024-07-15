@@ -9,7 +9,6 @@ from typing import List, Callable
 from dotenv import load_dotenv
 
 from .crud import (
-    get_turn_information,
     get_user_preferred_language,
 )
 from .handlers import handle_input, handle_output

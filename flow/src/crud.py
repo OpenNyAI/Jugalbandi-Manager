@@ -134,18 +134,6 @@ async def get_session_by_turn_id(turn_id: str) -> JBSession | None:
             return s
 
 
-async def get_bot_by_turn_id(turn_id: str) -> JBBot | None:
-    async with DBSessionHandler.get_async_session() as session:
-        async with session.begin():
-            result = await session.execute(
-                select(JBBot)
-                .join(JBTurn, JBBot.id == JBTurn.bot_id)
-                .where(JBTurn.id == turn_id)
-            )
-            s = result.scalars().first()
-            return s
-
-
 async def get_all_bots():
     async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
