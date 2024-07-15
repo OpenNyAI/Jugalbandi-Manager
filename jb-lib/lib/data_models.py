@@ -149,6 +149,7 @@ class BotConfig(BaseModel):
     bot_requirements_txt: Optional[str] = None
     bot_version: Optional[str] = None
     bot_config_env: Optional[Dict[str, Any]] = None
+    bot_required_credentials: Optional[List[str]] = None
     index_urls: Optional[List[str]] = None
 
 
