@@ -208,8 +208,8 @@ CREATE TABLE public.jb_session (
     id character varying NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    user_id character varying,
-    channel_id character varying
+    channel_id character varying,
+    user_id character varying
 );
 
 
