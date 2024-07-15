@@ -1,13 +1,20 @@
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock, MagicMock, Mock
 import pytest
 
 from lib.data_models import (
-    ChannelInput,
-    BotOutput,
-    MessageType,
     ChannelIntent,
-    MessageData,
-    OptionsListType,
+    MessageType,
+    Message,
+    TextMessage,
+    AudioMessage,
+    ButtonMessage,
+    ListMessage,
+    FormMessage,
+    ImageMessage,
+    DocumentMessage,
+    DialogMessage,
+    DialogOption,
+    Option,
 )
 
 mock_storage_instance = MagicMock()
@@ -18,8 +25,14 @@ mock_storage_instance.write_file = mock_write_file
 mock_storage_instance.public_url = mock_public_url
 
 mock_encryption_handler = MagicMock()
-mock_encryption_handler.decrypt_dict = MagicMock(return_value={"whatsapp": "api_key"})
-mock_encryption_handler.decrypt_text = MagicMock(return_value="api_key")
+mock_encryption_handler.decrypt_dict = Mock(
+    side_effect=lambda x: {
+        k: v.replace("encrypted_", "decrypted_") for k, v in x.items()
+    }
+)
+mock_encryption_handler.decrypt_text = Mock(
+    side_effect=lambda x: x.replace("encrypted_", "decrypted_")
+)
 
 with patch(
     "lib.file_storage.StorageHandler.get_async_instance",
@@ -33,352 +46,368 @@ with patch(
 
 @pytest.mark.asyncio
 async def test_send_text_message():
-    mock_get_user_by_session_id = AsyncMock(
-        return_value=MagicMock(identifier="1234567890")
+    mock_channel = MagicMock(
+        app_id="test_number",
+        key="encrypted_credentials",
     )
-    mock_get_channel_by_session_id = AsyncMock(
-        return_value=MagicMock(app_id="test_number", key="encrypted_credentials")
+    mock_user = MagicMock(
+        identifier="1234567890",
     )
-    mock_wa_send_text_message = MagicMock(return_value="test_channel_id")
+    mock_get_user_by_turn_id = AsyncMock(return_value=mock_user)
+    mock_get_channel_by_turn_id = AsyncMock(return_value=mock_channel)
+    mock_wa_send_text_message = MagicMock()
     mock_create_message = AsyncMock()
 
-    with patch(
-        "src.handlers.outgoing.get_user_by_session_id", mock_get_user_by_session_id
-    ):
+    message = Message(
+        message_type=MessageType.TEXT,
+        text=TextMessage(
+            body="Hello",
+        ),
+    )
+    turn_id = "test_turn_id"
+
+    with patch("src.handlers.outgoing.get_user_by_turn_id", mock_get_user_by_turn_id):
         with patch(
-            "src.handlers.outgoing.get_channel_by_session_id",
-            mock_get_channel_by_session_id,
+            "src.handlers.outgoing.get_channel_by_turn_id", mock_get_channel_by_turn_id
         ):
             with patch(
                 "lib.whatsapp.WhatsappHelper.wa_send_text_message",
                 mock_wa_send_text_message,
             ):
                 with patch("src.handlers.outgoing.create_message", mock_create_message):
-                    message = ChannelInput(
-                        source="language",
-                        message_id="test_msg_id",
-                        turn_id="test_turn_id",
-                        session_id="test_session_id",
-                        intent=ChannelIntent.BOT_OUT,
-                        data=BotOutput(
-                            message_data=MessageData(message_text="Hello"),
-                            message_type=MessageType.TEXT,
-                        ),
-                    )
-                    await send_message_to_user(message)
-                    mock_wa_send_text_message.assert_called_once_with(
-                        wa_bnumber="test_number",
-                        wa_api_key="api_key",
-                        user_tele="1234567890",
-                        text="Hello",
-                    )
-                    mock_create_message.assert_called_once()
+                    await send_message_to_user(turn_id=turn_id, message=message)
+
+    mock_get_channel_by_turn_id.assert_called_once_with(turn_id=turn_id)
+    mock_get_user_by_turn_id.assert_called_once_with(turn_id=turn_id)
+    mock_wa_send_text_message.assert_called_once_with(
+        wa_bnumber="test_number",
+        wa_api_key="decrypted_credentials",
+        user_tele="1234567890",
+        text="Hello",
+    )
+    mock_create_message.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_send_audio_message():
-    mock_get_user_by_session_id = AsyncMock(
-        return_value=MagicMock(identifier="1234567890")
+    mock_channel = MagicMock(
+        app_id="test_number",
+        key="encrypted_credentials",
     )
-    mock_get_channel_by_session_id = AsyncMock(
-        return_value=MagicMock(app_id="test_number", key="encrypted_credentials")
+    mock_user = MagicMock(
+        identifier="1234567890",
     )
-    mock_wa_send_audio_message = MagicMock(return_value="test_channel_id")
+    mock_get_user_by_turn_id = AsyncMock(return_value=mock_user)
+    mock_get_channel_by_turn_id = AsyncMock(return_value=mock_channel)
+    mock_wa_send_audio_message = MagicMock()
     mock_create_message = AsyncMock()
 
-    with patch(
-        "src.handlers.outgoing.get_user_by_session_id", mock_get_user_by_session_id
-    ):
+    message = Message(
+        message_type=MessageType.AUDIO,
+        audio=AudioMessage(
+            media_url="https://example.com/audio.ogg",
+        ),
+    )
+    turn_id = "test_turn_id"
+
+    with patch("src.handlers.outgoing.get_user_by_turn_id", mock_get_user_by_turn_id):
         with patch(
-            "src.handlers.outgoing.get_channel_by_session_id",
-            mock_get_channel_by_session_id,
+            "src.handlers.outgoing.get_channel_by_turn_id",
+            mock_get_channel_by_turn_id,
         ):
             with patch(
                 "lib.whatsapp.WhatsappHelper.wa_send_audio_message",
                 mock_wa_send_audio_message,
             ):
                 with patch("src.handlers.outgoing.create_message", mock_create_message):
-                    message = ChannelInput(
-                        source="language",
-                        message_id="test_msg_id",
-                        turn_id="test_turn_id",
-                        session_id="test_session_id",
-                        intent=ChannelIntent.BOT_OUT,
-                        data=BotOutput(
-                            message_data=MessageData(
-                                media_url="https://example.com/audio.ogg"
-                            ),
-                            message_type=MessageType.AUDIO,
-                        ),
-                    )
-                    await send_message_to_user(message)
-                    mock_wa_send_audio_message.assert_called_once_with(
-                        wa_bnumber="test_number",
-                        wa_api_key="api_key",
-                        user_tele="1234567890",
-                        audio_url="https://example.com/audio.ogg",
-                    )
-                    mock_create_message.assert_called_once()
+                    await send_message_to_user(turn_id=turn_id, message=message)
+    mock_get_channel_by_turn_id.assert_called_once_with(turn_id=turn_id)
+    mock_get_user_by_turn_id.assert_called_once_with(turn_id=turn_id)
+    mock_wa_send_audio_message.assert_called_once_with(
+        wa_bnumber="test_number",
+        wa_api_key="decrypted_credentials",
+        user_tele="1234567890",
+        audio_url="https://example.com/audio.ogg",
+    )
+    mock_create_message.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_send_interactive_message():
-    mock_get_user_by_session_id = AsyncMock(
-        return_value=MagicMock(identifier="1234567890")
+    mock_channel = MagicMock(
+        app_id="test_number",
+        key="encrypted_credentials",
     )
-    mock_get_channel_by_session_id = AsyncMock(
-        return_value=MagicMock(app_id="test_number", key="encrypted_credentials")
+    mock_user = MagicMock(
+        identifier="1234567890",
     )
-    mock_wa_send_interactive_message = MagicMock(return_value="test_channel_id")
+    mock_get_user_by_turn_id = AsyncMock(return_value=mock_user)
+    mock_get_channel_by_turn_id = AsyncMock(return_value=mock_channel)
+    mock_wa_send_interactive_message = MagicMock()
     mock_create_message = AsyncMock()
 
-    with patch(
-        "src.handlers.outgoing.get_user_by_session_id", mock_get_user_by_session_id
-    ):
+    message = Message(
+        message_type=MessageType.BUTTON,
+        button=ButtonMessage(
+            body="This is a button message",
+            header="Button header",
+            footer="Button footer",
+            options=[
+                Option(option_id="1", option_text="Option 1"),
+                Option(option_id="2", option_text="Option 2"),
+            ],
+        ),
+    )
+    turn_id = "test_turn_id"
+
+    with patch("src.handlers.outgoing.get_user_by_turn_id", mock_get_user_by_turn_id):
         with patch(
-            "src.handlers.outgoing.get_channel_by_session_id",
-            mock_get_channel_by_session_id,
+            "src.handlers.outgoing.get_channel_by_turn_id",
+            mock_get_channel_by_turn_id,
         ):
             with patch(
                 "lib.whatsapp.WhatsappHelper.wa_send_interactive_message",
                 mock_wa_send_interactive_message,
             ):
                 with patch("src.handlers.outgoing.create_message", mock_create_message):
-                    message = ChannelInput(
-                        source="language",
-                        message_id="test_msg_id",
-                        turn_id="test_turn_id",
-                        session_id="test_session_id",
-                        intent=ChannelIntent.BOT_OUT,
-                        data=BotOutput(
-                            message_data=MessageData(message_text="Choose a language"),
-                            message_type=MessageType.INTERACTIVE,
-                            header="Header",
-                            footer="Footer",
-                            menu_selector="Selector",
-                            menu_title="Title",
-                            options_list=[
-                                OptionsListType(id="1", title="Option 1"),
-                                OptionsListType(id="2", title="Option 2"),
-                            ],
-                        ),
-                    )
-                    await send_message_to_user(message)
-                    mock_wa_send_interactive_message.assert_called_once()
-                    mock_create_message.assert_called_once()
+                    await send_message_to_user(turn_id=turn_id, message=message)
+    mock_get_channel_by_turn_id.assert_called_once_with(turn_id=turn_id)
+    mock_get_user_by_turn_id.assert_called_once_with(turn_id=turn_id)
+    mock_wa_send_interactive_message.assert_called_once_with(
+        wa_bnumber="test_number",
+        wa_api_key="decrypted_credentials",
+        user_tele="1234567890",
+        message="This is a button message",
+        header="Button header",
+        body="This is a button message",
+        footer="Button footer",
+        menu_selector=None,
+        menu_title="This is a button message",
+        options=[
+            {"option_id": "1", "option_text": "Option 1"},
+            {"option_id": "2", "option_text": "Option 2"},
+        ],
+    )
+    mock_create_message.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_send_image_message():
-    mock_get_user_by_session_id = AsyncMock(
-        return_value=MagicMock(identifier="1234567890")
+    mock_channel = MagicMock(
+        app_id="test_number",
+        key="encrypted_credentials",
     )
-    mock_get_channel_by_session_id = AsyncMock(
-        return_value=MagicMock(app_id="test_number", key="encrypted_credentials")
+    mock_user = MagicMock(
+        identifier="1234567890",
     )
-    mock_wa_send_image = MagicMock(return_value="test_channel_id")
+    mock_get_user_by_turn_id = AsyncMock(return_value=mock_user)
+    mock_get_channel_by_turn_id = AsyncMock(return_value=mock_channel)
+    mock_wa_send_image_message = MagicMock()
     mock_create_message = AsyncMock()
 
-    with patch(
-        "src.handlers.outgoing.get_user_by_session_id", mock_get_user_by_session_id
-    ):
+    message = Message(
+        message_type=MessageType.IMAGE,
+        image=ImageMessage(
+            url="https://example.com/image.jpg",
+            caption="This is an image",
+        ),
+    )
+    turn_id = "test_turn_id"
+
+    with patch("src.handlers.outgoing.get_user_by_turn_id", mock_get_user_by_turn_id):
         with patch(
-            "src.handlers.outgoing.get_channel_by_session_id",
-            mock_get_channel_by_session_id,
+            "src.handlers.outgoing.get_channel_by_turn_id",
+            mock_get_channel_by_turn_id,
         ):
-            with patch("lib.whatsapp.WhatsappHelper.wa_send_image", mock_wa_send_image):
+            with patch(
+                "lib.whatsapp.WhatsappHelper.wa_send_image",
+                mock_wa_send_image_message,
+            ):
                 with patch("src.handlers.outgoing.create_message", mock_create_message):
-                    message = ChannelInput(
-                        source="language",
-                        message_id="test_msg_id",
-                        turn_id="test_turn_id",
-                        session_id="test_session_id",
-                        intent=ChannelIntent.BOT_OUT,
-                        data=BotOutput(
-                            message_data=MessageData(
-                                message_text="Image caption",
-                                media_url="https://example.com/image.jpg",
-                            ),
-                            message_type=MessageType.IMAGE,
-                            header="Header",
-                            footer="Footer",
-                            menu_selector="Selector",
-                            menu_title="Title",
-                            options_list=None,
-                        ),
-                    )
-                    await send_message_to_user(message)
-                    mock_wa_send_image.assert_called_once_with(
-                        wa_bnumber="test_number",
-                        wa_api_key="api_key",
-                        user_tele="1234567890",
-                        message="Image caption",
-                        header="Header",
-                        body="Image caption",
-                        footer="Footer",
-                        menu_selector="Selector",
-                        menu_title="Title",
-                        options=None,
-                        media_url="https://example.com/image.jpg",
-                    )
-                    mock_create_message.assert_called_once()
+                    await send_message_to_user(turn_id=turn_id, message=message)
+    mock_get_channel_by_turn_id.assert_called_once_with(turn_id=turn_id)
+    mock_get_user_by_turn_id.assert_called_once_with(turn_id=turn_id)
+    mock_wa_send_image_message.assert_called_once_with(
+        wa_bnumber="test_number",
+        wa_api_key="decrypted_credentials",
+        user_tele="1234567890",
+        message="This is an image",
+        media_url="https://example.com/image.jpg",
+    )
+    mock_create_message.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_send_document_message():
-    mock_get_user_by_session_id = AsyncMock(
-        return_value=MagicMock(identifier="1234567890")
+    mock_channel = MagicMock(
+        app_id="test_number",
+        key="encrypted_credentials",
     )
-    mock_get_channel_by_session_id = AsyncMock(
-        return_value=MagicMock(app_id="test_number", key="encrypted_credentials")
+    mock_user = MagicMock(
+        identifier="1234567890",
     )
-    mock_wa_send_document = MagicMock(return_value="test_channel_id")
+    mock_get_user_by_turn_id = AsyncMock(return_value=mock_user)
+    mock_get_channel_by_turn_id = AsyncMock(return_value=mock_channel)
+    mock_wa_send_document_message = MagicMock()
     mock_create_message = AsyncMock()
 
-    with patch(
-        "src.handlers.outgoing.get_user_by_session_id", mock_get_user_by_session_id
-    ):
+    message = Message(
+        message_type=MessageType.DOCUMENT,
+        document=DocumentMessage(
+            url="https://example.com/document.pdf",
+            name="Document title",
+            caption="This is a document",
+        ),
+    )
+    turn_id = "test_turn_id"
+
+    with patch("src.handlers.outgoing.get_user_by_turn_id", mock_get_user_by_turn_id):
         with patch(
-            "src.handlers.outgoing.get_channel_by_session_id",
-            mock_get_channel_by_session_id,
+            "src.handlers.outgoing.get_channel_by_turn_id",
+            mock_get_channel_by_turn_id,
         ):
             with patch(
                 "lib.whatsapp.WhatsappHelper.wa_send_document",
-                mock_wa_send_document,
+                mock_wa_send_document_message,
             ):
                 with patch("src.handlers.outgoing.create_message", mock_create_message):
-                    message = ChannelInput(
-                        source="language",
-                        message_id="test_msg_id",
-                        turn_id="test_turn_id",
-                        session_id="test_session_id",
-                        intent=ChannelIntent.BOT_OUT,
-                        data=BotOutput(
-                            message_data=MessageData(
-                                message_text="Document title",
-                                media_url="https://example.com/document.pdf",
-                            ),
-                            message_type=MessageType.DOCUMENT,
-                        ),
-                        dialog="",
-                    )
-                    await send_message_to_user(message)
-                    mock_wa_send_document.assert_called_once_with(
-                        wa_bnumber="test_number",
-                        wa_api_key="api_key",
-                        user_tele="1234567890",
-                        document_url="https://example.com/document.pdf",
-                        document_name="Document title",
-                    )
-                    mock_create_message.assert_called_once()
+                    await send_message_to_user(turn_id=turn_id, message=message)
+    mock_get_channel_by_turn_id.assert_called_once_with(turn_id=turn_id)
+    mock_get_user_by_turn_id.assert_called_once_with(turn_id=turn_id)
+    mock_wa_send_document_message.assert_called_once_with(
+        wa_bnumber="test_number",
+        wa_api_key="decrypted_credentials",
+        user_tele="1234567890",
+        document_url="https://example.com/document.pdf",
+        document_name="Document title",
+        caption="This is a document",
+    )
+    mock_create_message.assert_called_once()
 
 
 @pytest.mark.asyncio
 async def test_send_form_message():
-    mock_get_user_by_session_id = AsyncMock(
-        return_value=MagicMock(identifier="1234567890")
+    mock_channel = MagicMock(
+        app_id="test_number",
+        key="encrypted_credentials",
     )
-    mock_get_channel_by_session_id = AsyncMock(
-        return_value=MagicMock(app_id="test_number", key="encrypted_credentials")
+    mock_user = MagicMock(
+        identifier="1234567890",
     )
-    mock_get_form_parameters = AsyncMock(
-        return_value={
-            "form_token": "form_token",
-            "screen_id": "screen_id",
-            "flow_id": "flow_id",
-        }
-    )
-    mock_wa_send_form = MagicMock(return_value="test_channel_id")
+    mock_get_user_by_turn_id = AsyncMock(return_value=mock_user)
+    mock_get_channel_by_turn_id = AsyncMock(return_value=mock_channel)
+    mock_wa_send_form = MagicMock()
     mock_create_message = AsyncMock()
+    mock_form_parameters = {
+        "form_token": "form_token",
+        "screen_id": "screen_id",
+        "flow_id": "flow_id",
+    }
+    mock_get_form_parameters = AsyncMock(return_value=mock_form_parameters)
 
-    with patch(
-        "src.handlers.outgoing.get_user_by_session_id", mock_get_user_by_session_id
-    ):
+    message = Message(
+        message_type=MessageType.FORM,
+        form=FormMessage(
+            header="Form header",
+            body="Form body",
+            footer="Form footer",
+            form_id="form_id",
+        ),
+    )
+    turn_id = "test_turn_id"
+
+    with patch("src.handlers.outgoing.get_user_by_turn_id", mock_get_user_by_turn_id):
         with patch(
-            "src.handlers.outgoing.get_channel_by_session_id",
-            mock_get_channel_by_session_id,
+            "src.handlers.outgoing.get_channel_by_turn_id",
+            mock_get_channel_by_turn_id,
         ):
             with patch(
-                "src.handlers.outgoing.WhatsappHelper.wa_send_form", mock_wa_send_form
-            ):
-                with patch("src.handlers.outgoing.create_message", mock_create_message):
-                    with patch(
-                        "src.handlers.outgoing.get_form_parameters",
-                        mock_get_form_parameters,
-                    ):
-                        message = ChannelInput(
-                            source="language",
-                            message_id="test_msg_id",
-                            turn_id="test_turn_id",
-                            session_id="test_session_id",
-                            intent=ChannelIntent.BOT_OUT,
-                            data=BotOutput(
-                                message_data=MessageData(message_text="Form body"),
-                                message_type=MessageType.FORM,
-                                footer="Form footer",
-                                form_id="form_id",
-                            ),
-                            dialog="",
-                        )
-                        await send_message_to_user(message)
-                    mock_wa_send_form.assert_called_once_with(
-                        wa_bnumber="test_number",
-                        wa_api_key="api_key",
-                        user_tele="1234567890",
-                        body="Form body",
-                        footer="Form footer",
-                        form_parameters={
-                            "form_token": "form_token",
-                            "screen_id": "screen_id",
-                            "flow_id": "flow_id",
-                        },
-                    )
-                    mock_create_message.assert_called_once()
-
-
-@pytest.mark.asyncio
-async def test_send_language_message():
-    mock_get_user_by_session_id = AsyncMock(
-        return_value=MagicMock(identifier="1234567890")
-    )
-    mock_get_channel_by_session_id = AsyncMock(
-        return_value=MagicMock(app_id="test_number", key="encrypted_credentials")
-    )
-    mock_wa_send_text_message = MagicMock(return_value="test_channel_id")
-    mock_wa_send_interactive_message = MagicMock(return_value="test_channel_id")
-    mock_create_message = AsyncMock()
-
-    with patch(
-        "src.handlers.outgoing.get_user_by_session_id", mock_get_user_by_session_id
-    ):
-        with patch(
-            "src.handlers.outgoing.get_channel_by_session_id",
-            mock_get_channel_by_session_id,
-        ):
-            with patch(
-                "lib.whatsapp.WhatsappHelper.wa_send_text_message",
-                mock_wa_send_text_message,
+                "src.handlers.outgoing.get_form_parameters",
+                mock_get_form_parameters,
             ):
                 with patch(
-                    "lib.whatsapp.WhatsappHelper.wa_send_interactive_message",
-                    mock_wa_send_interactive_message,
+                    "lib.whatsapp.WhatsappHelper.wa_send_form",
+                    mock_wa_send_form,
                 ):
                     with patch(
                         "src.handlers.outgoing.create_message", mock_create_message
                     ):
-                        message = ChannelInput(
-                            source="language",
-                            message_id="test_msg_id",
-                            turn_id="test_turn_id",
-                            session_id="test_session_id",
-                            intent=ChannelIntent.BOT_OUT,
-                            data=BotOutput(
-                                message_data=MessageData(message_text="Hello"),
-                                message_type=MessageType.TEXT,
-                            ),
-                            dialog="language",
-                        )
-                        await send_message_to_user(message)
-                        mock_wa_send_text_message.assert_called_once()
-                        mock_wa_send_interactive_message.assert_called_once()
-                        assert mock_create_message.call_count == 2
+                        await send_message_to_user(turn_id=turn_id, message=message)
+    mock_get_channel_by_turn_id.assert_called_once_with(turn_id=turn_id)
+    mock_get_user_by_turn_id.assert_called_once_with(turn_id=turn_id)
+    mock_wa_send_form.assert_called_once_with(
+        wa_bnumber="test_number",
+        wa_api_key="decrypted_credentials",
+        user_tele="1234567890",
+        body="Form body",
+        footer="Form footer",
+        form_parameters={
+            "form_token": "form_token",
+            "screen_id": "screen_id",
+            "flow_id": "flow_id",
+        },
+    )
+    mock_create_message.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_send_language_message():
+    mock_channel = MagicMock(
+        app_id="test_number",
+        key="encrypted_credentials",
+    )
+    mock_user = MagicMock(
+        identifier="1234567890",
+    )
+    mock_get_user_by_turn_id = AsyncMock(return_value=mock_user)
+    mock_get_channel_by_turn_id = AsyncMock(return_value=mock_channel)
+    mock_wa_send_interactive_message = MagicMock()
+    mock_create_message = AsyncMock()
+
+    message = Message(
+        message_type=MessageType.DIALOG,
+        dialog=DialogMessage(
+            dialog_id=DialogOption.LANGUAGE_CHANGE,
+            dialog_input=None,
+        ),
+    )
+
+    turn_id = "test_turn_id"
+
+    with patch("src.handlers.outgoing.get_user_by_turn_id", mock_get_user_by_turn_id):
+        with patch(
+            "src.handlers.outgoing.get_channel_by_turn_id",
+            mock_get_channel_by_turn_id,
+        ):
+            with patch(
+                "lib.whatsapp.WhatsappHelper.wa_send_interactive_message",
+                mock_wa_send_interactive_message,
+            ):
+                with patch("src.handlers.outgoing.create_message", mock_create_message):
+                    await send_message_to_user(turn_id=turn_id, message=message)
+    mock_get_channel_by_turn_id.assert_called_once_with(turn_id=turn_id)
+    mock_get_user_by_turn_id.assert_called_once_with(turn_id=turn_id)
+    mock_wa_send_interactive_message.assert_called_once_with(
+        wa_bnumber="test_number",
+        wa_api_key="decrypted_credentials",
+        user_tele="1234567890",
+        message="Please select your preferred language",
+        header="Language",
+        body="Choose a Language",
+        footer="भाषा चुनें",
+        menu_selector="चुनें / Select",
+        menu_title="भाषाएँ / Languages",
+        options=[
+            {"option_id": "lang_hindi", "option_text": "हिन्दी"},
+            {"option_id": "lang_english", "option_text": "English"},
+            {"option_id": "lang_bengali", "option_text": "বাংলা"},
+            {"option_id": "lang_telugu", "option_text": "తెలుగు"},
+            {"option_id": "lang_marathi", "option_text": "मराठी"},
+            {"option_id": "lang_tamil", "option_text": "தமிழ்"},
+            {"option_id": "lang_gujarati", "option_text": "ગુજરાતી"},
+            {"option_id": "lang_urdu", "option_text": "اردو"},
+            {"option_id": "lang_kannada", "option_text": "ಕನ್ನಡ"},
+            {"option_id": "lang_odia", "option_text": "ଓଡ଼ିଆ"},
+        ],
+    )
+    mock_create_message.assert_called_once()

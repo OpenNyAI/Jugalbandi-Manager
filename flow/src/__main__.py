@@ -5,14 +5,13 @@ import logging
 from dotenv import load_dotenv
 
 from lib.data_models import (
-    FlowInput,
-    BotConfig,
+    Flow,
 )
 from .extensions import consumer, flow_topic
 from .crud import (
     get_all_bots,
 )
-from .handlers.bot_install import install_or_update_bot
+from .handlers.bot_install import install_bot
 from .handlers.flow_input import handle_flow_input
 
 load_dotenv()
@@ -25,7 +24,7 @@ async def flow_init():
     bots = await get_all_bots()
     for bot in bots:
         try:
-            await install_or_update_bot(
+            await install_bot(
                 bot_id=bot.id,
                 bot_fsm_code=bot.code,
                 bot_requirements_txt=bot.requirements,
@@ -51,7 +50,7 @@ async def flow_loop():
             msg = consumer.receive_message(flow_topic)
             msg = json.loads(msg)
             logger.info("Message Recieved :: %s", msg)
-            flow_input = FlowInput(**msg)
+            flow_input = Flow(**msg)
 
             await handle_flow_input(flow_input=flow_input)
 

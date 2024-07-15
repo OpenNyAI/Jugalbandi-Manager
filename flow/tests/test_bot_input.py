@@ -4,18 +4,35 @@ import json
 import pytest
 from lib.models import JBBot
 from lib.data_models import (
-    FlowInput,
+    Flow,
+    FlowIntent,
+    Callback,
+    CallbackType,
+    UserInput,
+    RAGResponse,
+    Language,
     LanguageIntent,
     FSMOutput,
+    FSMIntent,
     MessageType,
-    LanguageInput,
-    BotOutput,
-    MessageData,
-    OptionsListType,
-    ChannelInput,
-    ChannelIntent,
-    RAGInput,
     RAGResponse,
+    Message,
+    TextMessage,
+    InteractiveReplyMessage,
+    Option,
+    FormReplyMessage,
+    DialogMessage,
+    Dialog,
+    DialogOption,
+    ButtonMessage,
+    ListMessage,
+    ImageMessage,
+    DocumentMessage,
+    FormMessage,
+    Channel,
+    ChannelIntent,
+    RAG,
+    RAGQuery,
 )
 
 mock_bot = JBBot(
@@ -37,209 +54,319 @@ mock_bot = JBBot(
 
 
 flow_inputs = {
-    "language": FlowInput(
+    "language": Flow(
         source="language",
-        intent=LanguageIntent.LANGUAGE_IN,
-        session_id="test_session_id",
-        message_id="test_message_id",
-        turn_id="test_turn_id",
-        message_text="test_message_text",
+        intent=FlowIntent.USER_INPUT,
+        user_input=UserInput(
+            turn_id="test_turn_id",
+            message=Message(
+                message_type=MessageType.TEXT,
+                text=TextMessage(body="test_body_text"),
+            ),
+        ),
     ),
-    "api": FlowInput(
+    "api": Flow(
         source="api",
-        intent=LanguageIntent.LANGUAGE_IN,
-        session_id="test_session_id",
-        message_id="test_message_id",
-        turn_id="test_turn_id",
-        plugin_input={"test_plugin_key": "test_plugin_value"},
+        intent=FlowIntent.CALLBACK,
+        callback=Callback(
+            turn_id="test_turn_id",
+            callback_type=CallbackType.EXTERNAL,
+            external='{"test_plugin_key": "test_plugin_value"}',
+        ),
     ),
-    "retriever": FlowInput(
-        source="retriever",
-        intent=LanguageIntent.LANGUAGE_IN,
-        session_id="test_session_id",
-        message_id="test_message_id",
-        turn_id="test_turn_id",
-        rag_response=[
-            RAGResponse(chunk="test_chunk_text_1"),
-            RAGResponse(chunk="test_chunk_text_2"),
-        ],
+    "retriever": Flow(
+        source="api",
+        intent=FlowIntent.CALLBACK,
+        callback=Callback(
+            turn_id="test_turn_id",
+            callback_type=CallbackType.RAG,
+            rag_response=[
+                RAGResponse(chunk="test_chunk_text_1"),
+                RAGResponse(chunk="test_chunk_text_2"),
+            ],
+        ),
     ),
-    "channel_msg": FlowInput(
+    "channel_interactive": Flow(
         source="channel",
-        intent=LanguageIntent.LANGUAGE_IN,
-        session_id="test_session_id",
-        message_id="test_message_id",
-        turn_id="test_turn_id",
-        message_text="test_message_text",
+        intent=FlowIntent.USER_INPUT,
+        user_input=UserInput(
+            turn_id="test_turn_id",
+            message=Message(
+                message_type=MessageType.INTERACTIVE_REPLY,
+                interactive_reply=InteractiveReplyMessage(
+                    options=[
+                        Option(
+                            option_id="test_option_id_1",
+                            option_text="test_option_text_1",
+                        ),
+                        Option(
+                            option_id="test_option_id_2",
+                            option_text="test_option_text_2",
+                        ),
+                    ]
+                ),
+            ),
+        ),
     ),
-    "channel_form": FlowInput(
+    "channel_form": Flow(
         source="channel",
-        intent=LanguageIntent.LANGUAGE_IN,
-        session_id="test_session_id",
-        message_id="test_message_id",
-        turn_id="test_turn_id",
-        form_response={"test_form_key": "test_form_value"},
+        intent=FlowIntent.USER_INPUT,
+        user_input=UserInput(
+            turn_id="test_turn_id",
+            message=Message(
+                message_type=MessageType.FORM_REPLY,
+                form_reply=FormReplyMessage(
+                    form_data={"test_form_key": "test_form_value"}
+                ),
+            ),
+        ),
     ),
-    "channel_dialog": FlowInput(
+    "channel_conversation_reset": Flow(
         source="channel",
-        intent=LanguageIntent.LANGUAGE_IN,
-        session_id="test_session_id",
-        message_id="test_message_id",
-        turn_id="test_turn_id",
-        dialog="test_dialog",
+        intent=FlowIntent.DIALOG,
+        dialog=Dialog(
+            turn_id="test_turn_id",
+            message=Message(
+                message_type=MessageType.DIALOG,
+                dialog=DialogMessage(
+                    dialog_id=DialogOption.CONVERSATION_RESET,
+                ),
+            ),
+        ),
+    ),
+    "channel_language_selected": Flow(
+        source="channel",
+        intent=FlowIntent.DIALOG,
+        dialog=Dialog(
+            turn_id="test_turn_id",
+            message=Message(
+                message_type=MessageType.DIALOG,
+                dialog=DialogMessage(
+                    dialog_id=DialogOption.LANGUAGE_SELECTED,
+                    dialog_input="test_language",
+                ),
+            ),
+        ),
     ),
 }
 
 fsm_and_assertions = {
     "out_text": (
         FSMOutput(
-            dest="out",
-            type=MessageType.TEXT,
-            text="test_text",
+            intent=FSMIntent.SEND_MESSAGE,
+            message=Message(
+                message_type=MessageType.TEXT,
+                text=TextMessage(body="test_text"),
+            ),
         ),
-        LanguageInput(
+        Language(
             source="flow",
-            session_id="test_session_id",
             turn_id="test_turn_id",
             intent=LanguageIntent.LANGUAGE_OUT,
-            data=BotOutput(
+            message=Message(
                 message_type=MessageType.TEXT,
-                message_data=MessageData(
-                    message_text="test_text",
-                    media_url=None,
+                text=TextMessage(body="test_text"),
+            ),
+        ),
+    ),
+    "out_button": (
+        FSMOutput(
+            intent=FSMIntent.SEND_MESSAGE,
+            message=Message(
+                message_type=MessageType.BUTTON,
+                button=ButtonMessage(
+                    body="test_text",
+                    header="test_header",
+                    footer="test_footer",
+                    options=[
+                        Option(option_id="test_id_1", option_text="test_title_1"),
+                        Option(option_id="test_id_2", option_text="test_title_2"),
+                    ],
+                ),
+            ),
+        ),
+        Language(
+            source="flow",
+            turn_id="test_turn_id",
+            intent=LanguageIntent.LANGUAGE_OUT,
+            message=Message(
+                message_type=MessageType.BUTTON,
+                button=ButtonMessage(
+                    body="test_text",
+                    header="test_header",
+                    footer="test_footer",
+                    options=[
+                        Option(option_id="test_id_1", option_text="test_title_1"),
+                        Option(option_id="test_id_2", option_text="test_title_2"),
+                    ],
                 ),
             ),
         ),
     ),
-    "out_interactive": (
+    "out_list": (
         FSMOutput(
-            dest="out",
-            type=MessageType.INTERACTIVE,
-            text="test_text",
-            header="test_header",
-            footer="test_footer",
-            menu_selector="test_menu_selector",
-            menu_title="test_menu_title",
-            options_list=[
-                OptionsListType(id="test_id_1", title="test_title_1"),
-                OptionsListType(id="test_id_2", title="test_title_2"),
-            ],
+            intent=FSMIntent.SEND_MESSAGE,
+            message=Message(
+                message_type=MessageType.OPTION_LIST,
+                option_list=ListMessage(
+                    body="test_text",
+                    header="test_header",
+                    footer="test_footer",
+                    options=[
+                        Option(option_id="test_id_1", option_text="test_title_1"),
+                        Option(option_id="test_id_2", option_text="test_title_2"),
+                    ],
+                    button_text="test_button_text",
+                    list_title="test_list_title",
+                ),
+            ),
         ),
-        LanguageInput(
+        Language(
             source="flow",
-            session_id="test_session_id",
             turn_id="test_turn_id",
             intent=LanguageIntent.LANGUAGE_OUT,
-            data=BotOutput(
-                message_type=MessageType.INTERACTIVE,
-                message_data=MessageData(
-                    message_text="test_text",
-                    media_url=None,
+            message=Message(
+                message_type=MessageType.OPTION_LIST,
+                option_list=ListMessage(
+                    body="test_text",
+                    header="test_header",
+                    footer="test_footer",
+                    options=[
+                        Option(option_id="test_id_1", option_text="test_title_1"),
+                        Option(option_id="test_id_2", option_text="test_title_2"),
+                    ],
+                    button_text="test_button_text",
+                    list_title="test_list_title",
                 ),
-                header="test_header",
-                footer="test_footer",
-                menu_selector="test_menu_selector",
-                menu_title="test_menu_title",
-                options_list=[
-                    OptionsListType(id="test_id_1", title="test_title_1"),
-                    OptionsListType(id="test_id_2", title="test_title_2"),
-                ],
             ),
         ),
     ),
     "out_image": (
         FSMOutput(
-            dest="out",
-            type=MessageType.IMAGE,
-            media_url="test_media_url",
-            text="test_text",
+            intent=FSMIntent.SEND_MESSAGE,
+            message=Message(
+                message_type=MessageType.IMAGE,
+                image=ImageMessage(
+                    url="test_media_url",
+                    caption="test_text",
+                ),
+            ),
         ),
-        LanguageInput(
+        Language(
             source="flow",
-            session_id="test_session_id",
             turn_id="test_turn_id",
             intent=LanguageIntent.LANGUAGE_OUT,
-            data=BotOutput(
+            message=Message(
                 message_type=MessageType.IMAGE,
-                message_data=MessageData(
-                    message_text="test_text",
-                    media_url="test_media_url",
+                image=ImageMessage(
+                    url="test_media_url",
+                    caption="test_text",
                 ),
             ),
         ),
     ),
     "out_document": (
         FSMOutput(
-            dest="out",
-            type=MessageType.DOCUMENT,
-            media_url="test_media_url",
-            text="test_text",
+            intent=FSMIntent.SEND_MESSAGE,
+            message=Message(
+                message_type=MessageType.DOCUMENT,
+                document=DocumentMessage(
+                    url="test_media_url",
+                    caption="test_text",
+                    name="test_name",
+                ),
+            ),
         ),
-        LanguageInput(
+        Language(
             source="flow",
-            session_id="test_session_id",
             turn_id="test_turn_id",
             intent=LanguageIntent.LANGUAGE_OUT,
-            data=BotOutput(
+            message=Message(
                 message_type=MessageType.DOCUMENT,
-                message_data=MessageData(
-                    message_text="test_text",
-                    media_url="test_media_url",
+                document=DocumentMessage(
+                    url="test_media_url",
+                    caption="test_text",
+                    name="test_name",
                 ),
             ),
         ),
     ),
     "out_form": (
         FSMOutput(
-            dest="channel",
-            type=MessageType.FORM,
-            text="test_text",
-            form_id="test_form_id",
-        ),
-        ChannelInput(
-            source="flow",
-            session_id="test_session_id",
-            turn_id="test_turn_id",
-            message_id="test_message_id",
-            intent=ChannelIntent.BOT_OUT,
-            data=BotOutput(
+            intent=FSMIntent.SEND_MESSAGE,
+            message=Message(
                 message_type=MessageType.FORM,
-                message_data=MessageData(message_text="test_text"),
-                form_id="test_form_id",
+                form=FormMessage(
+                    header="test_header",
+                    footer="test_footer",
+                    body="test_text",
+                    form_id="test_form_id",
+                ),
+            ),
+        ),
+        Channel(
+            source="flow",
+            intent=ChannelIntent.CHANNEL_OUT,
+            turn_id="test_turn_id",
+            bot_output=Message(
+                message_type=MessageType.FORM,
+                form=FormMessage(
+                    header="test_header",
+                    footer="test_footer",
+                    body="test_text",
+                    form_id="test_form_id",
+                ),
             ),
         ),
     ),
-    "out_dialog": (
+    "conversation_reset": (
         FSMOutput(
-            dest="channel",
-            type=MessageType.DIALOG,
-            text="test_text",
-            dialog="test_dialog",
+            intent=FSMIntent.CONVERSATION_RESET,
         ),
-        ChannelInput(
+        Flow(
             source="flow",
-            session_id="test_session_id",
+            intent=FlowIntent.DIALOG,
+            dialog=Dialog(
+                turn_id="test_turn_id",
+                message=Message(
+                    message_type=MessageType.DIALOG,
+                    dialog=DialogMessage(
+                        dialog_id=DialogOption.CONVERSATION_RESET,
+                    ),
+                ),
+            ),
+        ),
+    ),
+    "select_language": (
+        FSMOutput(
+            intent=FSMIntent.LANGUAGE_CHANGE,
+        ),
+        Channel(
+            source="flow",
+            intent=ChannelIntent.CHANNEL_OUT,
             turn_id="test_turn_id",
-            message_id="test_message_id",
-            intent=ChannelIntent.BOT_OUT,
-            data=BotOutput(
+            bot_output=Message(
                 message_type=MessageType.DIALOG,
-                message_data=MessageData(message_text="test_text"),
+                dialog=DialogMessage(
+                    dialog_id=DialogOption.LANGUAGE_CHANGE,
+                ),
             ),
-            dialog="test_dialog",
         ),
     ),
-    "out_rag": (
+    "rag": (
         FSMOutput(
-            dest="rag",
-            text="test_text",
+            intent=FSMIntent.RAG_CALL,
+            rag_query=RAGQuery(
+                collection_name="test_collection",
+                query="test_query",
+                top_chunk_k_value=5,
+            ),
         ),
-        RAGInput(
+        RAG(
             source="flow",
-            session_id="test_session_id",
             turn_id="test_turn_id",
-            collection_name="KB_Law_Files",
-            query="test_text",
+            collection_name="test_collection",
+            query="test_query",
             top_chunk_k_value=5,
         ),
     ),
@@ -265,25 +392,33 @@ mock_produce_message = MagicMock()
 @patch.dict(
     "sys.modules", {"src.extensions": MagicMock(produce_message=mock_produce_message)}
 )
-@patch("src.handlers.bot_input.get_state_by_pid", return_value=AsyncMock())
+@patch("src.handlers.bot_input.get_state_by_session_id", return_value=AsyncMock())
 @patch("src.handlers.bot_input.update_state_and_variables", return_value=AsyncMock())
 @patch("src.handlers.bot_input.get_bot_by_session_id", return_value=mock_bot)
 @patch("src.handlers.bot_input.subprocess.run", return_value=MagicMock())
+@patch("src.handlers.bot_input.update_user_language", return_value=AsyncMock())
+@patch("src.handlers.bot_input.manage_session", return_value=AsyncMock())
+@patch("src.handlers.bot_input.create_message", return_value=AsyncMock())
 async def test_handle_flow_input(
+    mock_create_message,
+    mock_manage_session,
+    mock_update_user_language,
     mock_subprocess_run,
     mock_get_bot_by_session_id,
     mock_update_state_and_variables,
-    mock_get_state_by_pid,
+    mock_get_state_by_session_id,
     flow_input,
     mock_fsm_output,
     flow_output,
 ):
     mock_produce_message.reset_mock()
 
+    mock_manage_session.return_value = MagicMock(id="test_session_id")
+
     mock_state = MagicMock(variables={"test_key": "test_value"})
-    mock_get_state_by_pid.return_value = mock_state
+    mock_get_state_by_session_id.return_value = mock_state
     mock_subprocess_run.return_value = MagicMock(
-        stdout=f'{json.dumps({"callback_message": json.loads(mock_fsm_output.model_dump_json())})}\n{json.dumps({"new_state": {"state": "test_state", "variables": {"test_key": "test_value"}}})}',
+        stdout=f'{json.dumps({"fsm_output": json.loads(mock_fsm_output.model_dump_json())})}\n{json.dumps({"new_state": {"state": "test_state", "variables": {"test_key": "test_value"}}})}',
         stderr=None,
     )
 

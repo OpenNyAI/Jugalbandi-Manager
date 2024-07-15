@@ -1,11 +1,11 @@
 import uuid
-from typing import Tuple
+from typing import Dict
 from sqlalchemy import select, update
 from sqlalchemy.orm import joinedload
 
 from lib.db_session_handler import DBSessionHandler
 
-from lib.models import JBSession, JBUser, JBMessage, JBChannel, JBForm
+from lib.models import JBSession, JBUser, JBMessage, JBChannel, JBForm, JBTurn
 
 
 async def get_user_by_session_id(session_id: str) -> JBUser | None:
@@ -39,6 +39,19 @@ async def get_channel_by_session_id(session_id: str) -> JBChannel | None:
                 return channel
 
 
+async def get_channel_by_turn_id(turn_id: str) -> JBChannel | None:
+    query = (
+        select(JBChannel)
+        .join(JBTurn, JBChannel.id == JBTurn.channel_id)
+        .where(JBTurn.id == turn_id)
+    )
+    async with DBSessionHandler.get_async_session() as session:
+        async with session.begin():
+            result = await session.execute(query)
+            s = result.scalars().first()
+            return s
+
+
 async def set_user_language(session_id: str, language: str):
     async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
@@ -70,11 +83,8 @@ async def update_message(msg_id: str, **kwargs):
 async def create_message(
     turn_id: str,
     message_type: str,
-    channel: str,
-    channel_id: str,
+    message: Dict,
     is_user_sent: bool = False,
-    message_text: str = None,
-    media_url: str = None,
 ):
     message_id = str(uuid.uuid4())
     async with DBSessionHandler.get_async_session() as session:
@@ -84,11 +94,8 @@ async def create_message(
                     id=message_id,
                     turn_id=turn_id,
                     message_type=message_type,
-                    channel=channel,
-                    channel_id=channel_id,
                     is_user_sent=is_user_sent,
-                    message_text=message_text,
-                    media_url=media_url,
+                    message=message,
                 )
             )
             await session.commit()
@@ -100,10 +107,22 @@ async def get_form_parameters(channel_id, form_id):
     async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             result = await session.execute(
-                select(JBForm.parameters)
+                select(JBForm)
                 .where(JBForm.channel_id == channel_id)
                 .where(JBForm.form_uid == form_id)
             )
             s = result.scalars().first()
+            return s.parameters
+
+
+async def get_user_by_turn_id(turn_id: str) -> JBUser | None:
+    query = (
+        select(JBUser)
+        .join(JBTurn, JBUser.id == JBTurn.user_id)
+        .where(JBTurn.id == turn_id)
+    )
+    async with DBSessionHandler.get_async_session() as session:
+        async with session.begin():
+            result = await session.execute(query)
+            s = result.scalars().first()
             return s
-    return None

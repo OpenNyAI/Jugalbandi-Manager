@@ -1,7 +1,7 @@
 import os
 import logging
 from lib.kafka_utils import KafkaProducer, KafkaConsumer
-from lib.data_models import ChannelInput, LanguageInput, RAGInput, FlowInput
+from lib.data_models import Channel, Language, RAG, Flow
 
 logging.basicConfig()
 logger = logging.getLogger("flow")
@@ -36,14 +36,14 @@ producer = KafkaProducer.from_env_vars()
 logger.info("Connected to Kafka Topics")
 
 
-def produce_message(message: ChannelInput | LanguageInput | RAGInput | FlowInput):
-    if isinstance(message, ChannelInput):
+def produce_message(message: Channel | Language | RAG | Flow):
+    if isinstance(message, Channel):
         topic = channel_topic
-    elif isinstance(message, LanguageInput):
+    elif isinstance(message, Language):
         topic = language_topic
-    elif isinstance(message, RAGInput):
+    elif isinstance(message, RAG):
         topic = retriever_topic
-    elif isinstance(message, FlowInput):
+    elif isinstance(message, Flow):
         topic = flow_topic
     else:
         raise ValueError("Invalid message type")

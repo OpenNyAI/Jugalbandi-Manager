@@ -1,41 +1,32 @@
-import json
-from lib.data_models import FlowInput
-from .bot_install import handle_bot_installation_or_update
-from .bot_input import handle_bot_input
+import logging
+from lib.data_models import Flow, FlowIntent
+from .bot_install import handle_bot
+from .bot_input import handle_user_input, handle_callback_input, handle_dialog_input
+
+logger = logging.getLogger("flow")
 
 
-async def handle_flow_input(flow_input: FlowInput):
-    if flow_input.source == "api" and flow_input.bot_config is not None:
-        await handle_bot_installation_or_update(flow_input.bot_config)
-    elif flow_input.source in ["language", "api", "retriever", "channel"]:
-        session_id: str = flow_input.session_id
-        message_id: str = flow_input.message_id
-        turn_id: str = flow_input.turn_id
-        callback_input = None
-        msg_text = None
-        if flow_input.source == "language":
-            msg_text = flow_input.message_text
-        elif flow_input.source == "api":
-            callback_input = json.dumps(flow_input.plugin_input)
-        elif flow_input.source == "retriever":
-            rag_response = flow_input.rag_response
-            msg_text = json.dumps(
-                {"chunks": [response.model_dump() for response in rag_response]}
-            )
-        elif flow_input.source == "channel":
-            if flow_input.form_response is not None:
-                msg_text = json.dumps(flow_input.form_response)
-            elif flow_input.dialog is not None:
-                msg_text = flow_input.dialog
-            else:
-                msg_text = flow_input.message_text
-
-        await handle_bot_input(
-            session_id=session_id,
-            turn_id=turn_id,
-            message_id=message_id,
-            msg_text=msg_text,
-            callback_input=callback_input,
-        )
+async def handle_flow_input(flow_input: Flow):
+    flow_intent = flow_input.intent
+    if flow_intent == FlowIntent.BOT:
+        if not flow_input.bot_config:
+            logger.error("Bot config not found in flow input")
+            return
+        await handle_bot(flow_input.bot_config)
+    elif flow_intent == FlowIntent.DIALOG:
+        if not flow_input.dialog:
+            logger.error("Dialog not found in flow input")
+            return
+        await handle_dialog_input(flow_input.dialog)
+    elif flow_intent == FlowIntent.CALLBACK:
+        if not flow_input.callback:
+            logger.error("Callback not found in flow input")
+            return
+        await handle_callback_input(flow_input.callback)
+    elif flow_intent == FlowIntent.USER_INPUT:
+        if not flow_input.user_input:
+            logger.error("User input not found in flow input")
+            return
+        await handle_user_input(flow_input.user_input)
     else:
-        raise ValueError("Invalid source in flow input")
+        logger.error("Invalid flow intent: %s", flow_intent)

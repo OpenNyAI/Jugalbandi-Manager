@@ -61,7 +61,6 @@ class JBChannel(Base):
 
     bot = relationship("JBBot", back_populates="channels")
     users = relationship("JBUser", back_populates="channel")
-    sessions = relationship("JBSession", back_populates="channel")
 
 
 class JBUser(Base):
@@ -77,14 +76,13 @@ class JBUser(Base):
         TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
     )
     channel = relationship("JBChannel", back_populates="users")
-    sessions = relationship("JBSession", back_populates="user")
 
 
 class JBSession(Base):
     __tablename__ = "jb_session"
 
     id = Column(String, primary_key=True)
-    pid = Column(String, ForeignKey("jb_users.id"))
+    user_id = Column(String, ForeignKey("jb_users.id"))
     channel_id = Column(String, ForeignKey("jb_channel.id"))
     created_at = Column(
         TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
@@ -95,8 +93,6 @@ class JBSession(Base):
         nullable=False,
         onupdate=func.now(),
     )
-    user = relationship("JBUser", back_populates="sessions")
-    channel = relationship("JBChannel", back_populates="sessions")
     turns = relationship("JBTurn", back_populates="session")
 
 
@@ -105,9 +101,13 @@ class JBTurn(Base):
 
     id = Column(String, primary_key=True)
     session_id = Column(String, ForeignKey("jb_session.id"))
+    bot_id = Column(String, ForeignKey("jb_bot.id"))
     channel_id = Column(String, ForeignKey("jb_channel.id"))
+    user_id = Column(String, ForeignKey("jb_users.id"))
     turn_type = Column(String)
-    channel = Column(String)
+    created_at = Column(
+        TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
+    )
 
     session = relationship("JBSession", back_populates="turns")
     messages = relationship("JBMessage", back_populates="turn")
@@ -122,16 +122,13 @@ class JBMessage(Base):
     id = Column(String, primary_key=True)
     turn_id = Column(String, ForeignKey("jb_turn.id"))
     message_type = Column(String)
-    media_url = Column(String)
-    message_text = Column(String)
-    channel = Column(String)
-    channel_id = Column(String)
+    message = Column(JSON)
     is_user_sent = Column(Boolean, nullable=False, default=True)
 
     turn = relationship("JBTurn", back_populates="messages")
 
     def __repr__(self):
-        return f"<JBMessage(id={self.id}, turn_id={self.turn_id}, message_type={self.message_type}, media_url={self.media_url}, message_text={self.message_text}, channel={self.channel}, channel_id={self.channel_id}, is_user_sent={self.is_user_sent})>"
+        return f"<JBMessage(id={self.id}, turn_id={self.turn_id}, message_type={self.message_type}, message={self.message}, is_user_sent={self.is_user_sent})>"
 
 
 class JBDocumentStoreLog(Base):

@@ -4,13 +4,13 @@ import shutil
 import logging
 import subprocess
 from pathlib import Path
-from lib.data_models import BotConfig
+from lib.data_models import BotConfig, BotIntent
 from ..crud import create_bot
 
 logger = logging.getLogger("flow")
 
 
-async def install_or_update_bot(
+async def install_bot(
     bot_id: str, bot_fsm_code: str, bot_requirements_txt: str, index_urls: List[str]
 ):
     requirements_txt = "openai\ncryptography\njb-manager-bot\n" + bot_requirements_txt
@@ -51,29 +51,35 @@ async def install_or_update_bot(
     logger.info("Installed bot %s", bot_id)
 
 
-async def handle_bot_installation_or_update(bot_config: BotConfig):
-    bot_id = bot_config.bot_id
-    bot_fsm_code = bot_config.bot_fsm_code
-    if not bot_fsm_code:
-        raise ValueError("FSM code is required")
-    bot_requirements_txt = (
-        bot_config.bot_requirements_txt if bot_config.bot_requirements_txt else ""
-    )
-    index_urls = bot_config.index_urls if bot_config.index_urls else []
-    await install_or_update_bot(
-        bot_id=bot_id,
-        bot_fsm_code=bot_fsm_code,
-        bot_requirements_txt=bot_requirements_txt,
-        index_urls=index_urls,
-    )
-    jb_bot = await create_bot(
-        bot_id=bot_id,
-        name=bot_config.bot_name,
-        code=bot_fsm_code,
-        requirements=bot_requirements_txt,
-        index_urls=index_urls,
-        required_credentials=bot_config.bot_required_credentials,
-        version=bot_config.bot_version,
-    )
-    if jb_bot:
-        return jb_bot
+async def delete_bot(bot_id: str):
+    bots_parent_directory = Path(__file__).parent.parent.parent
+    bots_root_directory = Path(os.path.join(bots_parent_directory, "bots"))
+    bot_dir = Path(os.path.join(bots_root_directory, bot_id))
+    shutil.rmtree(bot_dir)
+    logger.info("Deleted bot %s", bot_id)
+
+
+async def handle_bot(bot_config: BotConfig):
+    if bot_config.intent == BotIntent.DELETE:
+        await delete_bot(bot_config.bot_id)
+    elif bot_config.intent == BotIntent.INSTALL:
+        if not bot_config.bot:
+            logger.error("Bot config missing bot")
+            return
+        await install_bot(
+            bot_id=bot_config.bot_id,
+            bot_fsm_code=bot_config.bot.fsm_code,
+            bot_requirements_txt=bot_config.bot.requirements_txt,
+            index_urls=bot_config.bot.index_urls,
+        )
+        await create_bot(
+            bot_id=bot_config.bot_id,
+            name=bot_config.bot.name,
+            code=bot_config.bot.fsm_code,
+            requirements=bot_config.bot.requirements_txt,
+            index_urls=bot_config.bot.index_urls,
+            required_credentials=bot_config.bot.required_credentials,
+            version=bot_config.bot.version,
+        )
+    else:
+        logger.error("Invalid intent in bot config")

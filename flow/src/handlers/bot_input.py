@@ -1,115 +1,136 @@
 import logging
 import json
 import subprocess
+from datetime import datetime
 from pathlib import Path
 from lib.data_models import (
     FSMOutput,
-    LanguageInput,
-    RAGInput,
-    ChannelInput,
-    BotOutput,
-    MessageData,
+    Language,
     LanguageIntent,
+    Channel,
     ChannelIntent,
+    FSMInput,
+    FSMIntent,
+    Message,
+    MessageType,
+    Flow,
+    FlowIntent,
+    DialogMessage,
+    DialogOption,
+    Dialog,
+    RAG,
+    UserInput,
+    Callback,
+    CallbackType,
 )
 from ..crud import (
     get_bot_by_session_id,
-    get_state_by_pid,
+    get_session_by_turn_id,
+    get_state_by_session_id,
     insert_state,
     update_state_and_variables,
+    create_message,
+    create_session,
+    update_session,
+    update_user_language,
 )
 from ..extensions import produce_message
 
 logger = logging.getLogger("flow")
 
 
-def handle_bot_output(
-    fsm_output: FSMOutput, session_id: str, turn_id: str, message_id: str
-):
-    media_url = None
-    if fsm_output.media_url is not None:
-        media_url = fsm_output.media_url
-
-    # if fsm_output.file is not None:
-    #     upload_file = fsm_output.file
-
-    #     with open(upload_file.path, "rb") as f:
-    #         file_content = f.read()
-    #     media_url = save_file(
-    #         upload_file.filename, file_content, upload_file.mime_type
-    #     )
-    logger.info("FSM Output: %s", fsm_output)
-
-    if fsm_output.dest == "out":
-        if fsm_output.options_list is not None:
-            options_list = [
-                {"id": option.id, "title": option.title}
-                for option in fsm_output.options_list
-            ]
-        kafka_out_msg = LanguageInput(
+def handle_bot_output(fsm_output: FSMOutput, turn_id: str):
+    intent = fsm_output.intent
+    if intent == FSMIntent.SEND_MESSAGE:
+        message = fsm_output.message
+        if not message:
+            logger.error("Message not found in fsm output")
+            return
+        message_type = message.message_type
+        if message_type == MessageType.FORM:
+            destination = "channel"
+            flow_output = Channel(
+                source="flow",
+                turn_id=turn_id,
+                intent=ChannelIntent.CHANNEL_OUT,
+                bot_output=message,
+            )
+        else:
+            destination = "language"
+            flow_output = Language(
+                source="flow",
+                turn_id=turn_id,
+                intent=LanguageIntent.LANGUAGE_OUT,
+                message=message,
+            )
+    elif intent == FSMIntent.CONVERSATION_RESET:
+        destination = "flow"
+        flow_output = Flow(
             source="flow",
-            session_id=session_id,
-            turn_id=turn_id,
-            intent=LanguageIntent.LANGUAGE_OUT,
-            data=BotOutput(
-                message_type=fsm_output.type,
-                message_data=MessageData(
-                    message_text=fsm_output.text,
-                    media_url=media_url if media_url else None,
+            intent=FlowIntent.DIALOG,
+            dialog=Dialog(
+                turn_id=turn_id,
+                message=Message(
+                    message_type=MessageType.DIALOG,
+                    dialog=DialogMessage(dialog_id=DialogOption.CONVERSATION_RESET),
                 ),
-                header=fsm_output.header,
-                footer=fsm_output.footer,
-                menu_selector=fsm_output.menu_selector,
-                menu_title=fsm_output.menu_title,
-                options_list=(options_list if fsm_output.options_list else None),
             ),
         )
-        return kafka_out_msg
-    elif fsm_output.dest == "rag":
-        rag_input = RAGInput(
+    elif intent == FSMIntent.LANGUAGE_CHANGE:
+        destination = "channel"
+        flow_output = Channel(
             source="flow",
-            session_id=session_id,
             turn_id=turn_id,
-            collection_name="KB_Law_Files",
-            query=fsm_output.text,
-            top_chunk_k_value=5,
-        )
-        return rag_input
-    elif fsm_output.dest == "channel":
-        channel_input = ChannelInput(
-            source="flow",
-            session_id=session_id,
-            message_id=message_id,
-            turn_id=turn_id,
-            intent=ChannelIntent.BOT_OUT,
-            dialog=fsm_output.dialog,
-            data=BotOutput(
-                message_type=fsm_output.type,
-                message_data=MessageData(
-                    message_text=fsm_output.text,
-                    media_url=media_url if media_url else None,
-                ),
-                footer=fsm_output.footer,
-                header=fsm_output.header,
-                menu_selector=fsm_output.menu_selector,
-                menu_title=fsm_output.menu_title,
-                options_list=fsm_output.options_list,
-                form_id=fsm_output.form_id,
+            intent=ChannelIntent.CHANNEL_OUT,
+            bot_output=Message(
+                message_type=MessageType.DIALOG,
+                dialog=DialogMessage(dialog_id=DialogOption.LANGUAGE_CHANGE),
             ),
         )
-        return channel_input
-    return NotImplemented
+    elif intent == FSMIntent.RAG_CALL:
+        destination = "rag"
+        rag_query = fsm_output.rag_query
+        if not rag_query:
+            logger.error("RAG query not found in fsm output")
+            return
+        flow_output = RAG(
+            source="flow",
+            turn_id=turn_id,
+            collection_name=rag_query.collection_name,
+            query=rag_query.query,
+            top_chunk_k_value=rag_query.top_chunk_k_value,
+        )
+    else:
+        logger.error("Invalid intent in fsm output")
+        return NotImplemented
+    logger.info("Output to %s: %s", destination, flow_output)
+    return flow_output
 
 
-async def handle_bot_input(
-    session_id: str, turn_id: str, message_id: str, msg_text: str, callback_input: str
-):
-    state = await get_state_by_pid(session_id)
-    logger.info("State: %s", state)
+async def manage_session(turn_id: str, new_session: bool = False):
+    if new_session:
+        logger.info("Creating new session for turn_id: %s", turn_id)
+        session = await create_session(turn_id)
+    else:
+        logger.info("Managing session for turn_id: %s", turn_id)
+        session = await get_session_by_turn_id(turn_id)
+        timeout = 60 * 60 * 24 * 1000  # 24 hours
+        if not session:
+            logger.info("Session not found for turn_id: %s", turn_id)
+            session = await create_session(turn_id)
+        elif session.updated_at.timestamp() + timeout < datetime.now().timestamp():
+            logger.info("Session expired for turn_id: %s", turn_id)
+            session = await create_session(turn_id)
+        else:
+            await update_session(session.id)
+    return session
 
+
+async def handle_bot_input(fsm_input: FSMInput, session_id: str):
+    state = await get_state_by_session_id(session_id)
     if state is None:
-        # logging.info(f"pid {pid} not found in db, inserting")
         state = await insert_state(session_id, "zero")
+    logger.info("State: %s", state)
 
     # get name from bot id
     bot_details = await get_bot_by_session_id(session_id)
@@ -127,8 +148,7 @@ async def handle_bot_input(
 
     ## need to pass state json and msg_text to the bot
     fsm_runner_input = {
-        "message_text": msg_text,
-        "callback_input": callback_input,
+        "fsm_input": fsm_input.model_dump(exclude_none=True),
         "state": state.variables,
         "bot_name": bot_name,
         "credentials": credentials,
@@ -150,23 +170,110 @@ async def handle_bot_input(
 
     # logger.error("Output from fsm: %s", completed_process.stdout)
     for line in completed_process.stdout.split("\n"):
-        print(line)
         if not line:
             continue
-        # logger.error("Output from fsm: %s", line)
-        fsm_op = json.loads(line)
-        if "callback_message" in fsm_op:
-            logger.info("Callback message: %s", fsm_op["callback_message"])
+        logger.error("Output from fsm: %s", line)
+        fsm_runner_output = json.loads(line)
+        if "fsm_output" in fsm_runner_output:
+            fsm_output = fsm_runner_output["fsm_output"]
+            logger.info("Callback message: %s", fsm_output)
+            fsm_output = FSMOutput.model_validate(fsm_output)
             # execute callback
-            output = handle_bot_output(
-                FSMOutput(**fsm_op["callback_message"]),
-                session_id=session_id,
-                turn_id=turn_id,
-                message_id=message_id,
-            )
-            logger.info("Output from callback: %s", output)
-            produce_message(output)
+            yield fsm_output
         else:
             # save new state to db
-            new_state_variables = fsm_op["new_state"]
+            new_state_variables = fsm_runner_output["new_state"]
+            logger.info("FSM Runner message: %s", fsm_runner_output)
             await update_state_and_variables(session_id, "zerotwo", new_state_variables)
+
+
+async def handle_user_input(user_input: UserInput):
+    message = user_input.message
+    message_type = message.message_type
+    if message_type == MessageType.TEXT:
+        if not message.text:
+            logger.error("Text not found in user input")
+            return
+        # TODO: content filter
+        fsm_input = FSMInput(user_input=message.text.body)
+    elif message_type == MessageType.INTERACTIVE_REPLY:
+        if not message.interactive_reply:
+            logger.error("Interactive reply not found in user input")
+            return
+        selected_options = json.dumps(
+            [
+                option.model_dump(exclude_none=True)
+                for option in message.interactive_reply.options
+            ]
+        )
+        fsm_input = FSMInput(user_input=selected_options)
+    elif message_type == MessageType.FORM_REPLY:
+        if not message.form_reply:
+            logger.error("Form reply not found in user input")
+            return
+        form_response = json.dumps(message.form_reply.form_data)
+        fsm_input = FSMInput(user_input=form_response)
+    else:
+        return NotImplemented
+
+    turn_id = user_input.turn_id
+    await create_message(
+        turn_id=turn_id,
+        message_type=message_type.value,
+        is_user_sent=True,
+        message=getattr(message, message.message_type.value).model_dump_json(
+            exclude_none=True
+        ),
+    )
+    session = await manage_session(turn_id=turn_id)
+    session_id: str = session.id
+    async for fsm_output in handle_bot_input(fsm_input, session_id=session_id):
+        flow_output = handle_bot_output(fsm_output, turn_id=turn_id)
+        produce_message(flow_output)
+
+
+async def handle_callback_input(callback: Callback):
+    callback_type = callback.callback_type
+    if callback_type == CallbackType.EXTERNAL:
+        callback_input = callback.external
+        fsm_input = FSMInput(callback_input=callback_input)
+    elif callback_type == CallbackType.RAG:
+        if not callback.rag_response:
+            logger.error("RAG response not found in callback input")
+            return
+        callback_input = [
+            resp.model_dump_json(exclude_none=True) for resp in callback.rag_response
+        ]
+        callback_input = json.dumps(callback_input)
+        fsm_input = FSMInput(callback_input=callback_input)
+
+    turn_id = callback.turn_id
+    session = await manage_session(turn_id=turn_id)
+    session_id: str = session.id
+    async for fsm_output in handle_bot_input(fsm_input, session_id=session_id):
+        flow_output = handle_bot_output(fsm_output, turn_id=turn_id)
+        produce_message(flow_output)
+
+
+async def handle_dialog_input(dialog: Dialog):
+    turn_id = dialog.turn_id
+    if not dialog.message.dialog:
+        logger.error("Message not found in dialog input")
+        return
+    dialog_id = dialog.message.dialog.dialog_id
+    if dialog_id == DialogOption.CONVERSATION_RESET:
+        fsm_input = FSMInput(user_input="reset")
+        new_session = True
+    elif dialog_id == DialogOption.LANGUAGE_SELECTED:
+        selected_language: str = dialog.message.dialog.dialog_input
+        await update_user_language(turn_id=turn_id, selected_language=selected_language)
+        fsm_input = FSMInput(user_input="language_selected")
+        new_session = False
+    else:
+        return NotImplemented
+
+    session = await manage_session(turn_id=turn_id, new_session=new_session)
+    session_id: str = session.id
+    async for fsm_output in handle_bot_input(fsm_input, session_id=session_id):
+        flow_output = handle_bot_output(fsm_output, turn_id=turn_id)
+        produce_message(flow_output)

@@ -1,14 +1,14 @@
 from unittest.mock import AsyncMock, patch, MagicMock
 import pytest
 from lib.data_models import (
-    LanguageInput,
+    Flow,
+    FlowIntent,
     MessageType,
-    LanguageIntent,
-    FlowInput,
-    BotInput,
-    MessageData,
+    Message,
+    TextMessage,
+    AudioMessage,
 )
-from lib.model import Language
+from lib.model import LanguageCodes
 
 mock_storage_instance = MagicMock()
 mock_write_file = AsyncMock()
@@ -50,96 +50,62 @@ interactive_message = "This is an interactive message."
 async def test_handle_input_text_message():
     mock_extension.reset_mock()
 
-    preferred_language = Language.EN
-    language_input = LanguageInput(
-        session_id="session1",
-        message_id="msg1",
-        turn_id="turn1",
-        source="channel",
-        intent=LanguageIntent.LANGUAGE_IN,
-        data=BotInput(
-            message_type=MessageType.TEXT,
-            message_data=MessageData(message_text=text_message),
-        ),
+    preferred_language = LanguageCodes.EN
+    turn_id = "turn1"
+    message = Message(
+        message_type=MessageType.TEXT,
+        text=TextMessage(body=text_message),
     )
+
     mock_translate_text.return_value = "Translated text message"
 
-    result = await handle_input(preferred_language, language_input)
+    result = await handle_input(turn_id, preferred_language, message)
     print(result)
 
     # Verifying the results
     mock_translate_text.assert_called_once_with(
-        text_message, preferred_language, Language.EN
+        text_message, preferred_language, LanguageCodes.EN
     )
-    assert result.message_text == "Translated text message"
-    assert isinstance(result, FlowInput)
-    assert result.intent == LanguageIntent.LANGUAGE_IN
-    assert result.session_id == "session1"
-    assert result.message_id == "msg1"
-    assert result.turn_id == "turn1"
+
+    assert result is not None
+    assert isinstance(result, Flow)
+    assert result.intent == FlowIntent.USER_INPUT
+    assert result.user_input is not None
+    assert result.user_input.turn_id == turn_id
+    assert result.user_input.message is not None
+    assert result.user_input.message.message_type == MessageType.TEXT
+    assert result.user_input.message.text is not None
+    assert result.user_input.message.text.body == "Translated text message"
 
 
 @pytest.mark.asyncio
 async def test_handle_input_audio_message():
     mock_extension.reset_mock()
 
-    # Setting up the mocks
-    preferred_language = Language.EN  # Example language
-    language_input = LanguageInput(
-        session_id="session2",
-        message_id="msg2",
-        turn_id="turn2",
-        source="channel",
-        intent=LanguageIntent.LANGUAGE_IN,
-        data=BotInput(
-            message_type=MessageType.AUDIO,
-            message_data=MessageData(media_url=audio_url),
-        ),
+    preferred_language = LanguageCodes.EN
+    turn_id = "turn1"
+    message = Message(
+        message_type=MessageType.AUDIO,
+        audio=AudioMessage(media_url=audio_url),
     )
 
     mock_speech_to_text.return_value = "Vernacular text"
     mock_translate_text.return_value = "Translated audio message"
 
-    result = await handle_input(preferred_language, language_input)
+    result = await handle_input(turn_id, preferred_language, message)
 
     # Verifying the results
     mock_convert_to_wav.assert_called_once_with(audio_url)
     mock_speech_to_text.assert_called_once_with(b"wav_data", preferred_language)
     mock_translate_text.assert_called_once_with(
-        "Vernacular text", preferred_language, Language.EN
+        "Vernacular text", preferred_language, LanguageCodes.EN
     )
-    assert result.message_text == "Translated audio message"
-    assert isinstance(result, FlowInput)
-    assert result.intent == LanguageIntent.LANGUAGE_IN
-    assert result.session_id == "session2"
-    assert result.message_id == "msg2"
-    assert result.turn_id == "turn2"
-
-
-@pytest.mark.asyncio
-async def test_handle_input_interactive_message():
-    mock_extension.reset_mock()
-
-    # Setting up the mocks
-    preferred_language = Language.EN  # Example language
-    language_input = LanguageInput(
-        session_id="session3",
-        message_id="msg3",
-        turn_id="turn3",
-        source="channel",
-        intent=LanguageIntent.LANGUAGE_IN,
-        data=BotInput(
-            message_type=MessageType.INTERACTIVE,
-            message_data=MessageData(message_text=interactive_message),
-        ),
-    )
-
-    result = await handle_input(preferred_language, language_input)
-
-    # Verifying the results
-    assert result.message_text == interactive_message
-    assert isinstance(result, FlowInput)
-    assert result.intent == LanguageIntent.LANGUAGE_IN
-    assert result.session_id == "session3"
-    assert result.message_id == "msg3"
-    assert result.turn_id == "turn3"
+    assert result is not None
+    assert isinstance(result, Flow)
+    assert result.intent == FlowIntent.USER_INPUT
+    assert result.user_input is not None
+    assert result.user_input.turn_id == turn_id
+    assert result.user_input.message is not None
+    assert result.user_input.message.message_type == MessageType.TEXT
+    assert result.user_input.message.text is not None
+    assert result.user_input.message.text.body == "Translated audio message"

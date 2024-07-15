@@ -2,11 +2,10 @@ import os
 import uuid
 from typing import Dict
 from lib.models import JBBot
-from lib.data_models import FlowInput, BotConfig
+from lib.data_models import Flow, BotConfig, FlowIntent, BotIntent, Bot
 from lib.encryption_handler import EncryptionHandler
 from ...jb_schema import JBBotActivate, JBBotCode
 from ...crud import (
-    create_bot,
     create_channel,
     get_bot_by_id,
     update_channel,
@@ -16,18 +15,22 @@ from ...crud import (
 )
 
 
-async def handle_install_bot(install_content: JBBotCode) -> FlowInput:
+async def handle_install_bot(install_content: JBBotCode) -> Flow:
     bot_id = str(uuid.uuid4())
-    flow_input = FlowInput(
+    flow_input = Flow(
         source="api",
+        intent=FlowIntent.BOT,
         bot_config=BotConfig(
             bot_id=bot_id,
-            bot_name=install_content.name,
-            bot_fsm_code=install_content.code,
-            bot_requirements_txt=install_content.requirements,
-            index_urls=install_content.index_urls,
-            bot_required_credentials=install_content.required_credentials,
-            bot_version=install_content.version,
+            intent=BotIntent.INSTALL,
+            bot=Bot(
+                name=install_content.name,
+                fsm_code=install_content.code,
+                requirements_txt=install_content.requirements,
+                index_urls=install_content.index_urls,
+                required_credentials=install_content.required_credentials,
+                version=install_content.version,
+            ),
         ),
     )
     return flow_input

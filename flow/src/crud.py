@@ -1,18 +1,59 @@
 import uuid
-from sqlalchemy import join, select, update
-from sqlalchemy.orm import joinedload
+from datetime import datetime
+from typing import Dict
+from sqlalchemy import join, select, update, and_
 from lib.db_session_handler import DBSessionHandler
-from lib.models import JBFSMState, JBSession, JBPluginUUID, JBBot, JBChannel
+from lib.models import (
+    JBFSMState,
+    JBSession,
+    JBPluginUUID,
+    JBBot,
+    JBMessage,
+    JBTurn,
+    JBUser,
+)
 
 
-async def get_state_by_pid(session_id: str) -> JBFSMState:
+async def get_state_by_session_id(session_id: str) -> JBFSMState:
     query = select(JBFSMState).where(JBFSMState.session_id == session_id)
     async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             result = await session.execute(query)
             state = result.scalars().first()
             return state
-    return None
+
+
+async def create_session(turn_id: str) -> JBSession:
+    session_id = str(uuid.uuid4())
+    async with DBSessionHandler.get_async_session() as session:
+        async with session.begin():
+            result = await session.execute(select(JBTurn).where(JBTurn.id == turn_id))
+            jb_turn = result.scalars().first()
+        async with session.begin():
+            jb_session = JBSession(
+                id=session_id, user_id=jb_turn.user_id, channel_id=jb_turn.channel_id
+            )
+            session.add(jb_session)
+            await session.commit()
+        async with session.begin():
+            await session.execute(
+                update(JBTurn).where(JBTurn.id == turn_id).values(session_id=session_id)
+            )
+            await session.commit()
+            return jb_session
+
+
+async def update_session(session_id: str):
+    async with DBSessionHandler.get_async_session() as session:
+        async with session.begin():
+            stmt = (
+                update(JBSession)
+                .where(JBSession.id == session_id)
+                .values(updated_at=datetime.now())
+            )
+            await session.execute(stmt)
+            await session.commit()
+            return None
 
 
 async def insert_state(
@@ -53,9 +94,9 @@ async def get_bot_by_session_id(session_id: str) -> JBBot | None:
             result = await session.execute(
                 select(JBBot)
                 .select_from(
-                    join(
-                        JBSession, JBChannel, JBSession.channel_id == JBChannel.id
-                    ).join(JBBot, JBChannel.bot_id == JBBot.id)
+                    join(JBSession, JBTurn, JBSession.id == JBTurn.session_id).join(
+                        JBBot, JBTurn.bot_id == JBBot.id
+                    )
                 )
                 .where(JBSession.id == session_id)
             )
@@ -63,10 +104,32 @@ async def get_bot_by_session_id(session_id: str) -> JBBot | None:
             return s
 
 
-async def get_bot_by_id(bot_id: str) -> JBBot | None:
+async def get_session_by_turn_id(turn_id: str) -> JBSession | None:
     async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
-            result = await session.execute(select(JBBot).where(JBBot.id == bot_id))
+            result = await session.execute(
+                select(JBSession)
+                .join(
+                    JBTurn,
+                    and_(
+                        JBSession.user_id == JBTurn.user_id,
+                        JBSession.channel_id == JBTurn.channel_id,
+                    ),
+                )
+                .where(JBTurn.id == turn_id)
+            )
+            s = result.scalars().first()
+            return s
+
+
+async def get_bot_by_turn_id(turn_id: str) -> JBBot | None:
+    async with DBSessionHandler.get_async_session() as session:
+        async with session.begin():
+            result = await session.execute(
+                select(JBBot)
+                .join(JBTurn, JBBot.id == JBTurn.bot_id)
+                .where(JBTurn.id == turn_id)
+            )
             s = result.scalars().first()
             return s
 
@@ -112,3 +175,44 @@ async def create_bot(
             session.add(bot)
             await session.commit()
             return bot
+
+
+async def create_message(
+    turn_id: str,
+    message_type: str,
+    message: Dict,
+    is_user_sent: bool = False,
+):
+    message_id = str(uuid.uuid4())
+    async with DBSessionHandler.get_async_session() as session:
+        async with session.begin():
+            session.add(
+                JBMessage(
+                    id=message_id,
+                    turn_id=turn_id,
+                    message_type=message_type,
+                    is_user_sent=is_user_sent,
+                    message=message,
+                )
+            )
+            await session.commit()
+            return message_id
+
+
+async def update_user_language(turn_id: str, selected_language: str):
+    async with DBSessionHandler.get_async_session() as session:
+        async with session.begin():
+            stmt = (
+                update(JBUser)
+                .where(
+                    JBUser.id.in_(
+                        select(JBTurn.user_id)
+                        .where(JBTurn.id == turn_id)
+                        .scalar_subquery()
+                    )
+                )
+                .values(language_preference=selected_language)
+            )
+            await session.execute(stmt)
+            await session.commit()
+            return None
