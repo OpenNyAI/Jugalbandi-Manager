@@ -342,10 +342,12 @@ class AbstractFSM(ABC):
                 for i, option in enumerate(options)
             ]
             if len(options) <= 3:
+                if message is None:
+                    message = "Please select an option from below"
                 options_payload = ButtonMessage(
-                    header="Header Text",  # Provide appropriate header text
-                    body="Body Text",  # Provide appropriate body text
-                    footer="Footer Text",  # Provide appropriate footer text
+                    header="Select Below",  # Provide appropriate header text
+                    body=message,  # Provide appropriate body text
+                    footer="Please select",  # Provide appropriate footer text
                     options=options,
                 )
                 message_payload = FSMOutput(
@@ -365,9 +367,9 @@ class AbstractFSM(ABC):
                     button_text=menu_title,
                     list_title=menu_selector,
                     options=options,
-                    header="Header Text",  # Provide appropriate header text
-                    body="Body Text",  # Provide appropriate body text
-                    footer="Footer Text",  # Provide appropriate footer text
+                    header="Select Below",  # Provide appropriate header text
+                    body=message,  # Provide appropriate body text
+                    footer="Please select",  # Provide appropriate footer text
                 )
                 message_payload = FSMOutput(
                     intent=FSMIntent.SEND_MESSAGE,
