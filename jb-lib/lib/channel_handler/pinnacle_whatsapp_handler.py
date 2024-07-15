@@ -1,4 +1,5 @@
 import base64
+import logging
 import json
 from typing import Any, Dict, Generator
 import requests
@@ -30,6 +31,7 @@ from ..data_models import (
 from ..models import JBChannel, JBUser, JBForm
 from ..encryption_handler import EncryptionHandler
 
+logger = logging.getLogger(__name__)
 storage = StorageHandler.get_sync_instance()
 
 
@@ -232,7 +234,7 @@ class PinnacleWhatsappHandler(RestChannelHandler):
                 "type": "list",
                 "header": {
                     "type": "text",
-                    "text": message.header[:59] if message.header else None,
+                    "text": message.header[:59] if message.header else "",
                 },
                 "body": {"text": message.body},
                 "footer": {"text": message.footer},
@@ -272,7 +274,7 @@ class PinnacleWhatsappHandler(RestChannelHandler):
                 "type": "button",
                 "header": {
                     "type": "text",
-                    "text": message.header[:59] if message.header else None,
+                    "text": message.header[:59] if message.header else "",
                 },
                 "body": {"text": message.body},
                 "footer": {"text": message.footer},
@@ -423,8 +425,10 @@ class PinnacleWhatsappHandler(RestChannelHandler):
         data = cls.parse_bot_output(message=message, channel=channel, user=user)
         r = requests.post(url, data=json.dumps(data), headers=headers)
         json_output = r.json()
-        if json_output and json_output["messages"]:
+        if json_output and "messages" in json_output and json_output["messages"]:
             return json_output["messages"][0]["id"]
+        else:
+            logger.error(f"Error sending message: {json_output}")
         return None
 
     @classmethod
