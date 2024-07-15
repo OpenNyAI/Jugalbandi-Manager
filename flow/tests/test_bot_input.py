@@ -1,5 +1,4 @@
 from itertools import product
-import re
 from unittest.mock import MagicMock, patch, AsyncMock
 import json
 import pytest
