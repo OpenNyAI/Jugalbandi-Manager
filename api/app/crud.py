@@ -1,7 +1,6 @@
-from datetime import datetime
 from typing import Sequence
 import uuid
-from sqlalchemy import desc, select, update
+from sqlalchemy import select, update
 from sqlalchemy.orm import joinedload
 
 from lib.db_session_handler import DBSessionHandler
@@ -10,7 +9,6 @@ from lib.models import (
     JBSession,
     JBTurn,
     JBUser,
-    JBMessage,
     JBBot,
     JBChannel,
 )
@@ -47,50 +45,6 @@ async def get_user_by_number(number: str, channel_id: str) -> JBUser:
     return None
 
 
-async def create_session(pid: str, channel_id: str):
-    session_id = str(uuid.uuid4())
-    async with DBSessionHandler.get_async_session() as session:
-        async with session.begin():
-            s = JBSession(id=session_id, pid=pid, channel_id=channel_id)
-            session.add(s)
-            await session.commit()
-            return s
-    return None
-
-
-async def get_user_session(channel_id: str, pid: str, timeout: int):
-    query = (
-        select(JBSession)
-        .where(JBSession.pid == pid and JBSession.channel_id == channel_id)
-        .order_by(desc(JBSession.created_at))
-    )
-    async with DBSessionHandler.get_async_session() as session:
-        async with session.begin():
-            result = await session.execute(query)
-            session = result.scalars().first()
-            if session is not None:
-                if (
-                    session.created_at.timestamp() + timeout
-                    > datetime.now().timestamp()
-                ):
-                    return session
-    return None
-
-
-async def update_session(session_id: str):
-    async with DBSessionHandler.get_async_session() as session:
-        async with session.begin():
-            stmt = (
-                update(JBSession)
-                .where(JBSession.id == session_id)
-                .values(updated_at=datetime.now())
-            )
-            await session.execute(stmt)
-            await session.commit()
-            return session_id
-    return None
-
-
 async def create_turn(bot_id: str, channel_id: str, user_id: str):
     turn_id: str = str(uuid.uuid4())
     async with DBSessionHandler.get_async_session() as session:
@@ -107,31 +61,6 @@ async def create_turn(bot_id: str, channel_id: str, user_id: str):
             return turn_id
 
 
-async def create_message(
-    turn_id: str,
-    message_type: str,
-    channel: str,
-    channel_id: str,
-    is_user_sent: bool = False,
-):
-    message_id = str(uuid.uuid4())
-    async with DBSessionHandler.get_async_session() as session:
-        async with session.begin():
-            session.add(
-                JBMessage(
-                    id=message_id,
-                    turn_id=turn_id,
-                    message_type=message_type,
-                    channel=channel,
-                    channel_id=channel_id,
-                    is_user_sent=is_user_sent,
-                )
-            )
-            await session.commit()
-            return message_id
-    return None
-
-
 async def get_bot_by_id(bot_id: str):
     query = select(JBBot).options(joinedload(JBBot.channels)).where(JBBot.id == bot_id)
     async with DBSessionHandler.get_async_session() as session:
@@ -141,18 +70,6 @@ async def get_bot_by_id(bot_id: str):
             return bot
 
 
-async def get_bot_by_phone_number(phone_number):
-    query = select(JBBot).where(
-        JBBot.phone_number == phone_number and JBBot.status == "active"
-    )
-    async with DBSessionHandler.get_async_session() as session:
-        async with session.begin():
-            result = await session.execute(query)
-            bot = result.scalars().first()
-            return bot if bot else None
-    return None
-
-
 async def get_chat_history(bot_id: str, skip=0, limit=1000):
     # TODO: introduce pagination
     async with DBSessionHandler.get_async_session() as session:
@@ -160,8 +77,9 @@ async def get_chat_history(bot_id: str, skip=0, limit=1000):
             result = await session.execute(
                 select(JBSession)
                 .options(joinedload(JBSession.user))
-                .join(JBUser, JBSession.pid == JBUser.id)
-                .where(JBSession.bot_id == bot_id)
+                .join(JBUser, JBSession.user_id == JBUser.id)
+                .join(JBChannel, JBSession.channel_id == JBChannel.id)
+                .where(JBChannel.bot_id == bot_id)
                 .offset(skip)
                 .limit(limit)
             )
