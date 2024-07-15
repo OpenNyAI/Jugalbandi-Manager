@@ -1,42 +1,10 @@
 import uuid
 from typing import Dict
-from sqlalchemy import select, update
-from sqlalchemy.orm import joinedload
+from sqlalchemy import select
 
 from lib.db_session_handler import DBSessionHandler
 
-from lib.models import JBSession, JBUser, JBMessage, JBChannel, JBForm, JBTurn
-
-
-async def get_user_by_session_id(session_id: str) -> JBUser | None:
-    query = (
-        select(JBSession)
-        .options(joinedload(JBSession.user))
-        .where(JBSession.id == session_id)
-    )
-    async with DBSessionHandler.get_async_session() as session:
-        async with session.begin():
-            result = await session.execute(query)
-            s = result.scalars().first()
-            if s is not None:
-                user = s.user
-                return user
-    return None
-
-
-async def get_channel_by_session_id(session_id: str) -> JBChannel | None:
-    query = (
-        select(JBSession)
-        .options(joinedload(JBSession.channel))
-        .where(JBSession.id == session_id)
-    )
-    async with DBSessionHandler.get_async_session() as session:
-        async with session.begin():
-            result = await session.execute(query)
-            s = result.scalars().first()
-            if s is not None:
-                channel: JBChannel = s.channel
-                return channel
+from lib.models import JBUser, JBMessage, JBChannel, JBForm, JBTurn
 
 
 async def get_channel_by_turn_id(turn_id: str) -> JBChannel | None:
@@ -50,34 +18,6 @@ async def get_channel_by_turn_id(turn_id: str) -> JBChannel | None:
             result = await session.execute(query)
             s = result.scalars().first()
             return s
-
-
-async def set_user_language(session_id: str, language: str):
-    async with DBSessionHandler.get_async_session() as session:
-        async with session.begin():
-            query = select(JBSession).where(JBSession.id == session_id)
-            result = await session.execute(query)
-            s = result.scalars().first()
-            if s is not None:
-                query = (
-                    update(JBUser)
-                    .where(JBUser.id == s.pid)
-                    .values(language_preference=language)
-                )
-                await session.execute(query)
-                await session.commit()
-                return True
-    return None
-
-
-async def update_message(msg_id: str, **kwargs):
-    async with DBSessionHandler.get_async_session() as session:
-        async with session.begin():
-            query = update(JBMessage).where(JBMessage.id == msg_id).values(**kwargs)
-            await session.execute(query)
-            await session.commit()
-            return True
-    return None
 
 
 async def create_message(
