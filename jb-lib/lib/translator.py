@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 import aiohttp
 import httpx
 
-from .model import InternalServerException, Language
+from .model import InternalServerException, LanguageCodes
 
 logger = logging.getLogger("translator")
 
@@ -17,8 +17,8 @@ class Translator(ABC):
     async def translate_text(
         self,
         text: str,
-        source_language: Language,
-        destination_language: Language,
+        source_language: LanguageCodes,
+        destination_language: LanguageCodes,
     ) -> str:
         pass
 
@@ -79,8 +79,8 @@ class DhruvaTranslator(Translator):
     async def translate_text(
         self,
         text: str,
-        source_language: Language,
-        destination_language: Language,
+        source_language: LanguageCodes,
+        destination_language: LanguageCodes,
     ) -> str:
         source = source_language.name.lower()
         destination = destination_language.name.lower()
@@ -181,8 +181,8 @@ class AzureTranslator(Translator):
     async def translate_text(
         self,
         text: str,
-        source_language: Language,
-        destination_language: Language,
+        source_language: LanguageCodes,
+        destination_language: LanguageCodes,
     ) -> str:
         path = "/translate"
         constructed_url = self.endpoint + path
@@ -258,7 +258,11 @@ class AzureTranslator(Translator):
                 return translated_text
 
     async def transliterate_text(
-        self, text: str, source_language: Language, from_script: str, to_script: str
+        self,
+        text: str,
+        source_language: LanguageCodes,
+        from_script: str,
+        to_script: str,
     ) -> str:
         path = "/transliterate"
         constructed_url = self.endpoint + path
@@ -295,8 +299,8 @@ class CompositeTranslator(Translator):
     async def translate_text(
         self,
         text: str,
-        source_language: Language,
-        destination_language: Language,
+        source_language: LanguageCodes,
+        destination_language: LanguageCodes,
     ) -> str:
         if source_language.value == destination_language.value:
             return text

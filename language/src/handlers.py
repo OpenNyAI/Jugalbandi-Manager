@@ -2,21 +2,28 @@
 Handlers for Language Input and Output
 """
 
+from typing import List
 import logging
 import uuid
 from .extension import speech_processor, storage, translator
 from lib.audio_converter import convert_to_wav_with_ffmpeg
 from lib.data_models import (
-    BotOutput,
-    ChannelInput,
+    Channel,
     ChannelIntent,
-    FlowInput,
-    LanguageInput,
-    LanguageIntent,
+    Flow,
+    FlowIntent,
+    UserInput,
     MessageType,
-    MessageData,
+    Message,
+    TextMessage,
+    AudioMessage,
+    DocumentMessage,
+    ImageMessage,
+    ButtonMessage,
+    Option,
+    ListMessage,
 )
-from lib.model import Language
+from lib.model import LanguageCodes
 
 
 logger = logging.getLogger("language")
@@ -24,12 +31,14 @@ logger.setLevel(logging.INFO)
 
 
 async def handle_input(
-    preferred_language: Language, language_input: LanguageInput
-) -> str:
+    turn_id: str, preferred_language: LanguageCodes, message: Message
+) -> Flow:
     """Handler for Language Input"""
-    message_text = language_input.data.message_data.message_text
     english_text = None
-    if language_input.data.message_type == MessageType.TEXT:
+    if message.message_type == MessageType.TEXT:
+        if not message.text:
+            raise ValueError("Message text is empty")
+        message_text = message.text.body
         logger.info(
             "Received %s text message %s", preferred_language.name, message_text
         )
@@ -37,10 +46,17 @@ async def handle_input(
         english_text = await translator.translate_text(
             vernacular_text,
             preferred_language,
-            Language.EN,
+            LanguageCodes.EN,
         )
-    elif language_input.data.message_type == MessageType.AUDIO:
-        audio_url = language_input.data.message_data.media_url
+        text_message = TextMessage(body=english_text)
+        message = Message(
+            message_type=MessageType.TEXT,
+            text=text_message,
+        )
+    elif message.message_type == MessageType.AUDIO:
+        if not message.audio:
+            raise ValueError("Message audio is empty")
+        audio_url = message.audio.media_url
         wav_data = await convert_to_wav_with_ffmpeg(audio_url)
         vernacular_text = await speech_processor.speech_to_text(
             wav_data, preferred_language
@@ -49,168 +65,218 @@ async def handle_input(
         english_text = await translator.translate_text(
             vernacular_text,
             preferred_language,
-            Language.EN,
+            LanguageCodes.EN,
         )
         logger.info("English Text %s", english_text)
-    elif language_input.data.message_type == MessageType.INTERACTIVE:
-        english_text = language_input.data.message_data.message_text
+        text_message = TextMessage(body=english_text)
+        message = Message(
+            message_type=MessageType.TEXT,
+            text=text_message,
+        )
 
-    flow_input = FlowInput(
+    flow_input = Flow(
         source="language",
-        intent=LanguageIntent.LANGUAGE_IN,
-        session_id=language_input.session_id,
-        message_id=language_input.message_id,
-        turn_id=language_input.turn_id,
-        message_text=english_text,
+        intent=FlowIntent.USER_INPUT,
+        user_input=UserInput(turn_id=turn_id, message=message),
     )
     return flow_input
 
 
 async def handle_output(
-    preferred_language: Language,
-    language_input: LanguageInput,
-):
+    turn_id: str, preferred_language: LanguageCodes, message: Message
+) -> List[Channel]:
     logger.info("Preferred Language %s", preferred_language)
-    logger.info("Language Input %s", language_input)
+    logger.info("Message %s", message)
 
     media_output_url = None
     channel_inputs = []
-    if language_input.data.message_type == MessageType.TEXT:
-        vernacular_text = await translator.translate_text(
-            language_input.data.message_data.message_text,
-            Language.EN,
+    message_type = message.message_type
+    if message_type == MessageType.TEXT:
+        if not message.text:
+            raise ValueError("Message text is empty")
+
+        vernacular_body = await translator.translate_text(
+            message.text.body,
+            LanguageCodes.EN,
             preferred_language,
         )
-        logger.info("Vernacular Text %s", vernacular_text)
+        translated_text_message = TextMessage(body=vernacular_body)
+        if message.text.header:
+            translated_text_message.header = await translator.translate_text(
+                message.text.header, LanguageCodes.EN, preferred_language
+            )
+        if message.text.footer:
+            translated_text_message.footer = await translator.translate_text(
+                message.text.footer, LanguageCodes.EN, preferred_language
+            )
+        logger.info("Vernacular Text %s", vernacular_body)
+        channel_inputs.append(
+            Channel(
+                source="language",
+                intent=ChannelIntent.CHANNEL_OUT,
+                turn_id=turn_id,
+                bot_output=Message(
+                    message_type=MessageType.TEXT, text=translated_text_message
+                ),
+            )
+        )
         try:
             audio_content = await speech_processor.text_to_speech(
-                vernacular_text, preferred_language
+                vernacular_body, preferred_language
             )
             fid = str(uuid.uuid4())
             filename = f"{fid}.mp3"
             await storage.write_file(filename, audio_content, "audio/mpeg")
             media_output_url = await storage.public_url(filename)
-        except Exception as e:
-            logger.error("Error in text to speech: %s", e)
-        return [
-            ChannelInput(
-                source="language",
-                intent=ChannelIntent.BOT_OUT,
-                session_id=language_input.session_id,
-                message_id=fid,
-                turn_id=language_input.turn_id,
-                data=BotOutput(
-                    message_type=MessageType.AUDIO,
-                    message_data=MessageData(
-                        message_text=None, media_url=media_output_url
-                    ),
-                ),
-            ),
-            ChannelInput(
-                source="language",
-                intent=ChannelIntent.BOT_OUT,
-                session_id=language_input.session_id,
-                message_id=str(uuid.uuid4()),
-                turn_id=language_input.turn_id,
-                data=BotOutput(
-                    message_type=MessageType.TEXT,
-                    message_data=MessageData(
-                        message_text=vernacular_text, media_url=None
-                    ),
-                    options_list=language_input.data.options_list,
-                    menu_selector=language_input.data.menu_selector,
-                    menu_title=language_input.data.menu_title,
-                    header=language_input.data.header,
-                    footer=language_input.data.footer,
-                ),
-            ),
-        ]
-        # else:
-        #     # Turn Type == TEXT | DOCUMENT | INTERACTIVE | IMAGE
-        #     vernacular_text = await translator.translate_text(
-        #         language_input.message_data.message_text,
-        #         Language.EN,
-        #         preferred_language,
-        #     )
-        #     logger.info("Vernacular Text %s", vernacular_text)
-
-    elif language_input.data.message_type == MessageType.DOCUMENT:
-        vernacular_text = await translator.translate_text(
-            language_input.data.message_data.message_text,
-            Language.EN,
-            preferred_language,
-        )
-        media_output_url = language_input.data.message_data.media_url
-    elif language_input.data.message_type == MessageType.IMAGE:
-        vernacular_text = await translator.translate_text(
-            language_input.data.message_data.message_text,
-            Language.EN,
-            preferred_language,
-        )
-        media_output_url = language_input.data.message_data.media_url
-    elif language_input.data.message_type == MessageType.INTERACTIVE:
-        vernacular_text = await translator.translate_text(
-            language_input.data.message_data.message_text,
-            Language.EN,
-            preferred_language,
-        )
-        if language_input.data.header:
-            language_input.data.header = await translator.translate_text(
-                language_input.data.header, Language.EN, preferred_language
-            )
-        if language_input.data.footer:
-            language_input.data.footer = await translator.translate_text(
-                language_input.data.footer, Language.EN, preferred_language
-            )
-
-        for option in language_input.data.options_list:
-            option.title = await translator.translate_text(
-                option.title, Language.EN, preferred_language
-            )
-        try:
-            audio_content = await speech_processor.text_to_speech(
-                vernacular_text, preferred_language
-            )
-            fid = str(uuid.uuid4())
-            filename = f"{fid}.mp3"
-            await storage.write_file(filename, audio_content, "audio/mpeg")
-            audio_url = await storage.public_url(filename)
+            translated_audio_message = AudioMessage(media_url=media_output_url)
             channel_inputs.append(
-                ChannelInput(
+                Channel(
                     source="language",
-                    intent=ChannelIntent.BOT_OUT,
-                    session_id=language_input.session_id,
-                    message_id=fid,
-                    turn_id=language_input.turn_id,
-                    data=BotOutput(
-                        message_type=MessageType.AUDIO,
-                        message_data=MessageData(
-                            message_text=None, media_url=audio_url
-                        ),
+                    intent=ChannelIntent.CHANNEL_OUT,
+                    turn_id=turn_id,
+                    bot_output=Message(
+                        message_type=MessageType.AUDIO, audio=translated_audio_message
                     ),
                 )
             )
         except Exception as e:
             logger.error("Error in text to speech: %s", e)
 
-    channel_input = ChannelInput(
-        source="language",
-        intent=ChannelIntent.BOT_OUT,
-        session_id=language_input.session_id,
-        message_id=str(uuid.uuid4()),
-        turn_id=language_input.turn_id,
-        data=BotOutput(
-            message_type=language_input.data.message_type,
-            message_data=MessageData(
-                message_text=vernacular_text, media_url=media_output_url
-            ),
-            options_list=language_input.data.options_list,
-            menu_selector=language_input.data.menu_selector,
-            menu_title=language_input.data.menu_title,
-            header=language_input.data.header,
-            footer=language_input.data.footer,
-        ),
-    )
+    elif message_type == MessageType.DOCUMENT:
+        if not message.document:
+            raise ValueError("Message document is empty")
+        vernacular_text = await translator.translate_text(
+            message.document.caption,
+            LanguageCodes.EN,
+            preferred_language,
+        )
+        translated_document_message = DocumentMessage(
+            url=message.document.url,
+            caption=vernacular_text,
+            name=message.document.name,
+        )
+        channel_inputs.append(
+            Channel(
+                source="language",
+                intent=ChannelIntent.CHANNEL_OUT,
+                turn_id=turn_id,
+                bot_output=Message(
+                    message_type=MessageType.DOCUMENT,
+                    document=translated_document_message,
+                ),
+            )
+        )
+    elif message_type == MessageType.IMAGE:
+        if not message.image:
+            raise ValueError("Message image is empty")
+        vernacular_text = await translator.translate_text(
+            message.image.caption,
+            LanguageCodes.EN,
+            preferred_language,
+        )
+        translated_image_message = ImageMessage(
+            url=message.image.url,
+            caption=vernacular_text,
+        )
+        channel_inputs.append(
+            Channel(
+                source="language",
+                intent=ChannelIntent.CHANNEL_OUT,
+                turn_id=turn_id,
+                bot_output=Message(
+                    message_type=MessageType.IMAGE, image=translated_image_message
+                ),
+            )
+        )
+    elif message_type == MessageType.BUTTON or message_type == MessageType.OPTION_LIST:
+        if message_type == MessageType.BUTTON:
+            interactive_message = message.button
+        elif message_type == MessageType.OPTION_LIST:
+            interactive_message = message.option_list
 
-    channel_inputs.append(channel_input)
+        if not interactive_message:
+            raise ValueError("Interactive message is empty")
+        vernacular_body = await translator.translate_text(
+            interactive_message.body,
+            LanguageCodes.EN,
+            preferred_language,
+        )
+        vernacular_options = [
+            Option(
+                option_id=option.option_id,
+                option_text=await translator.translate_text(
+                    option.option_text, LanguageCodes.EN, preferred_language
+                ),
+            )
+            for option in interactive_message.options
+        ]
+        vernacular_header = await translator.translate_text(
+            interactive_message.header, LanguageCodes.EN, preferred_language
+        )
+        vernacular_footer = await translator.translate_text(
+            interactive_message.footer, LanguageCodes.EN, preferred_language
+        )
+        if message_type == MessageType.BUTTON:
+            translated_interactive_message = ButtonMessage(
+                body=vernacular_body,
+                header=vernacular_header,
+                footer=vernacular_footer,
+                options=vernacular_options,
+            )
+            channel_input = Channel(
+                source="language",
+                intent=ChannelIntent.CHANNEL_OUT,
+                turn_id=turn_id,
+                bot_output=Message(
+                    message_type=MessageType.BUTTON,
+                    button=translated_interactive_message,
+                ),
+            )
+        else:
+            translated_interactive_message = ListMessage(
+                body=vernacular_body,
+                header=vernacular_header,
+                footer=vernacular_footer,
+                options=vernacular_options,
+                button_text=await translator.translate_text(
+                    interactive_message.button_text,
+                    LanguageCodes.EN,
+                    preferred_language,
+                ),
+                list_title=await translator.translate_text(
+                    interactive_message.list_title, LanguageCodes.EN, preferred_language
+                ),
+            )
+            channel_input = Channel(
+                source="language",
+                intent=ChannelIntent.CHANNEL_OUT,
+                turn_id=turn_id,
+                bot_output=Message(
+                    message_type=MessageType.OPTION_LIST,
+                    option_list=translated_interactive_message,
+                ),
+            )
+        channel_inputs.append(channel_input)
+        try:
+            audio_content = await speech_processor.text_to_speech(
+                vernacular_body, preferred_language
+            )
+            fid = str(uuid.uuid4())
+            filename = f"{fid}.mp3"
+            await storage.write_file(filename, audio_content, "audio/mpeg")
+            audio_url = await storage.public_url(filename)
+            channel_inputs.append(
+                Channel(
+                    source="language",
+                    intent=ChannelIntent.CHANNEL_OUT,
+                    turn_id=turn_id,
+                    bot_output=Message(
+                        message_type=MessageType.AUDIO,
+                        audio=AudioMessage(media_url=audio_url),
+                    ),
+                )
+            )
+        except Exception as e:
+            logger.error("Error in text to speech: %s", e)
+
     return channel_inputs

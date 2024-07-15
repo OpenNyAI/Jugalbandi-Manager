@@ -1,39 +1,55 @@
 import uuid
+from typing import Dict
 from sqlalchemy import select, update
+from sqlalchemy.orm import joinedload
 
 from lib.db_session_handler import DBSessionHandler
 
-from lib.models import JBSession, JBUser, JBMessage, JBBot
+from lib.models import JBSession, JBUser, JBMessage, JBChannel, JBForm, JBTurn
 
 
-async def get_user_by_session_id(session_id: str):
-    # TODO: have to make it as single query
-    query = select(JBSession).where(JBSession.id == session_id)
+async def get_user_by_session_id(session_id: str) -> JBUser | None:
+    query = (
+        select(JBSession)
+        .options(joinedload(JBSession.user))
+        .where(JBSession.id == session_id)
+    )
     async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             result = await session.execute(query)
             s = result.scalars().first()
             if s is not None:
-                query = select(JBUser).where(JBUser.id == s.pid)
-                result = await session.execute(query)
-                user = result.scalars().first()
+                user = s.user
                 return user
     return None
 
 
-async def get_bot_by_session_id(session_id: str):
-    # TODO: have to make it as single query
-    query = select(JBSession).where(JBSession.id == session_id)
+async def get_channel_by_session_id(session_id: str) -> JBChannel | None:
+    query = (
+        select(JBSession)
+        .options(joinedload(JBSession.channel))
+        .where(JBSession.id == session_id)
+    )
     async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             result = await session.execute(query)
             s = result.scalars().first()
             if s is not None:
-                query = select(JBBot).where(JBBot.id == s.bot_id)
-                result = await session.execute(query)
-                bot = result.scalars().first()
-                return bot.phone_number, bot.channels
-    return None
+                channel: JBChannel = s.channel
+                return channel
+
+
+async def get_channel_by_turn_id(turn_id: str) -> JBChannel | None:
+    query = (
+        select(JBChannel)
+        .join(JBTurn, JBChannel.id == JBTurn.channel_id)
+        .where(JBTurn.id == turn_id)
+    )
+    async with DBSessionHandler.get_async_session() as session:
+        async with session.begin():
+            result = await session.execute(query)
+            s = result.scalars().first()
+            return s
 
 
 async def set_user_language(session_id: str, language: str):
@@ -67,11 +83,8 @@ async def update_message(msg_id: str, **kwargs):
 async def create_message(
     turn_id: str,
     message_type: str,
-    channel: str,
-    channel_id: str,
+    message: Dict,
     is_user_sent: bool = False,
-    message_text: str = None,
-    media_url: str = None,
 ):
     message_id = str(uuid.uuid4())
     async with DBSessionHandler.get_async_session() as session:
@@ -81,13 +94,35 @@ async def create_message(
                     id=message_id,
                     turn_id=turn_id,
                     message_type=message_type,
-                    channel=channel,
-                    channel_id=channel_id,
                     is_user_sent=is_user_sent,
-                    message_text=message_text,
-                    media_url=media_url,
+                    message=message,
                 )
             )
             await session.commit()
             return message_id
     return None
+
+
+async def get_form_parameters(channel_id, form_id):
+    async with DBSessionHandler.get_async_session() as session:
+        async with session.begin():
+            result = await session.execute(
+                select(JBForm)
+                .where(JBForm.channel_id == channel_id)
+                .where(JBForm.form_uid == form_id)
+            )
+            s = result.scalars().first()
+            return s.parameters
+
+
+async def get_user_by_turn_id(turn_id: str) -> JBUser | None:
+    query = (
+        select(JBUser)
+        .join(JBTurn, JBUser.id == JBTurn.user_id)
+        .where(JBTurn.id == turn_id)
+    )
+    async with DBSessionHandler.get_async_session() as session:
+        async with session.begin():
+            result = await session.execute(query)
+            s = result.scalars().first()
+            return s

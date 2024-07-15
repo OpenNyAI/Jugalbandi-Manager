@@ -17,4 +17,4 @@ speech_processor = CompositeSpeechProcessor(
 translator = CompositeTranslator(DhruvaTranslator(), AzureTranslator())
 
 # ---- Storage ----
-storage = StorageHandler.get_instance()
+storage = StorageHandler.get_async_instance()

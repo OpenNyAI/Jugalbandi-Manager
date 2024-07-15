@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class Language(Enum):
+class LanguageCodes(Enum):
     EN = "English"
     HI = "Hindi"
     BN = "Bengali"

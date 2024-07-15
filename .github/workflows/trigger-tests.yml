@@ -34,4 +34,16 @@ jobs:
       - name: Test language with pytest
         working-directory: ./language
         run: poetry run pytest
+      - name: Install dependencies api
+        working-directory: ./api
+        run: poetry install --with test
+      - name: Test api with pytest
+        working-directory: ./api
+        run: poetry run pytest
+      - name: Install dependencies flow
+        working-directory: ./flow
+        run: poetry install --with test
+      - name: Test flow with pytest
+        working-directory: ./flow
+        run: poetry run pytest
 
