@@ -1,10 +1,23 @@
 import re
 from pydantic import BaseModel
 from typing import Dict, Any, Optional, Type
-from jb_manager_bot import (
-    AbstractFSM
-    )
-from jb_manager_bot.data_models import Status
+from jb_manager_bot import AbstractFSM
+from jb_manager_bot.data_models import (
+    FSMOutput,
+    Message,
+    MessageType,
+    Status,
+    FSMIntent,
+    TextMessage,
+    ListMessage,
+    ButtonMessage,
+    Option,
+    ImageMessage,
+)
+
+from jb_manager_bot.parsers import Parser, OptionParser
+
+
 # example plugin
 def availability_plugin(SELECTED_SERVICE, APPOINTMENT_DATE, APPOINTMENT_TIME):
     return {
@@ -12,6 +25,7 @@ def availability_plugin(SELECTED_SERVICE, APPOINTMENT_DATE, APPOINTMENT_TIME):
         "booking_status": "confirmed",
         "appointment_image": "https://d27jswm5an3efw.cloudfront.net/app/uploads/2019/08/image-url-3.jpg",
     }
+
 
 # Variables are defined here
 class CarWashDealerVariables(BaseModel):
@@ -295,7 +309,7 @@ class CarWashDealerFSM(AbstractFSM):
         )
         if not self.credentials["AZURE_OPENAI_API_ENDPOINT"]:
             raise ValueError("Missing credential: AZURE_OPENAI_API_ENDPOINT")
-        
+
         if not credentials.get("FAST_MODEL"):
             raise ValueError("Missing credential: FAST_MODEL")
         self.credentials["FAST_MODEL"] = credentials.get("FAST_MODEL")
@@ -307,179 +321,382 @@ class CarWashDealerFSM(AbstractFSM):
         self.plugins: Dict[str, AbstractFSM] = {}
         self.variables = self.variable_names()
         super().__init__(send_message=send_message)
-        # print(self.variables.__dict__)
+    
+    def standard_ask_again(self, message=None):
+        self.status = Status.WAIT_FOR_ME
+        if message is None:
+            message = (
+                "Sorry, I did not understand your question. Can you tell me again?"
+            )
+        self.send_message(
+            FSMOutput(
+                intent=FSMIntent.SEND_MESSAGE,
+                message=Message(
+                    message_type=MessageType.TEXT, text=TextMessage(body=message)
+                ),
+            )
+        )
+        self.status = Status.MOVE_FORWARD
 
     def on_enter_language_selection(self):
         self._on_enter_select_language()
 
     def on_enter_welcome_message_display(self):
-        self._on_enter_display(
-            message="Welcome to the Car Dealer Bot! How can I help you today?"
+        self.status = Status.WAIT_FOR_ME
+        message = "Hello! Welcome to Car Wash Dealer. How can I assist you today?"
+        self.send_message(
+            FSMOutput(
+                intent=FSMIntent.SEND_MESSAGE,
+                message=Message(
+                    message_type=MessageType.TEXT, text=TextMessage(body=message)
+                ),
+            )
         )
+        self.status = Status.MOVE_FORWARD
 
     def on_enter_service_selection_display(self):
-        self._on_enter_display(
-            message="Would you like to buy a car, service your car, test drive, buy accessories or parts, or get a warranty and protection plan?",
-            options=[
-                "Buy a Car",
-                "Service Car",
-                "Test Drive",
-                "Buy Accessories or Parts",
-                "Warranty and Protection Plan",
-            ],
+        self.status = Status.WAIT_FOR_ME
+        message = "Would you like to buy a car, service your car, test drive, buy accessories or parts, or get a warranty and protection plan?"
+
+        options = [
+            Option(option_id="1", option_text="Buy a Car"),
+            Option(option_id="2", option_text="Service Car"),
+            Option(option_id="3", option_text="Test Drive"),
+            Option(option_id="4", option_text="Buy Accessories or Parts"),
+            Option(option_id="5", option_text="Warranty and Protection Plan"),
+        ]
+        self.send_message(
+            FSMOutput(
+                intent=FSMIntent.SEND_MESSAGE,
+                message=Message(
+                    message_type=MessageType.OPTION_LIST,
+                    option_list=ListMessage(
+                        body=message,
+                        header="",
+                        footer="",
+                        button_text="Service Select",
+                        list_title="Service Select",
+                        options=options,
+                    ),
+                ),
+            )
         )
+        self.status = Status.MOVE_FORWARD
 
     def on_enter_service_selection_input(self):
-        self._on_enter_empty_input()
+        self.status = Status.WAIT_FOR_ME
+        self.status = Status.WAIT_FOR_USER_INPUT
 
     def on_enter_service_selection_logic(self):
-        self._on_enter_input_logic(
-            message="Please select one of the following options:",
-            write_var="selected_service",
-            options=[
-                "Buy a Car",
-                "Service Car",
-                "Test Drive",
-                "Buy Accessories or Parts",
-                "Warranty and Protection Plan",
-            ],
-            validation="selected_service in ['Buy a Car', 'Service Car', 'Test Drive', 'Buy Accessories or Parts', 'Warranty and Protection Plan']",
+        self.status = Status.WAIT_FOR_ME
+        options = [
+            Option(option_id="1", option_text="Buy a Car"),
+            Option(option_id="2", option_text="Service Car"),
+            Option(option_id="3", option_text="Test Drive"),
+            Option(option_id="4", option_text="Buy Accessories or Parts"),
+            Option(option_id="5", option_text="Warranty and Protection Plan"),
+        ]
+        task = "The user is asked to select a service from the options."
+        result = Parser.parse_user_input(
+            task,
+            options,
+            self.current_input,
+            azure_endpoint=self.credentials["AZURE_OPENAI_API_ENDPOINT"],
+            azure_openai_api_key=self.credentials["AZURE_OPENAI_API_KEY"],
+            azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
+            model=self.credentials["FAST_MODEL"],
         )
+
+        if options:
+            result = result["id"]
+            if result.isdigit():
+                result = options[int(result) - 1].option_text
+
+        else:
+            result = result["result"]
+        try:
+            # update the pydantic variable with the result
+            setattr(self.variables, "selected_service", result)
+        except Exception as e:
+            setattr(self.variables, "selected_service", None)
+        self.status = Status.MOVE_FORWARD
 
     def on_enter_service_selection_fail(self):
         self.status = Status.WAIT_FOR_ME
-        variable_name = "fail_service_count"
-        validation = lambda x: x + 1
-        self._on_enter_assign(
-            variable_name,
-            validation,
-        )
-
+        value = self.variables.fail_service_count
+        setattr(self.variables, "fail_service_count", value + 1)
         self.status = Status.MOVE_FORWARD
 
     def on_enter_service_selection_task_fail_verify(self):
-        self._on_enter_empty_branching()
+        self.status = Status.WAIT_FOR_ME
+        self.status = Status.MOVE_FORWARD
 
     def is_service_fail_count_less_than_3(self):
-        variable_name = "fail_service_count"
-        validation = lambda x: x < 3
-        return self._validate_method(variable_name, validation)
+        if self.variables.fail_service_count < 3:
+            return True
+        return False
 
     def is_service_fail_count_3(self):
-        variable_name = "fail_service_count"
-        validation = lambda x: x >= 3
-        return self._validate_method(variable_name, validation)
+        if self.variables.fail_service_count == 3:
+            return True
+        return False
 
     def on_enter_service_selection_fail_display(self):
-        self._on_enter_display(
-            message="Sorry, I didn't understand that. Please select one of the following options:",
+        self.status = Status.WAIT_FOR_ME
+        message = "Sorry, I didn't get that. Please select one of the following options: Buy a Car, Service Car, Test Drive, Buy Accessories or Parts, or Warranty and Protection Plan."
+        self.send_message(
+            FSMOutput(
+                intent=FSMIntent.SEND_MESSAGE,
+                message=Message(
+                    message_type=MessageType.TEXT, text=TextMessage(body=message)
+                ),
+            )
         )
+        self.status = Status.MOVE_FORWARD
 
     def on_enter_date_display(self):
-        self._on_enter_display(
-            message="Please enter the date you would like to schedule your appointment (YYYY-MM-DD):"
+        self.status = Status.WAIT_FOR_ME
+        message = "Great choice! When would you like to book the appointment? Please provide the date you would be interested?"
+        self.send_message(
+            FSMOutput(
+                intent=FSMIntent.SEND_MESSAGE,
+                message=Message(
+                    message_type=MessageType.TEXT, text=TextMessage(body=message)
+                ),
+            )
         )
+        self.status = Status.MOVE_FORWARD
 
     def on_enter_date_input(self):
-        self._on_enter_empty_input()
+        self.status = Status.WAIT_FOR_ME
+        self.status = Status.WAIT_FOR_USER_INPUT
 
     def on_enter_date_logic(self):
-        self._on_enter_input_logic(
-            write_var="appointment_date",
-            validation="re.match(r'^\d{4}-\d{2}-\d{2}$', appointment_date) is not None",
+        self.status = Status.WAIT_FOR_ME
+        task = f"The user provides a date, convert it into a format of YYYY-MM-DD. Format and modify the user input into the format required and if you could not be decide return None. Based on the user's input, return the output in json format: {{'result': <input>}}"
+
+        result = Parser.parse_user_input(
+            task,
+            options=None,
+            user_input=self.current_input,
+            azure_endpoint=self.credentials["AZURE_OPENAI_API_ENDPOINT"],
+            azure_openai_api_key=self.credentials["AZURE_OPENAI_API_KEY"],
+            azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
+            model=self.credentials["FAST_MODEL"],
         )
+        result = result["result"]
+        try:
+            setattr(self.variables, "appointment_date", result)
+        except Exception as e:
+            setattr(self.variables, "appointment_date", None)
+        self.status = Status.MOVE_FORWARD
 
     def on_enter_date_fail_display(self):
-        self._on_enter_display(
-            message="Sorry, I didn't understand that. Please enter the date you would like to schedule your appointment (YYYY-MM-DD):"
+        self.status = Status.WAIT_FOR_ME
+        self.standard_ask_again(
+            message="Sorry, I didn't get that. Please provide the date in the format YYYY-MM-DD."
         )
+        self.status = Status.MOVE_FORWARD
 
     def on_enter_time_display(self):
-        self._on_enter_display(
-            message="Please enter the time of day you would like to schedule your appointment (Morning, Afternoon, Evening):",
-            options=["Morning", "Afternoon", "Evening"],
+        self.status = Status.WAIT_FOR_ME
+        message = "What time of day would you prefer? Morning, afternoon, or evening?"
+        slots = [
+            Option(option_id="1", option_text="Morning"),
+            Option(option_id="2", option_text="Afternoon"),
+            Option(option_id="3", option_text="Evening"),
+        ]
+        self.send_message(
+            FSMOutput(
+                intent=FSMIntent.SEND_MESSAGE,
+                message=Message(
+                    message_type=MessageType.BUTTON,
+                    button=ButtonMessage(
+                        body=message,
+                        header="",
+                        footer="",
+                        options=slots,
+                    ),
+                ),
+            )
         )
+        self.status = Status.MOVE_FORWARD
+
 
     def on_enter_time_input(self):
-        self._on_enter_empty_input()
+        self.status = Status.WAIT_FOR_ME
+        self.status = Status.WAIT_FOR_USER_INPUT
 
     def on_enter_time_logic(self):
-        self._on_enter_input_logic(
-            write_var="appointment_time",
-            options=["Morning", "Afternoon", "Evening"],
-            validation="appointment_time in ['Morning', 'Afternoon', 'Evening']",
+        self.status = Status.WAIT_FOR_ME
+        valid_times = ["morning", "afternoon", "evening"]
+        slots = [
+            Option(option_id="1", option_text="Morning"),
+            Option(option_id="2", option_text="Afternoon"),
+            Option(option_id="3", option_text="Evening"),
+        ]
+        task = "The user is asked to select a time of day from the options."
+        result = OptionParser.parse(
+            task,
+            slots,
+            self.current_input,
+            azure_openai_api_key=self.credentials["AZURE_OPENAI_API_KEY"],
+            azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
+            azure_endpoint=self.credentials["AZURE_OPENAI_API_ENDPOINT"],
+            model=self.credentials["FAST_MODEL"],
         )
+        if result.isdigit():
+            result = slots[int(result) - 1].option_text 
+            setattr(self.variables, "appointment_time", result)
+        else:
+            setattr(self.variables, "appointment_time", None)
+        self.status = Status.MOVE_FORWARD
 
     def on_enter_time_fail_display(self):
-        self._on_enter_display(
-            "Sorry, I didn't understand that. Please enter the time of day you would like to schedule your appointment (Morning, Afternoon, Evening):"
+        self.status = Status.WAIT_FOR_ME
+        self.standard_ask_again(
+            message="Sorry, I didn't get that. Please select one of the following options: Morning, Afternoon, or Evening."
         )
+        self.status = Status.MOVE_FORWARD
 
     def on_enter_check_availability_plugin(self):
-        self._on_enter_plugin(
-            plugin=availability_plugin,
-            input_variables={
-                "SELECTED_SERVICE": "selected_service",
-                "APPOINTMENT_DATE": "appointment_date",
-                "APPOINTMENT_TIME": "appointment_time",
-            },
-            output_variables={
-                "booking_status": "booking_status",
-                "appointment_image": "appointment_image",
-                # "error_code": "error_code",
-            },
-            message="Checking availability for your appointment...",
+        self.status = Status.WAIT_FOR_ME
+        self.send_message(
+            FSMOutput(
+                intent=FSMIntent.SEND_MESSAGE,
+                message=Message(
+                    message_type=MessageType.TEXT,
+                    text=TextMessage(
+                        body="Checking availability for the requested date and time..."
+                    ),
+                ),
+            )
         )
+
+        response = availability_plugin(self.variables.selected_service, self.variables.appointment_date, self.variables.appointment_time)
+        self.variables.booking_status = response["booking_status"]
+        self.variables.appointment_image = response["appointment_image"]
+        self.variables.error_code = response["error_code"]
+        self.status = Status.MOVE_FORWARD
 
     def on_enter_plugin_fail_display(self):
-        self._on_enter_display(
-            message="Sorry, We couldn't complete your booking. Apologies, Please try again after sometime."
+        self.status = Status.WAIT_FOR_ME
+        self.standard_ask_again(
+            "Sorry, We couldn't complete your booking. Apologies, Please try again after sometime."
         )
+        self.status = Status.MOVE_FORWARD
 
     def on_enter_check_booking_status_logic(self):
-        self._on_enter_empty_branching()
+        self.status = Status.WAIT_FOR_ME
+        self.status = Status.MOVE_FORWARD
 
     def on_enter_booking_pending_display(self):
-        self._on_enter_display(
-            message="Sorry, We couldn't complete your booking. Apologies, Please try again after sometime."
+        self.status = Status.WAIT_FOR_ME
+        self.send_message(
+            FSMOutput(
+                intent=FSMIntent.SEND_MESSAGE,
+                message=Message(
+                    message_type=MessageType.TEXT,
+                    text=TextMessage(
+                        body="Sorry, We couldn't complete your booking. Apologies, Please try again after sometime."
+                    ),
+                ),
+            )
         )
+        self.status = Status.MOVE_FORWARD
 
     def on_enter_booking_confirmation_display(self):
         self._on_enter_display(
             message="Your appointment has been confirmed! Please check your email for more details.",
         )
+        self.status = Status.WAIT_FOR_ME
+        message = f"Your appointment has been successfully booked for {self.variables.selected_service} on {self.variables.appointment_date} at {self.variables.appointment_time}."
+        self.send_message(
+            FSMOutput(
+                intent=FSMIntent.SEND_MESSAGE,
+                message=Message(
+                    message_type=MessageType.IMAGE,
+                    image=ImageMessage(
+                        url=self.variables.appointment_image, caption=message
+                    ),
+                ),
+            )
+        )
+        self.status = Status.MOVE_FORWARD
 
     def on_enter_further_assistance_display(self):
-        self._on_enter_display(
-            message="Do you need further assistance?",
-            options=["Yes", "No"],
+        self.status = Status.WAIT_FOR_ME
+        message = "Is there anything else I can help you with today?"
+        options = [
+            Option(option_id="1", option_text="Yes"),
+            Option(option_id="2", option_text="No"),
+        ]
+        self.send_message(
+            FSMOutput(
+                intent=FSMIntent.SEND_MESSAGE,
+                message=Message(
+                    message_type=MessageType.BUTTON,
+                    button=ButtonMessage(
+                        body=message,
+                        header="",
+                        footer="",
+                        options=options,
+                    ),
+                ),
+            )
         )
+        self.status = Status.MOVE_FORWARD
 
     def on_enter_further_assistance_input(self):
-        self._on_enter_empty_input()
+        self.status = Status.WAIT_FOR_ME
+        self.status = Status.WAIT_FOR_USER_INPUT
 
     def on_enter_further_assistance_logic(self):
-        self._on_enter_input_logic(
-            write_var="further_assistance",
-            options=["Yes", "No"],
-            validation="isinstance(further_assistance, str) and re.match(r'^(Yes|No)$', further_assistance) is not None",
+        self.status = Status.WAIT_FOR_ME
+        options = [
+            Option(option_id="1", option_text="Yes"),
+            Option(option_id="2", option_text="No"),
+        ]
+        result = OptionParser.parse(
+            "The user provides a response to the 'Is there anything else I can help you with today?'.",
+            options,
+            self.current_input,
+            azure_openai_api_key=self.credentials["AZURE_OPENAI_API_KEY"],
+            azure_openai_api_version=self.credentials["AZURE_OPENAI_API_VERSION"],
+            azure_endpoint=self.credentials["AZURE_OPENAI_API_ENDPOINT"],
+            model=self.credentials["FAST_MODEL"],
         )
+        if result == "1":
+            self.variables.further_assistance = "Yes"
+        else:
+            self.variables.further_assistance = "No"
+        self.status = Status.MOVE_FORWARD
 
     def on_enter_further_assistance_fail_display(self):
-        self._on_enter_display(
-            message="Sorry, I didn't understand that. Please select one of the following options: Yes or No",
+        self.status = Status.WAIT_FOR_ME
+        self.standard_ask_again(
+            "Sorry, I didn't understand that. Please select one of the following options: Yes or No"
         )
+        self.status = Status.MOVE_FORWARD
 
     def on_enter_further_assistance_verify(self):
-        self._on_enter_empty_branching()
+        self.status = Status.WAIT_FOR_ME
+        self.status = Status.MOVE_FORWARD
 
     def on_enter_conclusion_display(self):
-        self._on_enter_display(
-            message="Thank you for using the Car Dealer Bot! Have a great day!"
+        self.status = Status.WAIT_FOR_ME
+        message = "Thank you for choosing Car Wash Dealer. Have a great day!"
+        self.send_message(
+            FSMOutput(
+                intent=FSMIntent.SEND_MESSAGE,
+                message=Message(
+                    message_type=MessageType.TEXT, text=TextMessage(body=message)
+                ),
+            )
         )
+        self.status = Status.MOVE_FORWARD
 
     def is_valid_service(self):
-        variable_name = "selected_service"
         validation = lambda x: x in [
             "Buy a Car",
             "Service Car",
@@ -487,42 +704,38 @@ class CarWashDealerFSM(AbstractFSM):
             "Buy Accessories or Parts",
             "Warranty and Protection Plan",
         ]
-        return self._validate_method(variable_name, validation)
+        return validation(self.variables.selected_service)
 
     def is_valid_date(self):
-        variable_name = "appointment_date"
         validation = lambda x: re.match(r"^\d{4}-\d{2}-\d{2}$", x) is not None
-        return self._validate_method(variable_name, validation)
+        return validation(self.variables.appointment_date)
 
     def is_valid_time(self):
-        variable_name = "appointment_time"
         validation = lambda x: x in ["Morning", "Afternoon", "Evening"]
-        return self._validate_method(variable_name, validation)
+        return validation(self.variables.appointment_time)
 
     def is_booking_confirmed(self):
-        variable_name = "booking_status"
         validation = lambda x: x == "confirmed"
-        return self._validate_method(variable_name, validation)
+        return validation(self.variables.booking_status)
 
     def is_booking_pending(self):
-        variable_name = "booking_status"
         validation = lambda x: x != "confirmed"
-        return self._validate_method(variable_name, validation)
+        return validation(self.variables.booking_status)
 
     def is_error_code_200(self):
-        return self._plugin_error_code_validation(200)
+        if self.variables.error_code == 200:
+            return True
+        return False
 
     def is_further_assistance_valid(self):
-        variable = "further_assistance"
         validation = (
             lambda x: isinstance(x, str) and re.match(r"^(Yes|No)$", x) is not None
         )
-        return self._validate_method(variable, validation)
+        return validation(self.variables.further_assistance)
 
     def is_further_assistance(self):
-        variable_name = "further_assistance"
         validation = lambda x: x == "Yes"
-        return self._validate_method(variable_name, validation)
+        return validation(self.variables.further_assistance)
 
     def is_not_further_assistance(self):
         variable_name = "further_assistance"
@@ -530,10 +743,16 @@ class CarWashDealerFSM(AbstractFSM):
         return self._validate_method(variable_name, validation)
 
     def is_error_code_400(self):
-        return self._plugin_error_code_validation(400)
+        if self.variables.error_code == 400:
+            return True
+        return False
 
     def is_error_code_500(self):
-        return self._plugin_error_code_validation(500)
+        if self.variables.error_code == 500:
+            return True
+        return False
 
     def is_error_code_404(self):
-        return self._plugin_error_code_validation(404)
+        if self.variables.error_code == 404:
+            return True
+        return False
