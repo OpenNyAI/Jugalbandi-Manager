@@ -4,7 +4,7 @@ from typing import Dict, Any, Optional, Type
 from jb_manager_bot import (
     AbstractFSM
     )
-
+from jb_manager_bot.data_models import Status
 # example plugin
 def availability_plugin(SELECTED_SERVICE, APPOINTMENT_DATE, APPOINTMENT_TIME):
     return {
@@ -295,10 +295,6 @@ class CarWashDealerFSM(AbstractFSM):
         )
         if not self.credentials["AZURE_OPENAI_API_ENDPOINT"]:
             raise ValueError("Missing credential: AZURE_OPENAI_API_ENDPOINT")
-
-        self.credentials["OPENAI_API_KEY"] = credentials.get("OPENAI_API_KEY")
-        if not self.credentials["OPENAI_API_KEY"]:
-            raise ValueError("Missing credential: OPENAI_API_KEY")
         
         if not credentials.get("FAST_MODEL"):
             raise ValueError("Missing credential: FAST_MODEL")
@@ -353,8 +349,6 @@ class CarWashDealerFSM(AbstractFSM):
     def on_enter_service_selection_fail(self):
         self.status = Status.WAIT_FOR_ME
         variable_name = "fail_service_count"
-        expression = "fail_service_count + 1"
-        # validation = lambda x: {expression.replace(variable_name, "x")}
         validation = lambda x: x + 1
         self._on_enter_assign(
             variable_name,
@@ -368,15 +362,11 @@ class CarWashDealerFSM(AbstractFSM):
 
     def is_service_fail_count_less_than_3(self):
         variable_name = "fail_service_count"
-        expression = "fail_service_count < 3"
-        # validation = lambda x: {expression.replace(variable_name, "x")}
         validation = lambda x: x < 3
         return self._validate_method(variable_name, validation)
 
     def is_service_fail_count_3(self):
         variable_name = "fail_service_count"
-        expression = "fail_service_count >= 3"
-        # validation = lambda x: {expression.replace(variable_name, "x")}
         validation = lambda x: x >= 3
         return self._validate_method(variable_name, validation)
 
@@ -490,8 +480,6 @@ class CarWashDealerFSM(AbstractFSM):
 
     def is_valid_service(self):
         variable_name = "selected_service"
-        expression = "selected_service in ['Buy a Car', 'Service Car', 'Test Drive', 'Buy Accessories or Parts', 'Warranty and Protection Plan']"
-        # validation = lambda x: {expression.replace(variable_name, "x")}
         validation = lambda x: x in [
             "Buy a Car",
             "Service Car",
@@ -503,29 +491,21 @@ class CarWashDealerFSM(AbstractFSM):
 
     def is_valid_date(self):
         variable_name = "appointment_date"
-        expression = ("re.match(r'^\d{4}-\d{2}-\d{2}$', appointment_date) is not None",)
-        # validation = lambda x: {expression.replace(variable_name, "x")}
         validation = lambda x: re.match(r"^\d{4}-\d{2}-\d{2}$", x) is not None
         return self._validate_method(variable_name, validation)
 
     def is_valid_time(self):
         variable_name = "appointment_time"
-        expression = "appointment_time in ['Morning', 'Afternoon', 'Evening']"
-        # validation = lambda x: {expression.replace(variable_name, "x")}
         validation = lambda x: x in ["Morning", "Afternoon", "Evening"]
         return self._validate_method(variable_name, validation)
 
     def is_booking_confirmed(self):
         variable_name = "booking_status"
-        expression = "booking_status == 'confirmed'"
-        # validation = lambda x: {expression.replace(variable_name, "x")}
         validation = lambda x: x == "confirmed"
         return self._validate_method(variable_name, validation)
 
     def is_booking_pending(self):
         variable_name = "booking_status"
-        expression = "booking_status != 'confirmed'"
-        # validation = lambda x: {expression.replace(variable_name, "x")}
         validation = lambda x: x != "confirmed"
         return self._validate_method(variable_name, validation)
 
@@ -534,8 +514,6 @@ class CarWashDealerFSM(AbstractFSM):
 
     def is_further_assistance_valid(self):
         variable = "further_assistance"
-        expression = "isinstance(further_assistance, str) and re.match(r'^(Yes|No)$', further_assistance) is not None"
-        # validation = lambda x: {expression.replace(variable, "x")}
         validation = (
             lambda x: isinstance(x, str) and re.match(r"^(Yes|No)$", x) is not None
         )
@@ -543,15 +521,11 @@ class CarWashDealerFSM(AbstractFSM):
 
     def is_further_assistance(self):
         variable_name = "further_assistance"
-        expression = "further_assistance == 'Yes'"
-        # validation = lambda x: {expression.replace(variable_name, "x")}
         validation = lambda x: x == "Yes"
         return self._validate_method(variable_name, validation)
 
     def is_not_further_assistance(self):
         variable_name = "further_assistance"
-        expression = "further_assistance == 'No'"
-        # validation = lambda x: {expression.replace(variable_name, "x")}
         validation = lambda x: x == "No"
         return self._validate_method(variable_name, validation)
 
