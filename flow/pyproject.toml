@@ -28,6 +28,14 @@ fastapi = "^0.109.0"
 uvicorn = "^0.26.0"
 lib = {path = "../jb-lib", develop = true}
 
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.2.2"
+pytest-asyncio = "^0.23.7"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+pythonpath = "./"

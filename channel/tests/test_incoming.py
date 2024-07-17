@@ -1,17 +1,17 @@
 import base64
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock, MagicMock, Mock
 import pytest
 
 from lib.data_models import (
-    ChannelInput,
-    ChannelData,
+    Channel,
     MessageType,
     ChannelIntent,
-    BotInput,
-    MessageData,
-    LanguageInput,
-    FlowInput,
+    RestBotInput,
+    Language,
+    Flow,
+    FlowIntent,
     LanguageIntent,
+    DialogOption,
 )
 
 # Patch StorageHandler.get_async_instance before importing the module
@@ -23,7 +23,14 @@ mock_storage_instance.write_file = mock_write_file
 mock_storage_instance.public_url = mock_public_url
 
 mock_encryption_handler = MagicMock()
-mock_encryption_handler.decrypt_dict = MagicMock(return_value={"whatsapp": "api_key"})
+mock_encryption_handler.decrypt_dict = Mock(
+    side_effect=lambda x: {
+        k: v.replace("encrypted_", "decrypted_") for k, v in x.items()
+    }
+)
+mock_encryption_handler.decrypt_text = Mock(
+    side_effect=lambda x: x.replace("encrypted_", "decrypted_")
+)
 
 with patch(
     "lib.file_storage.StorageHandler.get_async_instance",
@@ -37,184 +44,225 @@ with patch(
 
 @pytest.mark.asyncio
 async def test_process_incoming_text_message():
-    mock_update_message = AsyncMock()
-    mock_get_bot_by_session_id = AsyncMock(
-        return_value=("test_number", "encrypted_credentials")
+    mock_get_channel_by_turn_id = AsyncMock(
+        return_value=MagicMock(channel_id="test_channel_id")
     )
-    with patch("src.handlers.incoming.update_message", mock_update_message):
-        message = ChannelInput(
-            source="api",
-            message_id="test_msg_id",
-            turn_id="test_turn_id",
-            session_id="test_session_id",
-            intent=ChannelIntent.BOT_IN,
-            channel_data=ChannelData(
-                type=MessageType.TEXT,
-                timestamp="2021-09-01T00:00:00Z",
-                text={"body": "Hello"},
-            ),
-            data=BotInput(
-                message_type=MessageType.TEXT,
-                message_data=MessageData(message_text="Hello"),
-            ),
+    with patch(
+        "src.handlers.incoming.get_channel_by_turn_id", mock_get_channel_by_turn_id
+    ):
+        bot_input = RestBotInput(
+            channel_name="whatsapp",
+            headers={},
+            query_params={},
+            data={
+                "timestamp": "1714990325",
+                "text": {"body": "How are you?"},
+                "type": "text",
+            },
         )
-        result = await process_incoming_messages(message)
-        mock_update_message.assert_called_once_with("test_msg_id", message_text="Hello")
+        message = Channel(
+            source="api",
+            turn_id="test_turn_id",
+            intent=ChannelIntent.CHANNEL_IN,
+            bot_input=bot_input,
+        )
+        result = await process_incoming_messages(
+            turn_id=message.turn_id, bot_input=bot_input
+        )
+        mock_get_channel_by_turn_id.assert_called_once_with("test_turn_id")
         assert result is not None
-        assert isinstance(result, LanguageInput)
+        assert isinstance(result, Language)
+        assert result.turn_id == "test_turn_id"
         assert result.intent == LanguageIntent.LANGUAGE_IN
-        assert result.data is not None
-        assert result.data.message_type == MessageType.TEXT
-        assert result.data.message_data is not None
-        assert result.data.message_data.message_text is not None
-        assert result.data.message_data.message_text == "Hello"
+        assert result.message is not None
+        assert result.message.message_type == MessageType.TEXT
+        assert result.message.text is not None
+        assert result.message.text.body == "How are you?"
 
 
 @pytest.mark.asyncio
 async def test_process_incoming_audio_message():
-    mock_update_message = AsyncMock()
-    mock_get_bot_by_session_id = AsyncMock(
-        return_value=("test_number", "encrypted_credentials")
+    mock_get_channel_by_turn_id = AsyncMock(
+        return_value=MagicMock(channel_id="test_channel_id")
     )
-    mock_decrypt_credentials = MagicMock(return_value={"whatsapp": "api_key"})
     mock_wa_get_user_audio = MagicMock(
-        return_value=MagicMock(content=base64.b64encode(b"audio_bytes").decode("utf-8"))
+        return_value=base64.b64encode(b"audio_bytes").decode("utf-8")
     )
 
-    with patch("src.handlers.incoming.update_message", mock_update_message):
+    with patch(
+        "src.handlers.incoming.get_channel_by_turn_id", mock_get_channel_by_turn_id
+    ):
         with patch(
-            "src.handlers.incoming.get_bot_by_session_id", mock_get_bot_by_session_id
+            "lib.whatsapp.WhatsappHelper.wa_get_user_audio",
+            mock_wa_get_user_audio,
         ):
-            with patch(
-                "lib.whatsapp.WhatsappHelper.wa_get_user_audio",
-                mock_wa_get_user_audio,
-            ):
-                message = ChannelInput(
-                    source="api",
-                    message_id="test_msg_id",
-                    turn_id="test_turn_id",
-                    session_id="test_session_id",
-                    intent=ChannelIntent.BOT_IN,
-                    channel_data=ChannelData(
-                        type=MessageType.AUDIO,
-                        timestamp="2021-09-01T00:00:00Z",
-                        audio={"url": "https://storage.url/test_audio.ogg"},
-                    ),
-                    data=BotInput(
-                        message_type=MessageType.AUDIO,
-                        message_data=MessageData(
-                            media_url="https://storage.url/test_audio.ogg"
-                        ),
-                    ),
-                )
-                result = await process_incoming_messages(message)
-                mock_write_file.assert_called_once_with(
-                    "test_msg_id.ogg", b"audio_bytes", "audio/ogg"
-                )
-                mock_public_url.assert_called_once_with("test_msg_id.ogg")
-                mock_update_message.assert_called_once_with(
-                    "test_msg_id",
-                    media_url="https://storage.url/test_audio.ogg",
-                )
-                assert result is not None
-                assert isinstance(result, LanguageInput)
-                assert result.intent == LanguageIntent.LANGUAGE_IN
-                assert result.data is not None
-                assert result.data.message_type == MessageType.AUDIO
-                assert result.data.message_data is not None
-                assert result.data.message_data.media_url is not None
-                assert (
-                    result.data.message_data.media_url
-                    == "https://storage.url/test_audio.ogg"
-                )
+            bot_input = RestBotInput(
+                channel_name="whatsapp",
+                headers={},
+                query_params={},
+                data={
+                    "timestamp": "1714990325",
+                    "audio": {
+                        "mime_type": "audio/ogg; codecs=opus",
+                        "sha256": "random_sha256_value",
+                        "id": "audio_id1",
+                        "voice": True,
+                    },
+                    "type": "audio",
+                },
+            )
+            message = Channel(
+                source="api",
+                turn_id="test_turn_id",
+                intent=ChannelIntent.CHANNEL_IN,
+                bot_input=bot_input,
+            )
+            result = await process_incoming_messages(
+                turn_id=message.turn_id, bot_input=bot_input
+            )
+        mock_write_file.assert_called_once_with(
+            "test_turn_id.ogg", b"audio_bytes", "audio/ogg"
+        )
+        mock_public_url.assert_called_once_with("test_turn_id.ogg")
+        assert result is not None
+        assert isinstance(result, Language)
+        assert result.intent == LanguageIntent.LANGUAGE_IN
+        assert result.message is not None
+        assert result.message.message_type == MessageType.AUDIO
+        assert result.message.audio is not None
+        assert result.message.audio.media_url == "https://storage.url/test_audio.ogg"
 
 
 @pytest.mark.asyncio
 async def test_process_incoming_interactive_message():
-    message = ChannelInput(
-        source="api",
-        message_id="test_msg_id",
-        turn_id="test_turn_id",
-        session_id="test_session_id",
-        intent=ChannelIntent.BOT_IN,
-        channel_data=ChannelData(
-            type=MessageType.INTERACTIVE,
-            timestamp="2021-09-01T00:00:00Z",
-            interactive={
-                "type": "button",
-                "button": {
-                    "id": "test_button_id",
-                },
+    bot_input = RestBotInput(
+        channel_name="whatsapp",
+        headers={},
+        query_params={},
+        data={
+            "timestamp": "1714990452",
+            "type": "interactive",
+            "interactive": {
+                "type": "button_reply",
+                "button_reply": {"id": "0", "title": "Yes"},
             },
-        ),
-        data=BotInput(
-            message_type=MessageType.TEXT,
-            message_data=MessageData(message_text="Hello"),
-        ),
+        },
     )
-    result = await process_incoming_messages(message)
+    message = Channel(
+        source="api",
+        turn_id="test_turn_id",
+        intent=ChannelIntent.CHANNEL_IN,
+        bot_input=bot_input,
+    )
+    mock_get_channel_by_turn_id = AsyncMock(
+        return_value=MagicMock(channel_id="test_channel_id")
+    )
+    with patch(
+        "src.handlers.incoming.get_channel_by_turn_id", mock_get_channel_by_turn_id
+    ):
+        result = await process_incoming_messages(
+            turn_id=message.turn_id, bot_input=bot_input
+        )
     assert result is not None
-    assert isinstance(result, LanguageInput)
-    assert result.intent == LanguageIntent.LANGUAGE_IN
-    assert result.data is not None
-    assert result.data.message_type == MessageType.INTERACTIVE
-    assert result.data.message_data is not None
-    assert result.data.message_data.message_text is not None
-    assert result.data.message_data.message_text == "test_button_id"
+    assert isinstance(result, Flow)
+    assert result.intent == FlowIntent.USER_INPUT
+    assert result.user_input is not None
+    assert result.user_input.turn_id == "test_turn_id"
+    assert result.user_input.message is not None
+    assert result.user_input.message.message_type == MessageType.INTERACTIVE_REPLY
+    assert result.user_input.message.interactive_reply is not None
+    assert result.user_input.message.interactive_reply.options is not None
+    assert len(result.user_input.message.interactive_reply.options) == 1
+    assert result.user_input.message.interactive_reply.options[0].option_id == "0"
+    assert result.user_input.message.interactive_reply.options[0].option_text == "Yes"
 
 
 @pytest.mark.asyncio
 async def test_process_incoming_language_selection_message():
-    mock_set_user_language = AsyncMock()
-    with patch("src.handlers.incoming.set_user_language", mock_set_user_language):
-        message = ChannelInput(
-            source="api",
-            message_id="test_msg_id",
-            turn_id="test_turn_id",
-            session_id="test_session_id",
-            intent=ChannelIntent.BOT_IN,
-            channel_data=ChannelData(
-                type=MessageType.INTERACTIVE,
-                timestamp="2021-09-01T00:00:00Z",
-                interactive={
-                    "type": "button",
-                    "button": {
-                        "id": "lang_hindi",
-                    },
+    bot_input = RestBotInput(
+        channel_name="whatsapp",
+        headers={},
+        query_params={},
+        data={
+            "timestamp": "1714990499",
+            "type": "interactive",
+            "interactive": {
+                "type": "list_reply",
+                "list_reply": {
+                    "id": "lang_english",
+                    "title": "English",
                 },
-            ),
-            data=BotInput(
-                message_type=MessageType.TEXT,
-                message_data=MessageData(message_text="Hello"),
-            ),
+            },
+        },
+    )
+    message = Channel(
+        source="api",
+        turn_id="test_turn_id",
+        intent=ChannelIntent.CHANNEL_IN,
+        bot_input=bot_input,
+    )
+    mock_get_channel_by_turn_id = AsyncMock(
+        return_value=MagicMock(channel_id="test_channel_id")
+    )
+    with patch(
+        "src.handlers.incoming.get_channel_by_turn_id", mock_get_channel_by_turn_id
+    ):
+        result = await process_incoming_messages(
+            turn_id=message.turn_id, bot_input=bot_input
         )
-        result = await process_incoming_messages(message)
-        assert result is not None
-        assert isinstance(result, FlowInput)
-        assert result.intent == LanguageIntent.LANGUAGE_IN
-        assert result.dialog is not None
-        assert result.dialog == "language_selected"
+
+    print(result)
+
+    assert result is not None
+    assert isinstance(result, Flow)
+    assert result.intent == FlowIntent.DIALOG
+    assert result.dialog is not None
+    assert result.dialog.turn_id == "test_turn_id"
+    assert result.dialog.message is not None
+    assert result.dialog.message.message_type == MessageType.DIALOG
+    assert result.dialog.message.dialog is not None
+    assert result.dialog.message.dialog.dialog_id == DialogOption.LANGUAGE_SELECTED
+    assert result.dialog.message.dialog.dialog_input == "en"
 
 
 @pytest.mark.asyncio
 async def test_process_incoming_form_message():
-    message = ChannelInput(
-        source="api",
-        message_id="test_msg_id",
-        turn_id="test_turn_id",
-        session_id="test_session_id",
-        intent=ChannelIntent.BOT_IN,
-        channel_data=ChannelData(
-            type=MessageType.FORM,
-            timestamp="2021-09-01T00:00:00Z",
-            form={"type": "form", "form": {"response_json": '{"field": "value"}'}},
-        ),
-        data=BotInput(
-            message_type=MessageType.TEXT,
-            message_data=MessageData(message_text="Hello"),
-        ),
+    bot_input = RestBotInput(
+        channel_name="whatsapp",
+        headers={},
+        query_params={},
+        data={
+            "timestamp": "1714990325",
+            "type": "interactive",
+            "interactive": {
+                "type": "nfm_reply",
+                "nfm_reply": {
+                    "response_json": {"field": "value"},
+                },
+            },
+        },
     )
-    result = await process_incoming_messages(message)
+    message = Channel(
+        source="api",
+        turn_id="test_turn_id",
+        intent=ChannelIntent.CHANNEL_IN,
+        bot_input=bot_input,
+    )
+    mock_get_channel_by_turn_id = AsyncMock(
+        return_value=MagicMock(channel_id="test_channel_id")
+    )
+    with patch(
+        "src.handlers.incoming.get_channel_by_turn_id", mock_get_channel_by_turn_id
+    ):
+        result = await process_incoming_messages(
+            turn_id=message.turn_id, bot_input=bot_input
+        )
     assert result is not None
-    assert isinstance(result, FlowInput)
-    assert result.form_response is not None
+    assert isinstance(result, Flow)
+    assert result.intent == FlowIntent.USER_INPUT
+    assert result.user_input is not None
+    assert result.user_input.turn_id == "test_turn_id"
+    assert result.user_input.message is not None
+    assert result.user_input.message.message_type == MessageType.FORM_REPLY
+    assert result.user_input.message.form_reply is not None
+    assert result.user_input.message.form_reply.form_data == {"field": "value"}

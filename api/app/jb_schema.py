@@ -40,8 +40,19 @@ class JBBotCode(BaseModel):
     dsl: str
     code: str
     requirements: str
-    index_urls: List[str]
-    version: Optional[str] = "v0.1"
+    index_urls: Optional[List[str]] = Field(default_factory=list)
+    version: str
     required_credentials: Optional[List[str]] = Field(default_factory=list)
+
+    model_config = {"from_attributes": True}
+
+
+class JBChannelContent(BaseModel):
+    name: str
+    type: str
+    url: str
+    app_id: str
+    key: str
+    status: str = "inactive"
 
     model_config = {"from_attributes": True}

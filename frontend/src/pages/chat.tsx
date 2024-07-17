@@ -19,7 +19,7 @@ export const Chat:React.FunctionComponent = (props: props) => {
   React.useEffect(() => {
     if (bot_id) {
       sendRequest({
-        url: `${APIHOST}/chats/${bot_id}`
+        url: `${APIHOST}/v1/chats/${bot_id}`
       }).then((response:any) => {
         setChatSessions(response);
         loadMessages(response[0]);
@@ -29,7 +29,7 @@ export const Chat:React.FunctionComponent = (props: props) => {
   const loadMessages = (session:any) => {
     setSelectedSession(session.id);
     sendRequest({
-      url: `${APIHOST}/chats/${bot_id}/sessions/${session.id}`
+      url: `${APIHOST}/v1/chats/${bot_id}/sessions/${session.id}`
     }).then((response:any) => {
       if (response && response.length) {
         setSessionMessages(response[0]);

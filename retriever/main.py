@@ -19,7 +19,7 @@ load_dotenv()
 print("Inside Retriever", file=sys.stderr)
 
 kafka_broker = os.getenv("KAFKA_BROKER")
-rag_topic = os.getenv("KAFKA_RAG_TOPIC")
+retriever_topic = os.getenv("KAFKA_RETRIEVER_TOPIC")
 flow_topic = os.getenv("KAFKA_FLOW_TOPIC")
 
 print("Connecting", file=sys.stderr)
@@ -129,7 +129,8 @@ async def querying(
 
 while True:
     try:
-        message = consumer.receive_message(rag_topic, timeout=1.0)
+        # will keep trying until non-null message is received
+        message = consumer.receive_message(retriever_topic, timeout=1.0)
         data = json.loads(message)
         data = RAGInput(**data)
         retriever_input = data.model_dump(

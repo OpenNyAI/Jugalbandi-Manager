@@ -1,15 +1,20 @@
-from unittest import mock
+from typing import List
 from unittest.mock import AsyncMock, patch, MagicMock
 import pytest
 from lib.data_models import (
-    LanguageInput,
+    Channel,
     MessageType,
     LanguageIntent,
-    BotOutput,
-    MessageData,
-    OptionsListType,
+    Message,
+    TextMessage,
+    AudioMessage,
+    ImageMessage,
+    DocumentMessage,
+    ButtonMessage,
+    ListMessage,
+    Option,
 )
-from lib.model import Language
+from lib.model import LanguageCodes
 
 mock_storage_instance = MagicMock()
 mock_write_file = AsyncMock()
@@ -44,94 +49,118 @@ with patch.dict("sys.modules", {"src.extension": mock_extension}):
 @pytest.mark.asyncio
 async def test_handle_output_text_message():
     mock_extension.reset_mock()
-    language_input = LanguageInput(
-        source="flow",
-        intent=LanguageIntent.LANGUAGE_OUT,
-        session_id="test_session",
-        turn_id="test_turn",
-        data=BotOutput(
-            message_type=MessageType.TEXT,
-            message_data=MessageData(message_text="hello"),
-        ),
+    turn_id = "turn1"
+    preferred_language = LanguageCodes.EN
+    message = Message(
+        message_type=MessageType.TEXT,
+        text=TextMessage(body="hello"),
     )
-    result = await handle_output(Language.EN, language_input)
+    result = await handle_output(turn_id, preferred_language, message)
+
+    assert isinstance(result, list)
     assert len(result) == 2
-    assert result[0].data.message_type == MessageType.AUDIO
-    assert result[0].data.message_data.media_url == "https://storage.url/test_audio.ogg"
-    assert result[1].data.message_type == MessageType.TEXT
-    assert result[1].data.message_data.message_text == "translated_hello"
+    assert isinstance(result[0], Channel)
+    assert result[0].turn_id == turn_id
+    assert result[0].bot_output is not None
+    assert result[0].bot_output.message_type == MessageType.TEXT
+    assert result[0].bot_output.text is not None
+    assert result[0].bot_output.text.body == "translated_hello"
+    assert isinstance(result[1], Channel)
+    assert result[1].turn_id == turn_id
+    assert result[1].bot_output is not None
+    assert result[1].bot_output.message_type == MessageType.AUDIO
+    assert result[1].bot_output.audio is not None
+    assert result[1].bot_output.audio.media_url == "https://storage.url/test_audio.ogg"
 
 
 @pytest.mark.asyncio
 async def test_handle_output_document_message():
     mock_extension.reset_mock()
-    language_input = LanguageInput(
-        source="flow",
-        intent=LanguageIntent.LANGUAGE_OUT,
-        session_id="test_session",
-        turn_id="test_turn",
-        data=BotOutput(
-            message_type=MessageType.DOCUMENT,
-            message_data=MessageData(
-                message_text="document text", media_url="http://example.com/doc.pdf"
-            ),
+    turn_id = "turn1"
+    preferred_language = LanguageCodes.EN
+    message = Message(
+        message_type=MessageType.DOCUMENT,
+        document=DocumentMessage(
+            caption="doc_caption",
+            url="http://example.com/doc.pdf",
+            name="doc.pdf",
         ),
     )
-    result = await handle_output(Language.EN, language_input)
+    result = await handle_output(turn_id, preferred_language, message)
+
+    assert isinstance(result, list)
     assert len(result) == 1
-    assert result[0].data.message_type == MessageType.DOCUMENT
-    assert result[0].data.message_data.message_text == "translated_document text"
-    assert result[0].data.message_data.media_url == "http://example.com/doc.pdf"
+    assert isinstance(result[0], Channel)
+    assert result[0].turn_id == turn_id
+    assert result[0].bot_output is not None
+    assert result[0].bot_output.message_type == MessageType.DOCUMENT
+    assert result[0].bot_output.document is not None
+    assert result[0].bot_output.document.caption == "translated_doc_caption"
+    assert result[0].bot_output.document.url == "http://example.com/doc.pdf"
+    assert result[0].bot_output.document.name == "doc.pdf"
 
 
 @pytest.mark.asyncio
 async def test_handle_output_image_message():
     mock_extension.reset_mock()
-    language_input = LanguageInput(
-        source="flow",
-        intent=LanguageIntent.LANGUAGE_OUT,
-        session_id="test_session",
-        turn_id="test_turn",
-        data=BotOutput(
-            message_type=MessageType.IMAGE,
-            message_data=MessageData(
-                message_text="image text", media_url="http://example.com/image.png"
-            ),
+    turn_id = "turn1"
+    preferred_language = LanguageCodes.EN
+    message = Message(
+        message_type=MessageType.IMAGE,
+        image=ImageMessage(
+            caption="image_caption",
+            url="http://example.com/image.jpg",
         ),
     )
-    result = await handle_output(Language.EN, language_input)
+    result = await handle_output(turn_id, preferred_language, message)
+
+    assert isinstance(result, list)
     assert len(result) == 1
-    assert result[0].data.message_type == MessageType.IMAGE
-    assert result[0].data.message_data.message_text == "translated_image text"
-    assert result[0].data.message_data.media_url == "http://example.com/image.png"
+    assert isinstance(result[0], Channel)
+    assert result[0].turn_id == turn_id
+    assert result[0].bot_output is not None
+    assert result[0].bot_output.message_type == MessageType.IMAGE
+    assert result[0].bot_output.image is not None
+    assert result[0].bot_output.image.caption == "translated_image_caption"
+    assert result[0].bot_output.image.url == "http://example.com/image.jpg"
 
 
 @pytest.mark.asyncio
-async def test_handle_output_interactive_message():
+async def test_handle_output_button_message():
     mock_extension.reset_mock()
-    language_input = LanguageInput(
-        source="flow",
-        intent=LanguageIntent.LANGUAGE_OUT,
-        session_id="test_session",
-        turn_id="test_turn",
-        data=BotOutput(
-            message_type=MessageType.INTERACTIVE,
-            message_data=MessageData(message_text="interactive text"),
-            options_list=[
-                OptionsListType(id="1", title="Option 1"),
-                OptionsListType(id="2", title="Option 2"),
+    turn_id = "turn1"
+    preferred_language = LanguageCodes.EN
+    message = Message(
+        message_type=MessageType.BUTTON,
+        button=ButtonMessage(
+            body="button_text",
+            header="button_header",
+            footer="button_footer",
+            options=[
+                Option(option_id="option_1", option_text="Option 1"),
+                Option(option_id="option_2", option_text="Option 2"),
             ],
-            header="header text",
-            footer="footer text",
         ),
     )
-    result = await handle_output(Language.EN, language_input)
+    result = await handle_output(turn_id, preferred_language, message)
+    assert isinstance(result, list)
     assert len(result) == 2
-    assert result[0].data.message_type == MessageType.AUDIO
-    assert result[0].data.message_data.media_url == "https://storage.url/test_audio.ogg"
-    assert result[1].data.message_type == MessageType.INTERACTIVE
-    assert result[1].data.message_data.message_text == "translated_interactive text"
-    assert result[1].data.header == "translated_header text"
-    assert result[1].data.footer == "translated_footer text"
-    assert result[1].data.options_list[0].title == "translated_Option 1"
-    assert result[1].data.options_list[1].title == "translated_Option 2"
+    assert isinstance(result[0], Channel)
+    assert result[0].turn_id == turn_id
+    assert result[0].bot_output is not None
+    assert result[0].bot_output.message_type == MessageType.BUTTON
+    assert result[0].bot_output.button is not None
+    assert result[0].bot_output.button.body == "translated_button_text"
+    assert result[0].bot_output.button.header == "translated_button_header"
+    assert result[0].bot_output.button.footer == "translated_button_footer"
+    assert len(result[0].bot_output.button.options) == 2
+    assert result[0].bot_output.button.options[0].option_id == "option_1"
+    assert result[0].bot_output.button.options[0].option_text == "translated_Option 1"
+    assert result[0].bot_output.button.options[1].option_id == "option_2"
+    assert result[0].bot_output.button.options[1].option_text == "translated_Option 2"
+    assert isinstance(result[1], Channel)
+    assert result[1].turn_id == turn_id
+    assert result[1].bot_output is not None
+    assert result[1].bot_output.message_type == MessageType.AUDIO
+    assert result[1].bot_output.audio is not None
+    assert result[1].bot_output.audio.media_url == "https://storage.url/test_audio.ogg"
