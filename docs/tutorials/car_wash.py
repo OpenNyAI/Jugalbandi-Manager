@@ -472,9 +472,8 @@ class CarWashDealerFSM(AbstractFSM):
         self.status = Status.WAIT_FOR_USER_INPUT
 
     def on_enter_date_logic(self):
-    def on_enter_date_logic(self):
         self.status = Status.WAIT_FOR_ME
-        task = f"The user provides a date or day, convert it into a format of YYYY-MM-DD. Today's date is {datetime.now().strftime("%Y-%m-%d")} & Day is {datetime.now().strftime("%A")}Format and modify the user input into the format required and if you could not be decide return None. Based on the user's input, return the output in json format: {{'result': <input>}}."
+        task = f"The user provides a date or day, convert it into a format of YYYY-MM-DD. Today's date is {datetime.now().strftime("%Y-%m-%d")} & Day is {datetime.now().strftime("%A")}. Format and modify the user input into the format required and if you could not be decide return None. Based on the user's input, return the output in json format: {{'result': <input>}}."
 
         result = Parser.parse_user_input(
             task,
