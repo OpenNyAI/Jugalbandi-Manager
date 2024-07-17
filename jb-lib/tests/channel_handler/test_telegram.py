@@ -59,35 +59,35 @@ def sample_user():
 
 @pytest.fixture
 def sample_message_text():
-    return test_messages["text_message"][0]
+    return test_output_messages["text_message"][0]
 
 
 @pytest.fixture
 def sample_message_audio():
-    return test_messages["audio_message"][0]
+    return test_output_messages["audio_message"][0]
 
 
 @pytest.fixture
 def sample_message_document():
-    return test_messages["document_message"][0]
+    return test_output_messages["document_message"][0]
 
 
 @pytest.fixture
 def sample_message_image():
-    return test_messages["image_message"][0]
+    return test_output_messages["image_message"][0]
 
 
 @pytest.fixture
 def sample_message_list():
-    return test_messages["list_message"][0]
+    return test_output_messages["list_message"][0]
 
 
 @pytest.fixture
 def sample_message_button():
-    return test_messages["button_message"][0]
+    return test_output_messages["button_message"][0]
 
 
-test_messages = {
+test_output_messages = {
     "text_message": (
         Message(
             message_type=MessageType.TEXT,
@@ -286,17 +286,161 @@ test_messages = {
     ),
 }
 
+test_input_messages = {
+    "text_message": (
+        {
+            "update_id": 654987321,
+            "message": {
+                "message_id": 1234,
+                "from": {
+                    "id": 123456789,
+                    "is_bot": False,
+                    "first_name": "test_telegram_first_name",
+                    "last_name": "test_telegram_last_name",
+                    "username": "test_telegram_username",
+                    "language_code": "en",
+                },
+                "chat": {
+                    "id": 123456789,
+                    "first_name": "test_telegram_first_name",
+                    "last_name": "test_telegram_last_name",
+                    "username": "test_telegram_username",
+                    "type": "private",
+                },
+                "date": 1721213755,
+                "text": "Hi",
+            },
+        },
+        {
+            "data": {"message_id": 1234, "date": 1721213755, "text": "Hi"},
+            "user_identifier": "123456789",
+            "user_name": "test_telegram_username",
+        },
+    ),
+    "audio_message": (
+        {
+            "update_id": 654987321,
+            "message": {
+                "message_id": 1235,
+                "from": {
+                    "id": 123456789,
+                    "is_bot": False,
+                    "first_name": "test_telegram_first_name",
+                    "last_name": "test_telegram_last_name",
+                    "username": "test_telegram_username",
+                    "language_code": "en",
+                },
+                "chat": {
+                    "id": 123456789,
+                    "first_name": "test_telegram_first_name",
+                    "last_name": "test_telegram_last_name",
+                    "username": "test_telegram_username",
+                    "type": "private",
+                },
+                "date": 1721213963,
+                "voice": {
+                    "duration": 2,
+                    "mime_type": "audio/ogg",
+                    "file_id": "test_file_id",
+                    "file_unique_id": "test_file_unique_id",
+                    "file_size": 45368,
+                },
+            },
+        },
+        {
+            "data": {
+                "message_id": 1235,
+                "date": 1721213963,
+                "voice": {
+                    "duration": 2,
+                    "mime_type": "audio/ogg",
+                    "file_id": "test_file_id",
+                    "file_unique_id": "test_file_unique_id",
+                    "file_size": 45368,
+                },
+            },
+            "user_identifier": "123456789",
+            "user_name": "test_telegram_username",
+        },
+    ),
+    "interactive_reply_message": (
+        {
+            "update_id": 654987321,
+            "callback_query": {
+                "id": "test_callback_id",
+                "from": {
+                    "id": 123456789,
+                    "is_bot": False,
+                    "first_name": "test_telegram_first_name",
+                    "last_name": "test_telegram_last_name",
+                    "username": "test_telegram_username",
+                    "language_code": "en",
+                },
+                "message": {
+                    "message_id": 1236,
+                    "from": {
+                        "id": 9876543210,
+                        "is_bot": True,
+                        "first_name": "test_bot_name",
+                        "username": "test_bot_username",
+                    },
+                    "chat": {
+                        "id": 123456789,
+                        "first_name": "test_telegram_first_name",
+                        "last_name": "test_telegram_last_name",
+                        "username": "test_telegram_username",
+                        "type": "private",
+                    },
+                    "date": 1721213761,
+                    "text": "Please select your preferred option",
+                    "reply_markup": {
+                        "inline_keyboard": [
+                            [{"text": "Option 1", "callback_data": "option_1"}],
+                            [{"text": "Option 2", "callback_data": "option_2"}],
+                        ]
+                    },
+                },
+                "chat_instance": "-3027013130390797136",
+                "data": "option_1",
+            },
+        },
+        {
+            "data": {
+                "id": "test_callback_id",
+                "chat_instance": "-3027013130390797136",
+                "data": "option_1",
+            },
+            "user_identifier": "123456789",
+            "user_name": "test_telegram_username",
+        },
+    ),
+}
 
-def test_is_valid_data():
-    valid_data = {"update_id": 12345, "message": {"text": "Hello"}}
-    invalid_data = {"update_id": 12345}
 
-    assert TelegramHandler.is_valid_data(valid_data) is True
-    assert TelegramHandler.is_valid_data(invalid_data) is False
+@pytest.mark.parametrize(
+    "message",
+    list(test_input_messages.values()),
+    ids=list(test_input_messages.keys()),
+)
+def test_is_valid_data(message):
+    assert TelegramHandler.is_valid_data(message[0]) is True
 
 
 def test_get_channel_name():
     assert TelegramHandler.get_channel_name() == "telegram"
+
+
+@pytest.mark.parametrize(
+    "message",
+    list(test_input_messages.values()),
+    ids=list(test_input_messages.keys()),
+)
+def test_process_message(message):
+    channel_data = [msg for msg in TelegramHandler.process_message(message[0])]
+    assert len(channel_data) == 1
+    assert channel_data[0].message_data == message[1]["data"]
+    assert channel_data[0].user.user_identifier == message[1]["user_identifier"]
+    assert channel_data[0].user.user_name == message[1]["user_name"]
 
 
 @patch("requests.get")
@@ -367,7 +511,9 @@ def test_parse_button_message(sample_channel, sample_user, sample_message_button
 
 
 @pytest.mark.parametrize(
-    "message", list(test_messages.values()), ids=list(test_messages.keys())
+    "message",
+    list(test_output_messages.values()),
+    ids=list(test_output_messages.keys()),
 )
 def test_send_message(message, sample_channel, sample_user):
     mock_post = MagicMock()
