@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request
 import uuid
-from ...crud import get_chat_history, get_bot_list, get_bot_chat_sessions
+from ...crud import get_chat_history, get_bot_list, get_bot_chat_sessions, create_secret, update_secret, get_latest_secret_key
 from ...handlers.v1 import handle_callback, handle_webhook
 from ...handlers.v1.bot_handlers import (
     handle_activate_bot,
@@ -32,9 +32,27 @@ async def get_bots():
     return bots
 
 @router.get("/secret")
-async def generate_secret():
-    secret = str(uuid.uuid4())
-    return {"secret": secret}
+async def get_uuid():
+    key = get_latest_secret_key()
+    if key is None:
+        key = str(uuid.uuid4())
+        try:
+            create_secret(key)
+        except Exception as e:
+            raise HTTPException(
+                status_code=500, detail=f"Error adding secret: {e}"
+            ) from e
+    return {"secret": key}
+
+@router.put("/refresh-key")
+async def refresh_secret_key():
+    secret_value = str(uuid.uuid4())
+    success = await update_secret(secret_value)
+    
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to update secret key")
+    
+    return {"status": "success"}
 
 @router.post("/bot/install")
 async def install_bot(install_content: JBBotCode):

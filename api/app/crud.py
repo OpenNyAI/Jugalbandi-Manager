@@ -2,6 +2,7 @@ from typing import Sequence
 import uuid
 from sqlalchemy import select, update
 from sqlalchemy.orm import joinedload
+from sqlalchemy.sql import func
 
 from lib.db_session_handler import DBSessionHandler
 from lib.models import (
@@ -242,3 +243,42 @@ async def update_channel_by_bot_id(bot_id: str, data):
             await session.execute(stmt)
             await session.commit()
             return bot_id
+
+async def create_secret(secret_value):
+    async with DBSessionHandler.get_async_session() as session:
+        async with session.begin():
+            new_secret = JBSecret(
+                id=str(uuid.uuid4()),
+                secret_value=secret_value
+            )
+            session.add(new_secret)
+            await session.commit()
+            return new_secret.id
+
+                
+async def check_secret_key(secret_key):
+    async with DBSessionHandler.get_async_session() as session:
+        query = select(JBSecret).filter_by(id=secret_key)
+        result = await session.execute(query)
+        matched_secret = await result.fetchone()
+        return matched_secret is not None
+    return False
+
+async def update_secret(new_secret_value):
+    async with DBSessionHandler.get_async_session() as session:
+        async with session.begin():
+            latest_secret = await get_latest_secret()
+            if latest_secret:
+                latest_secret.secret_value = new_secret_value
+                latest_secret.created_at = func.now()
+                await session.commit()
+                return True
+            return False
+
+async def get_latest_secret_key():
+    async with DBSessionHandler.get_async_session() as session:
+        query = select(JBSecret.id).order_by(JBSecret.created_at.desc()).limit(1)
+        result = await session.execute(query)
+        latest_secret_key = await result.scalar_one()
+        return latest_secret_key
+    return None        

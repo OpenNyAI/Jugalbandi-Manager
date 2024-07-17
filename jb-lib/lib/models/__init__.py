@@ -293,6 +293,14 @@ class JBForm(Base):
         onupdate=func.now(),
     )
 
+class JBSecret(Base):
+    __tablename__ = "jb_secret"
+
+    id = Column(String, primary_key=True)
+    secret_value = Column(String, nullable=False)
+    created_at = Column(
+        TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
+    )
 
 # class LangchainPgCollection(Base):
 #     __tablename__ = 'langchain_pg_collection'
