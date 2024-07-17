@@ -67,12 +67,15 @@ Copy the tunnel url from the loophole shell and add it to `PUBLIC_URL_PREFIX` in
 ```
 PUBLIC_URL_PREFIX= # Set Tunnel URL if using local storage
 ```
-
-7.  Start JB Manager
+7. Start Kafka and Postgres services using the following command.
+```bash
+$ bash scripts/run.sh kafka postgres
+```
+8.  Start JB Manager
 ```bash
 $ bash scripts/run.sh --stage api channel language flow frontend
 ```
-8. Once the services are up and running, you can access the JB Manager UI at [http://localhost:4173](http://localhost:4173).
+9. Once the services are up and running, you can access the JB Manager UI at [http://localhost:4173](http://localhost:4173).
 
 ## Bot Installation and Go Live
 
