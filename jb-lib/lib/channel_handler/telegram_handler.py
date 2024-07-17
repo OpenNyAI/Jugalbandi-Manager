@@ -29,8 +29,6 @@ from ..data_models import (
 )
 from ..models import JBChannel, JBUser, JBForm
 
-storage = StorageHandler.get_sync_instance()
-
 
 class TelegramHandler(RestChannelHandler):
 
@@ -64,7 +62,7 @@ class TelegramHandler(RestChannelHandler):
                 bot_identifier=str(bot_identifier),
                 user=User(
                     user_identifier=str(user_identifier),
-                    user_name=from_details["username"],
+                    user_name=from_details.get("username", "Dummy"),
                     user_phone=str(user_identifier),
                 ),
                 message_data=message_data,
@@ -94,6 +92,7 @@ class TelegramHandler(RestChannelHandler):
             )
             audio_bytes = base64.b64decode(audio_content)
             audio_file_name = f"{turn_id}.ogg"
+            storage = StorageHandler.get_sync_instance()
             storage.write_file(audio_file_name, audio_bytes, "audio/ogg")
             storage_url = storage.public_url(audio_file_name)
 
@@ -108,6 +107,7 @@ class TelegramHandler(RestChannelHandler):
             )
             file_bytes = base64.b64decode(file_content)
             file_name = message_data["file_name"]
+            storage = StorageHandler.get_sync_instance()
             storage.write_file(file_name, file_bytes, "application/octet-stream")
             storage_url = storage.public_url(file_name)
 
@@ -122,6 +122,7 @@ class TelegramHandler(RestChannelHandler):
             file_content = cls.telegram_download_photo(channel=channel, file_id=file_id)
             file_bytes = base64.b64decode(file_content)
             file_name = f"{turn_id}.jpg"
+            storage = StorageHandler.get_sync_instance()
             storage.write_file(file_name, file_bytes, "image/jpeg")
             storage_url = storage.public_url(file_name)
 

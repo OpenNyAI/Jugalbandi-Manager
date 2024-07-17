@@ -99,6 +99,28 @@ async def test_process_incoming_audio_message():
     )
     mock_wa_get_user_audio = MagicMock(return_value=base64.b64encode(b"audio_bytes"))
 
+    bot_input = RestBotInput(
+        channel_name="pinnacle_whatsapp",
+        headers={},
+        query_params={},
+        data={
+            "timestamp": "1714990325",
+            "audio": {
+                "mime_type": "audio/ogg; codecs=opus",
+                "sha256": "random_sha256_value",
+                "id": "audio_id1",
+                "voice": True,
+            },
+            "type": "audio",
+        },
+    )
+    message = Channel(
+        source="api",
+        turn_id="test_turn_id",
+        intent=ChannelIntent.CHANNEL_IN,
+        bot_input=bot_input,
+    )
+
     with patch(
         "src.handlers.incoming.get_channel_by_turn_id", mock_get_channel_by_turn_id
     ):
@@ -106,30 +128,13 @@ async def test_process_incoming_audio_message():
             "lib.channel_handler.pinnacle_whatsapp_handler.PinnacleWhatsappHandler.wa_download_audio",
             mock_wa_get_user_audio,
         ):
-            bot_input = RestBotInput(
-                channel_name="pinnacle_whatsapp",
-                headers={},
-                query_params={},
-                data={
-                    "timestamp": "1714990325",
-                    "audio": {
-                        "mime_type": "audio/ogg; codecs=opus",
-                        "sha256": "random_sha256_value",
-                        "id": "audio_id1",
-                        "voice": True,
-                    },
-                    "type": "audio",
-                },
-            )
-            message = Channel(
-                source="api",
-                turn_id="test_turn_id",
-                intent=ChannelIntent.CHANNEL_IN,
-                bot_input=bot_input,
-            )
-            result = await process_incoming_messages(
-                turn_id=message.turn_id, bot_input=bot_input
-            )
+            with patch(
+                "lib.file_storage.StorageHandler.get_sync_instance",
+                return_value=mock_sync_storage_instance,
+            ):
+                result = await process_incoming_messages(
+                    turn_id=message.turn_id, bot_input=bot_input
+                )
         mock_sync_write_file.assert_called_once_with(
             "test_turn_id.ogg", b"audio_bytes", "audio/ogg"
         )

@@ -2,7 +2,6 @@ import os
 import logging
 from lib.kafka_utils import KafkaProducer, KafkaException
 from lib.data_models import Flow, Channel
-from lib.channel_handler import PinnacleWhatsappHandler, TelegramHandler
 
 logger = logging.getLogger("jb-manager-api")
 
