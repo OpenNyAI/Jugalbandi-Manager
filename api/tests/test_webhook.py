@@ -3,7 +3,6 @@ from unittest.mock import patch, MagicMock
 import pytest
 
 from lib.data_models import Flow, FlowIntent, CallbackType
-
 from app.handlers.v1 import handle_webhook
 
 

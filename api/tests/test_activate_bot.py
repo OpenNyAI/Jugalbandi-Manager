@@ -2,7 +2,6 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from app.jb_schema import JBBotActivate, JBBotChannels
 from lib.models import JBBot, JBChannel
-
 from app.handlers.v1.bot_handlers import handle_activate_bot
 
 

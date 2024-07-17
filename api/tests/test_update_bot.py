@@ -1,6 +1,5 @@
 from unittest.mock import MagicMock, patch, Mock
 import pytest
-
 from app.handlers.v1.bot_handlers import handle_update_bot
 
 mock_encryption_handler = MagicMock()
