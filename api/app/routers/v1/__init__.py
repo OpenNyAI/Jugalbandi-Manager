@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Request
+import uuid
 from ...crud import get_chat_history, get_bot_list, get_bot_chat_sessions
 from ...handlers.v1 import handle_callback, handle_webhook
 from ...handlers.v1.bot_handlers import (
@@ -30,6 +31,10 @@ async def get_bots():
         bot.status = status
     return bots
 
+@router.get("/secret")
+async def generate_secret():
+    secret = str(uuid.uuid4())
+    return {"secret": secret}
 
 @router.post("/bot/install")
 async def install_bot(install_content: JBBotCode):
@@ -94,6 +99,7 @@ async def add_bot_configuraton(bot_id: str, request: Request):
 # get all messages related to a session
 @router.get("/chats/{bot_id}/sessions/{session_id}")
 async def get_session(bot_id: str, session_id: str):
+    print("session_id", session_id)
     sessions = await get_bot_chat_sessions(bot_id, session_id)
     return sessions
 

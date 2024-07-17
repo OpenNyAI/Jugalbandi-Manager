@@ -12,6 +12,21 @@ interface props {
 
 }
 
+async function fetchAndCopySecret() {
+    const url = `${APIHOST}/v1/secret`;
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        const secret = data.secret;
+        await navigator.clipboard.writeText(secret);
+        alert("JB Manager secret copied!");
+    } catch (error) {
+        console.error("Error fetching secret:", error);
+        alert("Failed to copy secret");
+    }
+}
+
+
 export const Home:React.FunctionComponent = (props:props) => {
     const [refreshBots, incrementrefreshBots] = React.useState(0);
     const [projects, setProjects] = React.useState([]);
@@ -103,17 +118,19 @@ export const Home:React.FunctionComponent = (props:props) => {
                     </div>
                 </div>
                 <div className='value'>
-                    <div onClick={() => { navigator.clipboard.writeText("https://bandhujbstorage.z29.web.core.windows.net/"); alert("Installation URL copied") }}>
+                    <div onClick={() => { navigator.clipboard.writeText(import.meta.env.VITE_SERVER_HOST + "/install"); alert("Installation URL copied") }}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
                             <path d="M11.75 2C9.95507 2 8.5 3.45508 8.5 5.25V23.25C8.5 25.0449 9.95507 26.5 11.75 26.5H23.75C25.5449 26.5 27 25.0449 27 23.25V5.25C27 3.45507 25.5449 2 23.75 2H11.75ZM10.5 5.25C10.5 4.55964 11.0596 4 11.75 4H23.75C24.4404 4 25 4.55964 25 5.25V23.25C25 23.9404 24.4404 24.5 23.75 24.5H11.75C11.0596 24.5 10.5 23.9404 10.5 23.25V5.25ZM7 5.74902C5.82552 6.2388 5 7.39797 5 8.74994V23.4999C5 27.0898 7.91015 29.9999 11.5 29.9999H20.25C21.6021 29.9999 22.7613 29.1743 23.2511 27.9996H20.2786C20.2691 27.9998 20.2596 27.9999 20.25 27.9999H11.5C9.01472 27.9999 7 25.9852 7 23.4999V5.74902Z" fill="#8B8B8B"/>
                         </svg>
                         {import.meta.env.VITE_SERVER_HOST+"/install"}
                     </div>
                     <div>
+                        <div onClick={() => { fetchAndCopySecret()}}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
                             <path d="M11.75 2C9.95507 2 8.5 3.45508 8.5 5.25V23.25C8.5 25.0449 9.95507 26.5 11.75 26.5H23.75C25.5449 26.5 27 25.0449 27 23.25V5.25C27 3.45507 25.5449 2 23.75 2H11.75ZM10.5 5.25C10.5 4.55964 11.0596 4 11.75 4H23.75C24.4404 4 25 4.55964 25 5.25V23.25C25 23.9404 24.4404 24.5 23.75 24.5H11.75C11.0596 24.5 10.5 23.9404 10.5 23.25V5.25ZM7 5.74902C5.82552 6.2388 5 7.39797 5 8.74994V23.4999C5 27.0898 7.91015 29.9999 11.5 29.9999H20.25C21.6021 29.9999 22.7613 29.1743 23.2511 27.9996H20.2786C20.2691 27.9998 20.2596 27.9999 20.25 27.9999H11.5C9.01472 27.9999 7 25.9852 7 23.4999V5.74902Z" fill="#8B8B8B"/>
                         </svg>
                         ***************************
+                        </div>
                     </div>
                 </div>
             </div>
