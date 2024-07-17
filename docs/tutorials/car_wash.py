@@ -321,7 +321,7 @@ class CarWashDealerFSM(AbstractFSM):
         self.plugins: Dict[str, AbstractFSM] = {}
         self.variables = self.variable_names()
         super().__init__(send_message=send_message)
-
+    
     def standard_ask_again(self, message=None):
         self.status = Status.WAIT_FOR_ME
         if message is None:
