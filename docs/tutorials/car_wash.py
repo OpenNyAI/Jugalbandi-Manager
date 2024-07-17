@@ -14,7 +14,7 @@ from jb_manager_bot.data_models import (
     Option,
     ImageMessage,
 )
-
+from datetime import datetime
 from jb_manager_bot.parsers import Parser, OptionParser
 
 
@@ -321,7 +321,7 @@ class CarWashDealerFSM(AbstractFSM):
         self.plugins: Dict[str, AbstractFSM] = {}
         self.variables = self.variable_names()
         super().__init__(send_message=send_message)
-    
+
     def standard_ask_again(self, message=None):
         self.status = Status.WAIT_FOR_ME
         if message is None:
@@ -473,7 +473,7 @@ class CarWashDealerFSM(AbstractFSM):
 
     def on_enter_date_logic(self):
         self.status = Status.WAIT_FOR_ME
-        task = f"The user provides a date, convert it into a format of YYYY-MM-DD. Format and modify the user input into the format required and if you could not be decide return None. Based on the user's input, return the output in json format: {{'result': <input>}}"
+        task = f"The user provides a date or day, convert it into a format of YYYY-MM-DD. Today's date is {datetime.now().strftime("%Y-%m-%d")} & Day is {datetime.now().strftime("%A")}Format and modify the user input into the format required and if you could not be decide return None. Based on the user's input, return the output in json format: {{'result': <input>}}."
 
         result = Parser.parse_user_input(
             task,
@@ -522,7 +522,6 @@ class CarWashDealerFSM(AbstractFSM):
         )
         self.status = Status.MOVE_FORWARD
 
-
     def on_enter_time_input(self):
         self.status = Status.WAIT_FOR_ME
         self.status = Status.WAIT_FOR_USER_INPUT
@@ -546,7 +545,7 @@ class CarWashDealerFSM(AbstractFSM):
             model=self.credentials["FAST_MODEL"],
         )
         if result.isdigit():
-            result = slots[int(result) - 1].option_text 
+            result = slots[int(result) - 1].option_text
             setattr(self.variables, "appointment_time", result)
         else:
             setattr(self.variables, "appointment_time", None)
@@ -573,7 +572,11 @@ class CarWashDealerFSM(AbstractFSM):
             )
         )
 
-        response = availability_plugin(self.variables.selected_service, self.variables.appointment_date, self.variables.appointment_time)
+        response = availability_plugin(
+            self.variables.selected_service,
+            self.variables.appointment_date,
+            self.variables.appointment_time,
+        )
         self.variables.booking_status = response["booking_status"]
         self.variables.appointment_image = response["appointment_image"]
         self.variables.error_code = response["error_code"]
