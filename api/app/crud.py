@@ -2,7 +2,6 @@ from typing import Sequence
 import uuid
 from sqlalchemy import select, update
 from sqlalchemy.orm import joinedload
-from sqlalchemy.sql import func
 
 from lib.db_session_handler import DBSessionHandler
 from lib.models import (
