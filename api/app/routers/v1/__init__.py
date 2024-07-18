@@ -17,6 +17,7 @@ router = APIRouter(
     tags=["v1"],
 )
 
+JBMANAGER_KEY = str(uuid.uuid4())
 
 @router.get("/bots")
 async def get_bots():
@@ -33,29 +34,26 @@ async def get_bots():
 
 @router.get("/secret")
 async def get_uuid():
-    key = get_latest_secret_key()
-    if key is None:
-        key = str(uuid.uuid4())
-        try:
-            create_secret(key)
-        except Exception as e:
-            raise HTTPException(
-                status_code=500, detail=f"Error adding secret: {e}"
-            ) from e
-    return {"secret": key}
+    return {"secret": JBMANAGER_KEY}
+
 
 @router.put("/refresh-key")
 async def refresh_secret_key():
-    secret_value = str(uuid.uuid4())
-    success = await update_secret(secret_value)
-    
-    if not success:
-        raise HTTPException(status_code=500, detail="Failed to update secret key")
-    
+    JBMANAGER_KEY = str(uuid.uuid4())
     return {"status": "success"}
 
 @router.post("/bot/install")
-async def install_bot(install_content: JBBotCode):
+async def install_bot(request:Request, install_content: JBBotCode):
+    try:
+        request_body = await request.json()
+        print(f"request_body: {request_body}")
+    except Exception as e:
+        print(f"Error: {e}")
+    
+    # request_body bearer token
+    # match with JBMANAGER_KEY
+    # if match, proceed
+    
     flow_input = await handle_install_bot(install_content)
     try:
         produce_message(flow_input)
