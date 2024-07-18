@@ -20,6 +20,7 @@ pydantic = "^2.5.3"
 sqlalchemy = "^2.0.25"
 psycopg2-binary = "^2.9.9"
 cryptography = "^42.0.4"
+python-multipart = "^0.0.9"
 
 
 [tool.poetry.group.dev.dependencies]

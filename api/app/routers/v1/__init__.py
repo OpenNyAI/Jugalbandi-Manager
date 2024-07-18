@@ -1,17 +1,16 @@
-from fastapi import APIRouter, HTTPException, Request, UploadFile
 from typing import List
-from ...crud import get_chat_history, get_bot_list, get_bot_chat_sessions
+
+from fastapi import APIRouter, HTTPException, Request, UploadFile
+from lib.data_models.indexer import Indexer, SerializableUploadFile, IndexType
+
+from ...crud import get_bot_chat_sessions, get_bot_list, get_chat_history
+from ...extensions import produce_message
 from ...handlers.v1 import handle_callback, handle_webhook
-from ...handlers.v1.bot_handlers import (
-    handle_activate_bot,
-    handle_deactivate_bot,
-    handle_delete_bot,
-    handle_update_bot,
-    handle_install_bot,
-)
-from ...jb_schema import JBBotCode, JBBotActivate
-from ...extensions import produce_message, storage
-from lib.data_models.indexer import Indexer
+from ...handlers.v1.bot_handlers import (handle_activate_bot,
+                                         handle_deactivate_bot,
+                                         handle_delete_bot, handle_install_bot,
+                                         handle_update_bot)
+from ...jb_schema import JBBotActivate, JBBotCode
 
 router = APIRouter(
     prefix="/v1",
@@ -136,18 +135,14 @@ async def plugin_webhook(request: Request):
 
 
 @router.post("/index-data")
-async def index_data(request: Request, collection_name: str, files: List[UploadFile]):
-    file_name_list = [file.filename for file in files]
-    for file in files:
-        content = await file.read()
-        await storage.write_file(file_path=file.filename, file_content=content, mime_type=file.content_type)
-
+async def index_data(request: Request, indexer_type: IndexType, collection_name: str, files: List[UploadFile]):
+    serializable_files = [SerializableUploadFile.from_upload_file(file) for file in files]
     indexer_input = Indexer(
+        type=indexer_type.value,
         collection_name=collection_name,
-        files=file_name_list,
+        files=serializable_files,
     )
-    
     # write to indexer
-    produce_message(indexer_input.model_dump_json(), topic="indexer")
+    produce_message(indexer_input)
 
-    return {"message": "Files indexed successfully", "collection_name": collection_name, "files": file_name_list}
+    return {"message": f"Indexing started for the files in {collection_name}"}

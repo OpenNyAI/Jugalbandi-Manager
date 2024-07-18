@@ -13,7 +13,8 @@ from langchain.docstore.document import Document
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import PGVector
 from langchain_openai import AzureOpenAIEmbeddings, OpenAIEmbeddings
-from lib.data_models import IndexerInput
+from lib.data_models import Indexer
+from lib.file_storage import StorageHandler
 from lib.kafka_utils import KafkaConsumer
 from model import InternalServerException
 from r2r import R2R, EmbeddingConfig, R2RBuilder
@@ -72,7 +73,7 @@ class TextConverter:
         return parse_file(filepath)
 
 
-class Indexer:
+class DataIndexer:
     def __init__(self):
         self.splitter = RecursiveCharacterTextSplitter(
             chunk_size=4 * 1024,
@@ -85,8 +86,13 @@ class Indexer:
         self.db_host = os.getenv("POSTGRES_DATABASE_HOST")
         self.db_port = os.getenv("POSTGRES_DATABASE_PORT")
         self.db_url = f"postgresql+psycopg2://{self.db_user}:{self.db_password}@{self.db_host}:{self.db_port}/{self.db_name}"
+        os.environ["POSTGRES_DBNAME"] = self.db_name
+        os.environ["POSTGRES_USER"] = self.db_user
+        os.environ["POSTGRES_PASSWORD"] = self.db_password
+        os.environ["POSTGRES_HOST"] = self.db_host
+        os.environ["POSTGRES_PORT"] = self.db_port
         self.text_converter = TextConverter()
-        self.collection_name = os.getenv("POSTGRES_VECS_COLLECTION")
+        self.storage = StorageHandler.get_async_instance()
 
     async def create_pg_vector_index_if_not_exists(self):
         connection = await asyncpg.connect(
@@ -107,14 +113,18 @@ class Indexer:
         finally:
             await connection.close()
 
-    async def index(self, indexer_input: IndexerInput):
+    async def index(self, indexer_input: Indexer):
         source_files = []
         source_chunks = []
         counter = 0
         for file in indexer_input.files:
-            file_path = os.path.join(os.environ["DOCUMENT_LOCAL_STORAGE_PATH"], file)
-            print("file_path", file_path)
-            if os.getenv("INDEXER_TYPE") == "r2r":
+            await self.storage.write_file(
+                file_path=file.filename,
+                file_content=file.to_bytes(),
+                mime_type=file.content_type,
+            )
+            file_path = await self.storage._download_file_to_temp_storage(file.filename)
+            if indexer_input.type == "r2r":
                 with open(file_path, "rb") as file_reader:
                     file_content = file_reader.read()
                 source_files.append(
@@ -129,40 +139,40 @@ class Indexer:
                 for chunk in self.splitter.split_text(content):
                     new_metadata = {
                         "chunk-id": str(counter),
-                        "document_name": file,
+                        "document_name": file.filename,
                     }
                     source_chunks.append(
                         Document(page_content=chunk, metadata=new_metadata)
                     )
                     counter += 1
         try:
-            if os.getenv("INDEXER_TYPE") == "r2r":
-                r2r_app = self.get_r2r()
+            if indexer_input.type == "r2r":
+                os.environ["POSTGRES_VECS_COLLECTION"] = indexer_input.collection_name
+                r2r_app = await self.get_r2r()
                 await r2r_app.engine.aingest_files(files=source_files)
             else:
-                embeddings = self.get_embeddings()
-                db = PGVector.from_documents(
+                embeddings = await self.get_embeddings()
+                vector_db = PGVector.from_documents(
                     embedding=embeddings,
                     documents=source_chunks,
                     collection_name=indexer_input.collection_name,
                     connection_string=self.db_url,
                     pre_delete_collection=True,
                 )
-                self.collection_name = db.collection_name
                 await self.create_pg_vector_index_if_not_exists()
             print(
-                f"Embeddings have been created for the collection: {self.collection_name}"
+                f"Embeddings have been created for the collection: {indexer_input.collection_name}"
             )
         except Exception as e:
             raise InternalServerException(e.__str__())
 
-    def get_r2r(self):
+    async def get_r2r(self):
         if os.getenv("OPENAI_API_TYPE") == "azure":
             embedding_provider = AzureOpenAIEmbeddingProvider(
                 EmbeddingConfig(
-                    provider="azure-openai",
-                    base_model="text-embedding-3-large",
-                    base_dimension=512,
+                    provider="azure-openai",  # provider name for azure
+                    base_model=os.getenv("AZURE_EMBEDDING_MODEL_NAME"),
+                    base_dimension=512,  # default parameter
                 )
             )
             return (
@@ -172,10 +182,10 @@ class Indexer:
             )
         return R2R()
 
-    def get_embeddings(self):
+    async def get_embeddings(self):
         if os.getenv("OPENAI_API_TYPE") == "azure":
             return AzureOpenAIEmbeddings(
-                model="text-embedding-ada-002",
+                model=os.getenv("AZURE_EMBEDDING_MODEL_NAME"),
                 azure_deployment=os.getenv("AZURE_DEPLOYMENT_NAME"),
                 azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
                 openai_api_type=os.getenv("OPENAI_API_TYPE"),
@@ -184,11 +194,11 @@ class Indexer:
         return OpenAIEmbeddings(client="")
 
 
-indexer = Indexer()
+indexer = DataIndexer()
 while True:
     message = consumer.receive_message(kafka_topic)
-    print("Indexer Message:", message)
+    # print("Indexer Message:", message)
     data = json.loads(message)
-    indexer_input = IndexerInput(**data)
+    indexer_input = Indexer(**data)
 
     asyncio.run(indexer.index(indexer_input))

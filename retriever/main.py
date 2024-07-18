@@ -8,7 +8,7 @@ import traceback
 from dotenv import load_dotenv
 from langchain_community.vectorstores import PGVector
 from langchain_openai import AzureOpenAIEmbeddings, OpenAIEmbeddings
-from lib.data_models import FlowInput, RAGInput
+from lib.data_models import RAG, Flow
 from lib.kafka_utils import KafkaConsumer, KafkaProducer
 from openai import OpenAI
 from r2r import R2R, EmbeddingConfig, R2RBuilder, VectorSearchSettings
@@ -40,15 +40,20 @@ db_password = os.getenv("POSTGRES_DATABASE_PASSWORD")
 db_host = os.getenv("POSTGRES_DATABASE_HOST")
 db_port = os.getenv("POSTGRES_DATABASE_PORT")
 db_url = f"postgresql+psycopg2://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+os.environ["POSTGRES_DBNAME"] = db_name
+os.environ["POSTGRES_USER"] = db_user
+os.environ["POSTGRES_PASSWORD"] = db_password
+os.environ["POSTGRES_HOST"] = db_host
+os.environ["POSTGRES_PORT"] = db_port
 
 
 def get_r2r():
     if os.getenv("OPENAI_API_TYPE") == "azure":
         embedding_provider = AzureOpenAIEmbeddingProvider(
             EmbeddingConfig(
-                provider="azure-openai",
-                base_model="text-embedding-3-large",
-                base_dimension=512,
+                provider="azure-openai",  # provider name for azure
+                base_model=os.getenv("AZURE_EMBEDDING_MODEL_NAME"),
+                base_dimension=512,  # default parameter
             )
         )
         return R2RBuilder().with_embedding_provider(provider=embedding_provider).build()
@@ -58,7 +63,7 @@ def get_r2r():
 def get_embeddings():
     if os.getenv("OPENAI_API_TYPE") == "azure":
         return AzureOpenAIEmbeddings(
-            model="text-embedding-ada-002",
+            model=os.getenv("AZURE_EMBEDDING_MODEL_NAME"),
             azure_deployment=os.getenv("AZURE_DEPLOYMENT_NAME"),
             azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
             openai_api_type=os.getenv("OPENAI_API_TYPE"),
@@ -72,7 +77,7 @@ def send_message(data):
 
 
 async def querying(
-    session_id: str,
+    type: str,
     turn_id: str,
     collection_name: str,
     query: str,
@@ -80,14 +85,15 @@ async def querying(
     metadata: dict = None,
     callback: callable = None,
 ):
-    if os.getenv("RETRIEVER_TYPE") == "r2r":
+    if type == "r2r":
+        os.environ["POSTGRES_VECS_COLLECTION"] = collection_name
         r2r_app = get_r2r()
         vector_search_settings = (
             VectorSearchSettings(
                 search_filters=metadata, search_limit=top_chunk_k_value
             )
             if metadata
-            else VectorSearchSettings()
+            else VectorSearchSettings(search_limit=top_chunk_k_value)
         )
         search_results = await r2r_app.engine.asearch(
             query=query,
@@ -117,11 +123,10 @@ async def querying(
         ]
     flow_input = {
         "source": "retriever",
-        "session_id": session_id,
-        "turn_id": turn_id,
-        "rag_response": data,
+        "intent": "callback",
+        "callback": {"turn_id": turn_id, "callback_type": "rag", "rag_response": data},
     }
-    flow_input = FlowInput(**flow_input)
+    flow_input = Flow(**flow_input)
 
     if callback:
         callback(flow_input.model_dump_json())
@@ -132,10 +137,10 @@ while True:
         # will keep trying until non-null message is received
         message = consumer.receive_message(retriever_topic, timeout=1.0)
         data = json.loads(message)
-        data = RAGInput(**data)
+        data = RAG(**data)
         retriever_input = data.model_dump(
             include={
-                "session_id",
+                "type",
                 "turn_id",
                 "collection_name",
                 "query",
