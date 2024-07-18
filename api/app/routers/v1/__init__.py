@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request
 import uuid
-from ...crud import get_chat_history, get_bot_list, get_bot_chat_sessions, create_secret, update_secret, get_latest_secret_key
+from ...crud import get_chat_history, get_bot_list, get_bot_chat_sessions
 from ...handlers.v1 import handle_callback, handle_webhook
 from ...handlers.v1.bot_handlers import (
     handle_activate_bot,
