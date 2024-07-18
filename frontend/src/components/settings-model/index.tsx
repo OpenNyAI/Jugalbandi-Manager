@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './settings-model.css';
 import { sendRequest } from '@/api';
-import { fetchAndCopySecret } from '@/pages/home/home';
+import { fetchSecret } from '@/pages/home/home';
 
 interface InputConfig {
   value: string | number | boolean;
@@ -76,7 +76,7 @@ const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelT
     } else if (modelType === 'install') {
         apiEndpoint = `${APIHOST}/v1/bot/install`;
         try {
-          accessToken = await fetchAndCopySecret();
+          accessToken = await fetchSecret();
       } catch (error) {
           console.error("Failed to fetch the access token:", error);
           alert("Failed to fetch the access token");

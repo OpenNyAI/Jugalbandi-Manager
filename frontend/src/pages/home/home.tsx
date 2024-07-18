@@ -12,13 +12,12 @@ interface props {
 
 }
 
-export async function fetchAndCopySecret() {
+export async function fetchSecret() {
     const url = `${APIHOST}/v1/secret`;
     try {
         const response = await fetch(url);
         const data = await response.json();
         const secret = data.secret;
-        await navigator.clipboard.writeText(secret);
         return secret; // Return the secret explicitly
     } catch (error) {
         console.error("Error fetching secret:", error);
@@ -126,7 +125,8 @@ export const Home:React.FunctionComponent = (props:props) => {
                     <div>
                     <div onClick={async () => {
                             try {
-                                await fetchAndCopySecret();
+                                const secret = await fetchSecret();
+                                await navigator.clipboard.writeText(secret);
                                 alert("JB Manager secret copied!");
                             } catch (error) {
                                 alert("Failed to copy secret");
