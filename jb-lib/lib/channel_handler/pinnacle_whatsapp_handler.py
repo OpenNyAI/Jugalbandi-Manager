@@ -7,7 +7,6 @@ import requests
 from sqlalchemy import select
 
 from ..db_session_handler import DBSessionHandler
-from ..file_storage.handler import StorageHandler
 from .channel_handler import ChannelData, RestChannelHandler, User
 from .language import LanguageMapping, LanguageCodes
 from ..data_models import (
@@ -52,6 +51,7 @@ class PinnacleWhatsappHandler(RestChannelHandler):
                         if "messages" in change["value"]:
                             for message in change["value"]["messages"]:
                                 message.pop("id", None)
+                                message.pop("context", None)
                                 user_identifier = message.pop("from")
                                 yield ChannelData(
                                     bot_identifier=whatsapp_number,
@@ -68,75 +68,83 @@ class PinnacleWhatsappHandler(RestChannelHandler):
         return "pinnacle_whatsapp"
 
     @classmethod
-    def to_message(
-        cls, turn_id: str, channel: JBChannel, bot_input: RestBotInput
-    ) -> Message:
+    def get_message_type(cls, bot_input: RestBotInput) -> MessageType:
         data = bot_input.data
         message_type = data["type"]
         message_data = data[message_type]
         if message_type == "text":
-            text = message_data["body"]
-            return Message(
-                message_type=MessageType.TEXT,
-                text=TextMessage(body=text),
-            )
+            return MessageType.TEXT
         elif message_type == "audio":
-            audio_id = message_data["id"]
-            audio_content = cls.wa_download_audio(channel=channel, file_id=audio_id)
-            audio_bytes = base64.b64decode(audio_content)
-            audio_file_name = f"{turn_id}.ogg"
-            storage = StorageHandler.get_sync_instance()
-            storage.write_file(audio_file_name, audio_bytes, "audio/ogg")
-            storage_url = storage.public_url(audio_file_name)
-
-            return Message(
-                message_type=MessageType.AUDIO,
-                audio=AudioMessage(media_url=storage_url),
-            )
+            return MessageType.AUDIO
         elif message_type == "interactive":
             interactive_type = message_data["type"]
-            interactive_message_data = message_data[interactive_type]
             if interactive_type == "button_reply":
-                options = [
-                    Option(
-                        option_id=interactive_message_data["id"],
-                        option_text=interactive_message_data["title"],
-                    )
-                ]
-                return Message(
-                    message_type=MessageType.INTERACTIVE_REPLY,
-                    interactive_reply=InteractiveReplyMessage(options=options),
-                )
+                return MessageType.INTERACTIVE_REPLY
             elif interactive_type == "list_reply":
-                if (selected_language := interactive_message_data["id"]).startswith(
-                    "lang_"
-                ):
-                    selected_language = selected_language.replace("lang_", "").upper()
-                    return Message(
-                        message_type=MessageType.DIALOG,
-                        dialog=DialogMessage(
-                            dialog_id=DialogOption.LANGUAGE_SELECTED,
-                            dialog_input=LanguageCodes[selected_language].value.lower(),
-                        ),
-                    )
-                options = [
-                    Option(
-                        option_id=interactive_message_data["id"],
-                        option_text=interactive_message_data["title"],
-                    )
-                ]
-                return Message(
-                    message_type=MessageType.INTERACTIVE_REPLY,
-                    interactive_reply=InteractiveReplyMessage(options=options),
-                )
+                interactive_message_data = message_data[interactive_type]
+                if interactive_message_data["id"].startswith("lang_"):
+                    return MessageType.DIALOG
+                return MessageType.INTERACTIVE_REPLY
             elif interactive_type == "nfm_reply":
-                return Message(
-                    message_type=MessageType.FORM_REPLY,
-                    form_reply=FormReplyMessage(
-                        form_data=interactive_message_data["response_json"]
-                    ),
-                )
+                return MessageType.FORM_REPLY
         return NotImplemented
+
+    @classmethod
+    def to_text_message(cls, bot_input: RestBotInput) -> TextMessage:
+        data = bot_input.data
+        message_type = data["type"]
+        message_data = data[message_type]
+        text = message_data["body"]
+        return TextMessage(body=text)
+
+    @classmethod
+    def get_audio(cls, channel: JBChannel, bot_input: RestBotInput) -> bytes:
+        data = bot_input.data
+        message_type = data["type"]
+        message_data = data[message_type]
+        audio_id = message_data["id"]
+        audio_content = cls.wa_download_audio(channel=channel, file_id=audio_id)
+        return audio_content
+
+    @classmethod
+    def to_interactive_reply_message(
+        cls, bot_input: RestBotInput
+    ) -> InteractiveReplyMessage:
+        data = bot_input.data
+        message_type = data["type"]
+        message_data = data[message_type]
+        interactive_type = message_data["type"]
+        interactive_message_data = message_data[interactive_type]
+        options = [
+            Option(
+                option_id=interactive_message_data["id"],
+                option_text=interactive_message_data["title"],
+            )
+        ]
+        return InteractiveReplyMessage(options=options)
+
+    @classmethod
+    def to_dialog_message(cls, bot_input: RestBotInput) -> DialogMessage:
+        data = bot_input.data
+        message_type = data["type"]
+        message_data = data[message_type]
+        interactive_type = message_data["type"]
+        interactive_message_data = message_data[interactive_type]
+        selected_language = interactive_message_data["id"]
+        selected_language = selected_language.replace("lang_", "").upper()
+        return DialogMessage(
+            dialog_id=DialogOption.LANGUAGE_SELECTED,
+            dialog_input=LanguageCodes[selected_language].value.lower(),
+        )
+
+    @classmethod
+    def to_form_reply_message(cls, bot_input: RestBotInput) -> FormReplyMessage:
+        data = bot_input.data
+        message_type = data["type"]
+        message_data = data[message_type]
+        interactive_type = message_data["type"]
+        interactive_message_data = message_data[interactive_type]
+        return FormReplyMessage(form_data=interactive_message_data["response_json"])
 
     @classmethod
     def parse_bot_output(

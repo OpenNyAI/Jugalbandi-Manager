@@ -3,13 +3,11 @@ import json
 from typing import Any, Dict, Generator
 import requests
 
-from sqlalchemy import select
 from lib.encryption_handler import EncryptionHandler
+from lib.models import JBChannel, JBUser
 
-from ..db_session_handler import DBSessionHandler
-from ..file_storage.handler import StorageHandler
 from .channel_handler import ChannelData, RestChannelHandler, User
-from .language import LanguageMapping
+from .language import LanguageMapping, LanguageCodes
 from ..data_models import (
     MessageType,
     Message,
@@ -21,13 +19,13 @@ from ..data_models import (
     ImageMessage,
     DocumentMessage,
     InteractiveReplyMessage,
+    FormReplyMessage,
     RestBotInput,
     ListMessage,
     ButtonMessage,
     DialogMessage,
     DialogOption,
 )
-from ..models import JBChannel, JBUser, JBForm
 
 
 class TelegramHandler(RestChannelHandler):
@@ -73,76 +71,60 @@ class TelegramHandler(RestChannelHandler):
         return "telegram"
 
     @classmethod
-    def to_message(
-        cls, turn_id: str, channel: JBChannel, bot_input: RestBotInput
-    ) -> Message:
+    def get_message_type(cls, bot_input: RestBotInput) -> MessageType:
         data = bot_input.data
-        message_data = data
-        if "text" in message_data:
-            text = message_data["text"]
-            return Message(
-                message_type=MessageType.TEXT,
-                text=TextMessage(body=text),
-            )
-        elif "audio" in message_data or "voice" in message_data:
-            audio_type = "audio" if "audio" in message_data else "voice"
-            audio_id = message_data[audio_type]["file_id"]
-            audio_content = cls.telegram_download_audio(
-                channel=channel, file_id=audio_id
-            )
-            audio_bytes = base64.b64decode(audio_content)
-            audio_file_name = f"{turn_id}.ogg"
-            storage = StorageHandler.get_sync_instance()
-            storage.write_file(audio_file_name, audio_bytes, "audio/ogg")
-            storage_url = storage.public_url(audio_file_name)
+        if "text" in data:
+            return MessageType.TEXT
+        elif "audio" in data or "voice" in data:
+            return MessageType.AUDIO
+        elif "document" in data:
+            return MessageType.DOCUMENT
+        elif "photo" in data:
+            return MessageType.IMAGE
+        elif "data" in data:
+            if data["data"].startswith("lang_"):
+                return MessageType.DIALOG
+            return MessageType.INTERACTIVE_REPLY
+        return NotImplemented
 
-            return Message(
-                message_type=MessageType.AUDIO,
-                audio=AudioMessage(media_url=storage_url),
-            )
-        elif "document" in message_data:
-            file_id = message_data["document"]["file_id"]
-            file_content = cls.telegram_download_document(
-                channel=channel, file_id=file_id
-            )
-            file_bytes = base64.b64decode(file_content)
-            file_name = message_data["file_name"]
-            storage = StorageHandler.get_sync_instance()
-            storage.write_file(file_name, file_bytes, "application/octet-stream")
-            storage_url = storage.public_url(file_name)
+    @classmethod
+    def to_text_message(cls, bot_input: RestBotInput) -> TextMessage:
+        message_data = bot_input.data
+        text = message_data["text"]
+        return TextMessage(body=text)
 
-            return Message(
-                message_type=MessageType.DOCUMENT,
-                document=DocumentMessage(
-                    url=storage_url, name=file_name, caption=message_data.get("caption")
-                ),
-            )
-        elif "photo" in message_data:
-            file_id = message_data["photo"][0]["file_id"]
-            file_content = cls.telegram_download_photo(channel=channel, file_id=file_id)
-            file_bytes = base64.b64decode(file_content)
-            file_name = f"{turn_id}.jpg"
-            storage = StorageHandler.get_sync_instance()
-            storage.write_file(file_name, file_bytes, "image/jpeg")
-            storage_url = storage.public_url(file_name)
+    @classmethod
+    def get_audio(cls, channel: JBChannel, bot_input: RestBotInput) -> bytes:
+        message_data = bot_input.data
+        audio_type = "audio" if "audio" in message_data else "voice"
+        audio_id = message_data[audio_type]["file_id"]
+        audio_content = cls.telegram_download_audio(channel=channel, file_id=audio_id)
+        return audio_content
 
-            return Message(
-                message_type=MessageType.IMAGE,
-                image=ImageMessage(
-                    url=storage_url, caption=message_data.get("caption")
-                ),
+    @classmethod
+    def to_interactive_reply_message(
+        cls, bot_input: RestBotInput
+    ) -> InteractiveReplyMessage:
+        message_data = bot_input.data
+        options = [
+            Option(
+                option_id=message_data["data"],
+                option_text=message_data["data"],
             )
-        elif "data" in message_data:
-            options = [
-                Option(
-                    option_id=message_data["data"],
-                    option_text=message_data["data"],
-                )
-            ]
-            return Message(
-                message_type=MessageType.INTERACTIVE_REPLY,
-                interactive_reply=InteractiveReplyMessage(options=options),
-            )
+        ]
+        return InteractiveReplyMessage(options=options)
+
+    @classmethod
+    def to_dialog_message(cls, bot_input: RestBotInput) -> DialogMessage:
+        message_data = bot_input.data
+        selected_language = message_data["data"].replace("lang_", "").upper()
+        return DialogMessage(
+            dialog_id=DialogOption.LANGUAGE_SELECTED,
+            dialog_input=LanguageCodes[selected_language].value.lower(),
+        )
+
+    @classmethod
+    def to_form_reply_message(cls, bot_input: RestBotInput) -> FormReplyMessage:
         return NotImplemented
 
     @classmethod
@@ -310,34 +292,13 @@ class TelegramHandler(RestChannelHandler):
         return data
 
     @classmethod
-    def get_form_parameters(cls, form_id: str):
-        with DBSessionHandler.get_sync_session() as session:
-            with session.begin():
-                result = session.execute(select(JBForm).where(JBForm.id == form_id))
-                s = result.scalars().first()
-                return s
-
-    @classmethod
     def parse_form_message(
         cls,
         channel: JBChannel,
         user: JBUser,
         message: FormMessage,
     ) -> Dict[str, Any]:
-        form_id = message.form_id
-
-        form_parameters = cls.get_form_parameters(form_id)
-        data = {
-            "chat_id": str(user.identifier),
-            "text": message.body,
-            "reply_markup": {
-                "inline_keyboard": [
-                    [{"text": param["text"], "callback_data": param["data"]}]
-                    for param in form_parameters
-                ]
-            },
-        }
-        return data
+        return NotImplemented
 
     @classmethod
     def parse_dialog_message(
@@ -367,8 +328,6 @@ class TelegramHandler(RestChannelHandler):
 
     @classmethod
     def generate_header(cls, channel: JBChannel):
-        encrypted_key: str = str(channel.key)
-        decrypted_key = EncryptionHandler.decrypt_text(encrypted_key)
         headers = {
             "Content-type": "application/json",
         }

@@ -1,6 +1,6 @@
 import json
 import base64
-from unittest.mock import patch, MagicMock, AsyncMock, Mock
+from unittest.mock import patch, MagicMock, Mock
 import pytest
 from lib.data_models import (
     MessageType,
@@ -17,13 +17,6 @@ from lib.data_models import (
 )
 from lib.models import JBChannel, JBUser
 
-mock_storage_instance = MagicMock()
-mock_write_file = AsyncMock()
-mock_public_url = AsyncMock(return_value="https://storage.url/test_audio.ogg")
-
-mock_storage_instance.write_file = mock_write_file
-mock_storage_instance.public_url = mock_public_url
-
 mock_encryption_handler = MagicMock()
 mock_encryption_handler.decrypt_dict = Mock(
     side_effect=lambda x: {
@@ -34,12 +27,8 @@ mock_encryption_handler.decrypt_text = Mock(
     side_effect=lambda x: x.replace("encrypted_", "decrypted_")
 )
 
-with patch(
-    "lib.file_storage.handler.StorageHandler.get_sync_instance",
-    return_value=mock_storage_instance,
-):
-    with patch("lib.encryption_handler.EncryptionHandler", mock_encryption_handler):
-        from lib.channel_handler import TelegramHandler
+with patch("lib.encryption_handler.EncryptionHandler", mock_encryption_handler):
+    from lib.channel_handler import TelegramHandler
 
 
 @pytest.fixture

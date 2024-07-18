@@ -2,7 +2,17 @@ from abc import ABC, abstractmethod
 from typing import Dict, Generator, Optional
 from pydantic import BaseModel
 from lib.models import JBChannel, JBUser
-from lib.data_models import Message, BotInput
+from lib.data_models import (
+    Message,
+    BotInput,
+    MessageType,
+    TextMessage,
+    AudioMessage,
+    InteractiveReplyMessage,
+    FormReplyMessage,
+    DialogMessage,
+    RestBotInput,
+)
 
 
 class User(BaseModel):
@@ -32,12 +42,41 @@ class ChannelHandler(ABC):
 
     @classmethod
     @abstractmethod
-    def to_message(cls, turn_id: str, channel: JBChannel, bot_input: BotInput) -> Message:
+    def get_message_type(cls, bot_input: BotInput) -> MessageType:
         pass
 
     @classmethod
     @abstractmethod
-    def parse_bot_output(cls, message: Message, user: JBUser, channel: JBChannel) -> Dict:
+    def to_text_message(cls, bot_input: BotInput) -> TextMessage:
+        pass
+
+    @classmethod
+    @abstractmethod
+    def get_audio(cls, channel: JBChannel, bot_input: BotInput) -> bytes:
+        pass
+
+    @classmethod
+    @abstractmethod
+    def to_interactive_reply_message(
+        cls, bot_input: BotInput
+    ) -> InteractiveReplyMessage:
+        pass
+
+    @classmethod
+    @abstractmethod
+    def to_form_reply_message(cls, bot_input: BotInput) -> FormReplyMessage:
+        pass
+
+    @classmethod
+    @abstractmethod
+    def to_dialog_message(cls, bot_input: BotInput) -> DialogMessage:
+        pass
+
+    @classmethod
+    @abstractmethod
+    def parse_bot_output(
+        cls, message: Message, user: JBUser, channel: JBChannel
+    ) -> Dict:
         pass
 
     @classmethod
