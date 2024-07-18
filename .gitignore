@@ -8,7 +8,6 @@ kafkaproducer.py
 **/__pycache__
 .talismanrc
 **/.vscode
-**/.github
 **/.python-version
 **/.DS_Store
 frontend/dist
@@ -16,5 +15,3 @@ frontend/dist
 dist/
 plugins/
 media/
-
-mainTemplate.parameters.json

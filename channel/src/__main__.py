@@ -6,10 +6,10 @@ import traceback
 from dotenv import load_dotenv
 
 from lib.data_models import (
-    ChannelInput,
+    Channel,
     ChannelIntent,
-    FlowInput,
-    LanguageInput,
+    Flow,
+    Language,
 )
 from lib.kafka import KafkaHandler
 from .handlers import process_incoming_messages, send_message_to_user
@@ -46,18 +46,30 @@ async def start_channel():
             msg = consumer.receive_message(channel_topic)
             msg = json.loads(msg)
             logger.info("Input received: %s", msg)
-            input_data = ChannelInput(**msg)
-            logger.info("Input received in object form: %s", input_data.model_dump(exclude_none=True))
-            if input_data.intent == ChannelIntent.BOT_IN:
-                incoming_message = await process_incoming_messages(input_data)
-                if isinstance(incoming_message, FlowInput):
+            input_data = Channel(**msg)
+            logger.info(
+                "Input received in object form: %s",
+                input_data.model_dump(exclude_none=True),
+            )
+            if input_data.intent == ChannelIntent.CHANNEL_IN:
+                incoming_message = await process_incoming_messages(
+                    turn_id=input_data.turn_id, bot_input=input_data.bot_input
+                )
+                if isinstance(incoming_message, Flow):
                     logger.info("Sending to flow")
-                    producer.send_message(flow_topic, incoming_message.model_dump_json(exclude_none=True))
-                elif isinstance(incoming_message, LanguageInput):
+                    producer.send_message(
+                        flow_topic, incoming_message.model_dump_json(exclude_none=True)
+                    )
+                elif isinstance(incoming_message, Language):
                     logger.info("Sending to language")
-                    producer.send_message(language_topic, incoming_message.model_dump_json(exclude_none=True))
-            elif input_data.intent == ChannelIntent.BOT_OUT:
-                await send_message_to_user(input_data)
+                    producer.send_message(
+                        language_topic,
+                        incoming_message.model_dump_json(exclude_none=True),
+                    )
+            elif input_data.intent == ChannelIntent.CHANNEL_OUT:
+                await send_message_to_user(
+                    turn_id=input_data.turn_id, message=input_data.bot_output
+                )
         except Exception as e:
             logger.error("Error %s", e)
             traceback.print_exc()
