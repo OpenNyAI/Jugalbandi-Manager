@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Request
+import uuid
 from ...crud import get_chat_history, get_bot_list, get_bot_chat_sessions
 from ...handlers.v1 import handle_callback, handle_webhook
 from ...handlers.v1.bot_handlers import (
@@ -16,6 +17,7 @@ router = APIRouter(
     tags=["v1"],
 )
 
+JBMANAGER_KEY = str(uuid.uuid4())
 
 @router.get("/bots")
 async def get_bots():
@@ -30,9 +32,25 @@ async def get_bots():
         bot.status = status
     return bots
 
+@router.get("/secret")
+async def get_secret_key():
+    return {"secret": JBMANAGER_KEY}
+
+
+@router.put("/refresh-key")
+async def refresh_secret_key():
+    JBMANAGER_KEY = str(uuid.uuid4())
+    return {"status": "success"}
 
 @router.post("/bot/install")
-async def install_bot(install_content: JBBotCode):
+async def install_bot(request:Request, install_content: JBBotCode):
+    headers = dict(request.headers)
+    authorization = headers.get("authorization")
+    if authorization is None:
+        raise HTTPException(status_code=401, detail="Authorization header not provided")
+    if authorization != f"Bearer {JBMANAGER_KEY}":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
     flow_input = await handle_install_bot(install_content)
     try:
         produce_message(flow_input)
