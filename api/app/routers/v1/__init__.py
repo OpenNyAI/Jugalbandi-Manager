@@ -3,19 +3,25 @@ from typing import List
 from fastapi import APIRouter, HTTPException, Request, UploadFile
 from lib.data_models.indexer import Indexer, SerializableUploadFile, IndexType
 
-from ...crud import get_bot_chat_sessions, get_bot_list, get_chat_history
-from ...extensions import produce_message
+import uuid
+from ...crud import get_chat_history, get_bot_list, get_bot_chat_sessions
 from ...handlers.v1 import handle_callback, handle_webhook
-from ...handlers.v1.bot_handlers import (handle_activate_bot,
-                                         handle_deactivate_bot,
-                                         handle_delete_bot, handle_install_bot,
-                                         handle_update_bot)
-from ...jb_schema import JBBotActivate, JBBotCode
+from ...handlers.v1.bot_handlers import (
+    handle_activate_bot,
+    handle_deactivate_bot,
+    handle_delete_bot,
+    handle_update_bot,
+    handle_install_bot,
+)
+from ...jb_schema import JBBotCode, JBBotActivate
+from ...extensions import produce_message
+
 
 router = APIRouter(
     prefix="/v1",
     tags=["v1"],
 )
+JBMANAGER_KEY = str(uuid.uuid4())
 
 
 @router.get("/bots")
@@ -32,8 +38,26 @@ async def get_bots():
     return bots
 
 
+@router.get("/secret")
+async def get_secret_key():
+    return {"secret": JBMANAGER_KEY}
+
+
+@router.put("/refresh-key")
+async def refresh_secret_key():
+    JBMANAGER_KEY = str(uuid.uuid4())
+    return {"status": "success"}
+
+
 @router.post("/bot/install")
-async def install_bot(install_content: JBBotCode):
+async def install_bot(request: Request, install_content: JBBotCode):
+    headers = dict(request.headers)
+    authorization = headers.get("authorization")
+    if authorization is None:
+        raise HTTPException(status_code=401, detail="Authorization header not provided")
+    if authorization != f"Bearer {JBMANAGER_KEY}":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
     flow_input = await handle_install_bot(install_content)
     try:
         produce_message(flow_input)
