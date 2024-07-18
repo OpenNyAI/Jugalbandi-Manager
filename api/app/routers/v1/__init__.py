@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, UploadFile
+from typing import List
 from ...crud import get_chat_history, get_bot_list, get_bot_chat_sessions
 from ...handlers.v1 import handle_callback, handle_webhook
 from ...handlers.v1.bot_handlers import (
@@ -9,7 +10,8 @@ from ...handlers.v1.bot_handlers import (
     handle_install_bot,
 )
 from ...jb_schema import JBBotCode, JBBotActivate
-from ...extensions import produce_message
+from ...extensions import produce_message, storage
+from lib.data_models.indexer import Indexer
 
 router = APIRouter(
     prefix="/v1",
@@ -131,3 +133,21 @@ async def plugin_webhook(request: Request):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     return 200
+
+
+@router.post("/index-data")
+async def index_data(request: Request, collection_name: str, files: List[UploadFile]):
+    file_name_list = [file.filename for file in files]
+    for file in files:
+        content = await file.read()
+        await storage.write_file(file_path=file.filename, file_content=content, mime_type=file.content_type)
+
+    indexer_input = Indexer(
+        collection_name=collection_name,
+        files=file_name_list,
+    )
+    
+    # write to indexer
+    produce_message(indexer_input.model_dump_json(), topic="indexer")
+
+    return {"message": "Files indexed successfully", "collection_name": collection_name, "files": file_name_list}
