@@ -33,7 +33,7 @@ async def get_bots():
     return bots
 
 @router.get("/secret")
-async def get_uuid():
+async def get_secret_key():
     return {"secret": JBMANAGER_KEY}
 
 
@@ -47,7 +47,7 @@ async def install_bot(request:Request, install_content: JBBotCode):
     headers = dict(request.headers)
     authorization = headers.get("authorization")
     if authorization is None:
-        raise HTTPException(status_code=400, detail="Authorization header not provided")
+        raise HTTPException(status_code=401, detail="Authorization header not provided")
     if authorization != f"Bearer {JBMANAGER_KEY}":
         raise HTTPException(status_code=401, detail="Unauthorized")
     
@@ -112,7 +112,6 @@ async def add_bot_configuraton(bot_id: str, request: Request):
 # get all messages related to a session
 @router.get("/chats/{bot_id}/sessions/{session_id}")
 async def get_session(bot_id: str, session_id: str):
-    print("session_id", session_id)
     sessions = await get_bot_chat_sessions(bot_id, session_id)
     return sessions
 

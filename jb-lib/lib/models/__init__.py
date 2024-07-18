@@ -293,6 +293,7 @@ class JBForm(Base):
         onupdate=func.now(),
     )
 
+
 # class LangchainPgCollection(Base):
 #     __tablename__ = 'langchain_pg_collection'
 
