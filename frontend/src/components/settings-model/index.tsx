@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import './settings-model.css';
 import { sendRequest } from '@/api';
+import { fetchAndCopySecret } from '@/pages/home/home';
 
 interface InputConfig {
   value: string | number | boolean;
@@ -47,6 +48,7 @@ const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelT
   const handleSubmit = async () => {
     let data:any = {};
     let apiEndpoint = '';
+    let accessToken = null;
     if (modelType === 'credentials') {
         apiEndpoint = `${APIHOST}/v1/bot/${botId}/configure`;
         let credentials:any = {};
@@ -73,6 +75,13 @@ const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelT
         data['channels']['whatsapp'] = inputElements['whatsapp'].value;
     } else if (modelType === 'install') {
         apiEndpoint = `${APIHOST}/v1/bot/install`;
+        try {
+          accessToken = await fetchAndCopySecret();
+      } catch (error) {
+          console.error("Failed to fetch the access token:", error);
+          alert("Failed to fetch the access token");
+          return;
+      }
         for (let key in inputElements) {
           if (inputElements[key].required === true && !inputElements[key].value.toString().trim()) {
             alert(`${key} is required`);
@@ -89,6 +98,7 @@ const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelT
       await sendRequest({
         url: apiEndpoint,
         method: 'POST',
+        accessToken: accessToken,
         body: JSON.stringify(data ),
         headers: {
             'Content-Type': 'application/json',

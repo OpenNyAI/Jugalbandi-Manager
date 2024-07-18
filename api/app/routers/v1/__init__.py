@@ -44,15 +44,12 @@ async def refresh_secret_key():
 
 @router.post("/bot/install")
 async def install_bot(request:Request, install_content: JBBotCode):
-    try:
-        request_body = await request.json()
-        print(f"request_body: {request_body}")
-    except Exception as e:
-        print(f"Error: {e}")
-    
-    # request_body bearer token
-    # match with JBMANAGER_KEY
-    # if match, proceed
+    headers = dict(request.headers)
+    authorization = headers.get("authorization")
+    if authorization is None:
+        raise HTTPException(status_code=400, detail="Authorization header not provided")
+    if authorization != f"Bearer {JBMANAGER_KEY}":
+        raise HTTPException(status_code=401, detail="Unauthorized")
     
     flow_input = await handle_install_bot(install_content)
     try:
