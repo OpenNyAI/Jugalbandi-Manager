@@ -19,7 +19,7 @@ router = APIRouter(
     tags=["v1"],
 )
 
-JBMANAGER_KEY = str(uuid.uuid4())
+KEYS = {"JBMANAGER_KEY": str(uuid.uuid4())}
 
 
 @router.get("/bots")
@@ -38,12 +38,12 @@ async def get_bots():
 
 @router.get("/secret")
 async def get_secret_key():
-    return {"secret": JBMANAGER_KEY}
+    return {"secret": KEYS["JBMANAGER_KEY"]}
 
 
 @router.put("/refresh-key")
 async def refresh_secret_key():
-    JBMANAGER_KEY = str(uuid.uuid4())
+    KEYS["JBMANAGER_KEY"] = str(uuid.uuid4())
     return {"status": "success"}
 
 
