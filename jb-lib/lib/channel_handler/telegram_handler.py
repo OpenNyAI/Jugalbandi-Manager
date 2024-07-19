@@ -6,7 +6,8 @@ import requests
 from lib.encryption_handler import EncryptionHandler
 from lib.models import JBChannel, JBUser
 
-from .channel_handler import ChannelData, RestChannelHandler, User
+from .channel_handler import ChannelData, User
+from .rest_channel_handler import RestChannelHandler
 from .language import LanguageMapping, LanguageCodes
 from ..data_models import (
     MessageType,

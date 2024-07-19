@@ -7,15 +7,15 @@ from lib.data_models import (
     BotInput,
     MessageType,
     TextMessage,
-    AudioMessage,
     InteractiveReplyMessage,
     FormReplyMessage,
     DialogMessage,
-    RestBotInput,
 )
 
 
 class User(BaseModel):
+    """ """
+
     user_identifier: str
     user_name: str
     user_email: Optional[str] = None
@@ -23,6 +23,8 @@ class User(BaseModel):
 
 
 class ChannelData(BaseModel):
+    """ """
+
     bot_identifier: str
     user: User
     message_data: Dict
@@ -33,71 +35,158 @@ class ChannelHandler(ABC):
     @classmethod
     @abstractmethod
     def is_valid_data(cls, data: Dict) -> bool:
-        pass
+        """
+        Check if the given payload is valid for the given channel.
+        This method is called in api layer of JBManager.
+        """
 
     @classmethod
     @abstractmethod
     def get_channel_name(cls) -> str:
-        pass
+        """
+        Return the name of the channel
+        """
+
+    @classmethod
+    @abstractmethod
+    def process_message(cls, data: Dict) -> Generator[ChannelData, None, None]:
+        """
+        This method should process the recieved payload and yield the ChannelData object.
+        The ChannelData object should contain the bot_identifier, user and message_data.
+        message_data is an intermediate output with no PII data.
+        message_data is passed as a data to the bot_input in specific methods such as
+        to_text_message, to_interactive_reply_message, to_form_reply_message, to_dialog_message.
+
+        This method is called in api layer of JBManager.
+
+        Args:
+            data (Dict): Dictionary containing the payload recieved from the channel
+        """
 
     @classmethod
     @abstractmethod
     def get_message_type(cls, bot_input: BotInput) -> MessageType:
-        pass
+        """
+        Return the message type of the recieved message given bot input.
+        This method is called in channel layer of JBManager.
+
+        BotInput is an abstract class, the actual implementation of the BotInput should be used.
+        For example, RestBotInput should be used to determine the message type for REST channels.
+        In the definition, type of bot_input will override by the exact subclass of BotInput.
+
+        Args:
+            bot_input (BotInput): BotInput object
+        """
 
     @classmethod
     @abstractmethod
     def to_text_message(cls, bot_input: BotInput) -> TextMessage:
-        pass
+        """
+        Convert the given bot_input to a TextMessage object, assuming the message type is text.
+        This method is called in channel layer of JBManager.
+
+        BotInput is an abstract class, the actual implementation of the BotInput should be used.
+        For example, RestBotInput should be used to determine the message type for REST channels.
+        In the definition, type of bot_input will override by the exact subclass of BotInput.
+
+        Args:
+            bot_input (BotInput): BotInput object
+        """
 
     @classmethod
     @abstractmethod
     def get_audio(cls, channel: JBChannel, bot_input: BotInput) -> bytes:
-        pass
+        """
+        Get the base64 encoded audio from the given bot input and channel.
+        channel is used to determine the channel specific credentials for audio extraction.
+        This method is called in channel layer of JBManager.
+
+        BotInput is an abstract class, the actual implementation of the BotInput should be used.
+        For example, RestBotInput should be used to determine the message type for REST channels.
+        In the definition, type of bot_input will override by the exact subclass of BotInput.
+
+        Args:
+            bot_input (BotInput): BotInput object
+        """
 
     @classmethod
     @abstractmethod
     def to_interactive_reply_message(
         cls, bot_input: BotInput
     ) -> InteractiveReplyMessage:
-        pass
+        """
+        Convert the bot_input to an InteractiveReplyMessage object, assuming interactive reply.
+        This method is called in channel layer of JBManager.
+
+        BotInput is an abstract class, the actual implementation of the BotInput should be used.
+        For example, RestBotInput should be used to determine the message type for REST channels.
+        In the definition, type of bot_input will override by the exact subclass of BotInput.
+
+        Args:
+            bot_input (BotInput): BotInput object
+        """
 
     @classmethod
     @abstractmethod
     def to_form_reply_message(cls, bot_input: BotInput) -> FormReplyMessage:
-        pass
+        """
+        Convert the given bot_input to a FormReplyMessage object, assuming the message type is form.
+        This method is called in channel layer of JBManager.
+
+        BotInput is an abstract class, the actual implementation of the BotInput should be used.
+        For example, RestBotInput should be used to determine the message type for REST channels.
+        In the definition, type of bot_input will override by the exact subclass of BotInput.
+
+        Args:
+            bot_input (BotInput): BotInput object
+        """
 
     @classmethod
     @abstractmethod
     def to_dialog_message(cls, bot_input: BotInput) -> DialogMessage:
-        pass
+        """
+        Convert the given bot_input to a DialogMessage object, assuming the message type is dialog.
+        Currently JBManager supports language selected as the dialog type for message from user.
+        This method is called in channel layer of JBManager.
+
+
+        BotInput is an abstract class, the actual implementation of the BotInput should be used.
+        For example, RestBotInput should be used to determine the message type for REST channels.
+        In the definition, type of bot_input will override by the exact subclass of BotInput.
+
+        Args:
+            bot_input (BotInput): BotInput object
+        """
 
     @classmethod
     @abstractmethod
     def parse_bot_output(
         cls, message: Message, user: JBUser, channel: JBChannel
     ) -> Dict:
-        pass
+        """
+        Convert the given message to a dictionary that can be sent as a payload to sent to the user.
+        channel shall be used to determine the channel specific credentials for sending the message.
+        user is used to determine the user specific data for sending the message.
 
-    @classmethod
-    @abstractmethod
-    def process_message(cls, data: Dict) -> Generator[ChannelData, None, None]:
-        pass
+        Args:
+            message (Message): Message object
+            user (JBUser): JBUser object
+            channel (JBChannel): JBChannel object
+        """
 
     @classmethod
     @abstractmethod
     def send_message(cls, channel: JBChannel, user: JBUser, message: Message):
-        pass
+        """
+        Send the given message to the user using the given channel.
+        This method shall use the parse_bot_output method.
+        The dictionary shall be sent to the channel to be sent to the user.
+
+        This method is called in channel layer of JBManager.
 
 
-class RestChannelHandler(ChannelHandler):
-
-    @classmethod
-    @abstractmethod
-    def generate_header(cls, channel: JBChannel) -> Dict:
-        pass
-
-    @classmethod
-    @abstractmethod
-    def generate_url(cls, channel: JBChannel, user: JBUser, message: Message) -> str:
-        pass
+        Args:
+            channel (JBChannel): JBChannel object
+            user (JBUser): JBUser object
+            message (Message): Message object
+        """

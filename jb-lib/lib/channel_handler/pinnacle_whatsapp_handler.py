@@ -7,7 +7,8 @@ import requests
 from sqlalchemy import select
 
 from ..db_session_handler import DBSessionHandler
-from .channel_handler import ChannelData, RestChannelHandler, User
+from .channel_handler import ChannelData, User
+from .rest_channel_handler import RestChannelHandler
 from .language import LanguageMapping, LanguageCodes
 from ..data_models import (
     MessageType,
