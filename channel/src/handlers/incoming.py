@@ -24,8 +24,6 @@ logger.setLevel(logging.INFO)
 async def process_incoming_messages(turn_id: str, bot_input: RestBotInput):
     """Process incoming messages"""
     channel = channel_map[bot_input.channel_name]
-    print(channel.get_audio)
-    print(ChannelHandler.get_audio)
     jb_channel = await get_channel_by_turn_id(turn_id)
 
     message_type = channel.get_message_type(bot_input)

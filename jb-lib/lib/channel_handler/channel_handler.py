@@ -60,9 +60,9 @@ class ChannelHandler(ABC):
     def process_message(cls, data: Dict) -> Generator[ChannelData, None, None]:
         """
         This method should process the recieved payload and yield the ChannelData object.
-        The ChannelData object should contain the bot_identifier, user and message_data.
+        The ChannelData object should contain the user and message_data.
         message_data is an intermediate output with no PII data.
-        message_data is passed as a data to the bot_input in specific methods such as
+        message_data is parsed in channel layer by specific methods such as
         to_text_message, to_interactive_reply_message, to_form_reply_message, to_dialog_message.
 
         This method is called in api layer of JBManager.
@@ -75,7 +75,7 @@ class ChannelHandler(ABC):
     @abstractmethod
     def get_message_type(cls, bot_input: BotInput) -> MessageType:
         """
-        Return the message type of the recieved message given bot input.
+        Returns the type of the recieved message
         This method is called in channel layer of JBManager.
 
         BotInput is an abstract class, the actual implementation of the BotInput should be used.
