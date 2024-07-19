@@ -46,16 +46,12 @@ class PinnacleWhatsappHandler(RestChannelHandler):
             for entry in data["entry"]:
                 for change in entry["changes"]:
                     if "value" in change:
-                        if "metadata" in change["value"]:
-                            metadata = change["value"]["metadata"]
-                            whatsapp_number = metadata.get("display_phone_number")
                         if "messages" in change["value"]:
                             for message in change["value"]["messages"]:
                                 message.pop("id", None)
                                 message.pop("context", None)
                                 user_identifier = message.pop("from")
                                 yield ChannelData(
-                                    bot_identifier=whatsapp_number,
                                     user=User(
                                         user_identifier=user_identifier,
                                         user_name="Dummy",

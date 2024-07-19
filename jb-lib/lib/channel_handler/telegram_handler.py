@@ -56,9 +56,7 @@ class TelegramHandler(RestChannelHandler):
                 message_data.pop("message")
             from_details = message_data.pop("from")
             user_identifier = from_details["id"]
-            bot_identifier = from_details["id"]
             yield ChannelData(
-                bot_identifier=str(bot_identifier),
                 user=User(
                     user_identifier=str(user_identifier),
                     user_name=from_details.get("username", "Dummy"),

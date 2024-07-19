@@ -1,10 +1,8 @@
 import uuid
 import logging
-from typing import Optional
 from fastapi import APIRouter, HTTPException, Request
-from lib.channel_handler import ChannelHandler, channel_map
 from ...crud import get_chat_history, get_bot_list, get_bot_chat_sessions
-from ...handlers.v1 import handle_callback, handle_webhook
+from ...handlers.v1 import handle_webhook
 from ...handlers.v1.bot_handlers import (
     handle_activate_bot,
     handle_deactivate_bot,
@@ -134,31 +132,6 @@ async def get_chats(bot_id: str, skip: int = 0, limit: int = 100):
 async def get_chats(bot_id: str) -> list:
     chats = await get_chat_history(bot_id)
     return chats
-
-
-@router.post("/callback")
-async def callback(request: Request):
-    data = await request.json()
-    headers = dict(request.headers)
-    query_params = dict(request.query_params)
-    chosen_channel: Optional[type[ChannelHandler]] = None
-    for channel in channel_map.values():
-        if channel.is_valid_data(data):
-            chosen_channel = channel
-            break
-    if chosen_channel is None:
-        logger.error("No valid channel found")
-        return 404
-
-    async for err, channel_input in handle_callback(
-        data, headers=headers, query_params=query_params, chosen_channel=chosen_channel
-    ):
-        if err:
-            raise HTTPException(status_code=400, detail=str(err))
-        elif channel_input:
-            produce_message(channel_input)
-
-    return 200
 
 
 @router.post("/webhook")

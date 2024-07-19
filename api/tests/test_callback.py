@@ -7,14 +7,14 @@ from lib.data_models import (
 )
 
 from lib.channel_handler import PinnacleWhatsappHandler
-from app.handlers.v1 import handle_callback
+from app.handlers.v2.callback import handle_callback
 
 
 @pytest.mark.asyncio
-@patch("app.handlers.v1.get_active_channel_by_identifier")
-@patch("app.handlers.v1.get_user_by_number")
-@patch("app.handlers.v1.create_user")
-@patch("app.handlers.v1.create_turn")
+@patch("app.handlers.v2.callback.get_active_channel_by_identifier")
+@patch("app.handlers.v2.callback.get_user_by_number")
+@patch("app.handlers.v2.callback.create_user")
+@patch("app.handlers.v2.callback.create_turn")
 async def test_text_message(
     mock_create_turn,
     mock_create_user,
@@ -65,7 +65,9 @@ async def test_text_message(
     }
     result = [
         msg
-        async for msg in handle_callback(callback_data, {}, {}, PinnacleWhatsappHandler)
+        async for msg in handle_callback(
+            "919876543210", callback_data, {}, {}, PinnacleWhatsappHandler
+        )
     ]
     expected_message: Dict = callback_data["entry"][0]["changes"][0]["value"][
         "messages"
@@ -104,10 +106,10 @@ async def test_text_message(
 
 
 @pytest.mark.asyncio
-@patch("app.handlers.v1.get_active_channel_by_identifier")
-@patch("app.handlers.v1.get_user_by_number")
-@patch("app.handlers.v1.create_user")
-@patch("app.handlers.v1.create_turn")
+@patch("app.handlers.v2.callback.get_active_channel_by_identifier")
+@patch("app.handlers.v2.callback.get_user_by_number")
+@patch("app.handlers.v2.callback.create_user")
+@patch("app.handlers.v2.callback.create_turn")
 async def test_audio_message(
     mock_create_turn,
     mock_create_user,
@@ -163,7 +165,9 @@ async def test_audio_message(
     }
     result = [
         msg
-        async for msg in handle_callback(callback_data, {}, {}, PinnacleWhatsappHandler)
+        async for msg in handle_callback(
+            "919876543210", callback_data, {}, {}, PinnacleWhatsappHandler
+        )
     ]
     expected_message: Dict = callback_data["entry"][0]["changes"][0]["value"][
         "messages"
@@ -201,10 +205,10 @@ async def test_audio_message(
 
 
 @pytest.mark.asyncio
-@patch("app.handlers.v1.get_active_channel_by_identifier")
-@patch("app.handlers.v1.get_user_by_number")
-@patch("app.handlers.v1.create_user")
-@patch("app.handlers.v1.create_turn")
+@patch("app.handlers.v2.callback.get_active_channel_by_identifier")
+@patch("app.handlers.v2.callback.get_user_by_number")
+@patch("app.handlers.v2.callback.create_user")
+@patch("app.handlers.v2.callback.create_turn")
 async def test_button_reply_message(
     mock_create_turn,
     mock_create_user,
@@ -262,7 +266,9 @@ async def test_button_reply_message(
     }
     result = [
         msg
-        async for msg in handle_callback(callback_data, {}, {}, PinnacleWhatsappHandler)
+        async for msg in handle_callback(
+            "919876543210", callback_data, {}, {}, PinnacleWhatsappHandler
+        )
     ]
     expected_message: Dict = callback_data["entry"][0]["changes"][0]["value"][
         "messages"
@@ -300,10 +306,10 @@ async def test_button_reply_message(
 
 
 @pytest.mark.asyncio
-@patch("app.handlers.v1.get_active_channel_by_identifier")
-@patch("app.handlers.v1.get_user_by_number")
-@patch("app.handlers.v1.create_user")
-@patch("app.handlers.v1.create_turn")
+@patch("app.handlers.v2.callback.get_active_channel_by_identifier")
+@patch("app.handlers.v2.callback.get_user_by_number")
+@patch("app.handlers.v2.callback.create_user")
+@patch("app.handlers.v2.callback.create_turn")
 async def test_list_reply_message(
     mock_create_turn,
     mock_create_user,
@@ -364,7 +370,9 @@ async def test_list_reply_message(
     }
     result = [
         msg
-        async for msg in handle_callback(callback_data, {}, {}, PinnacleWhatsappHandler)
+        async for msg in handle_callback(
+            "919876543210", callback_data, {}, {}, PinnacleWhatsappHandler
+        )
     ]
     expected_message: Dict = callback_data["entry"][0]["changes"][0]["value"][
         "messages"

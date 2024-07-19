@@ -14,7 +14,14 @@ from lib.data_models import (
 
 
 class User(BaseModel):
-    """ """
+    """
+    User object to store user related data.
+
+    user_identifier: channel specific identifier for the user
+    user_name: user name
+    user_email: user email
+    user_phone: user phone number
+    """
 
     user_identifier: str
     user_name: str
@@ -23,9 +30,10 @@ class User(BaseModel):
 
 
 class ChannelData(BaseModel):
-    """ """
+    """
+    ChannelData object to store the user and message_data.
+    """
 
-    bot_identifier: str
     user: User
     message_data: Dict
 
