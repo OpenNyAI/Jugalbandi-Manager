@@ -22,7 +22,7 @@ export const Chat:React.FunctionComponent = (props: props) => {
         url: `${APIHOST}/v1/chats/${bot_id}`
       }).then((response:any) => {
         setChatSessions(response);
-        loadMessages(response[0]);
+        loadMessages(response[0][0]);
       });
     }
   }, [bot_id]);
@@ -80,16 +80,16 @@ export const Chat:React.FunctionComponent = (props: props) => {
           <div className="chat-sidebar">
             {chatSessions && chatSessions.map((session:any, index) => {
                 return (
-                  <div onClick={() => loadMessages(session)} key={index} className="chat-session">
-                    <div className={session.id === selectedSession ? 'chat-session-info selected' : 'chat-session-info'}>
+                  <div onClick={() => loadMessages(session[0])} key={index} className="chat-session">
+                    <div className={session[0].id === selectedSession ? 'chat-session-info selected' : 'chat-session-info'}>
                       <div className="user-info">
-                        <div>{session.user.phone_number}</div>
+                        <div>{session[1].identifier}</div>
                       </div>
                       <div className={'channel-info'}>
                         <div>
                           <img className="channel-icon" src="whatsapp.svg" />
                         </div>
-                        <div>{moment(session.created_at).format('DD/MM/YYYY')}</div>
+                        <div>{moment(session[0].created_at).format('DD/MM/YYYY')}</div>
                       </div>
                     </div>
                   </div>

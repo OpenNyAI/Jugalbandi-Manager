@@ -75,15 +75,16 @@ async def get_chat_history(bot_id: str, skip=0, limit=1000):
     async with DBSessionHandler.get_async_session() as session:
         async with session.begin():
             result = await session.execute(
-                select(JBSession)
-                .options(joinedload(JBSession.user))
+                select(JBSession, JBUser)
                 .join(JBUser, JBSession.user_id == JBUser.id)
                 .join(JBChannel, JBSession.channel_id == JBChannel.id)
                 .where(JBChannel.bot_id == bot_id)
                 .offset(skip)
                 .limit(limit)
             )
-            chat_history = result.scalars().all()
+            chat_history = []
+            for row in result:
+                chat_history.append(list(row))
             return chat_history
     return None
 
@@ -119,9 +120,10 @@ async def get_bot_chat_sessions(bot_id: str, session_id: str):
         async with session.begin():
             result = await session.execute(
                 select(JBSession)
-                .filter(JBSession.bot_id == bot_id)
+                .join(JBTurn, JBTurn.bot_id == bot_id)
+                .join(JBChannel, JBSession.channel_id == JBChannel.id)
+                .where(JBChannel.bot_id == bot_id)
                 .options(
-                    joinedload(JBSession.user),
                     joinedload(JBSession.turns).joinedload(JBTurn.messages),
                 )
                 .where(JBSession.id == session_id)
