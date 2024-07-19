@@ -117,29 +117,26 @@ class DataIndexer:
         source_files = []
         source_chunks = []
         counter = 0
-        for file in indexer_input.files:
-            await self.storage.write_file(
-                file_path=file.filename,
-                file_content=file.to_bytes(),
-                mime_type=file.content_type,
+        for file_path in indexer_input.files:
+            tmp_file_path = await self.storage._download_file_to_temp_storage(
+                os.path.basename(file_path)
             )
-            file_path = await self.storage._download_file_to_temp_storage(file.filename)
             if indexer_input.type == "r2r":
-                with open(file_path, "rb") as file_reader:
+                with open(tmp_file_path, "rb") as file_reader:
                     file_content = file_reader.read()
                 source_files.append(
                     UploadFile(
                         file=io.BytesIO(file_content),
-                        size=os.path.getsize(file_path),
+                        size=len(file_content),
                         filename=os.path.basename(file_path),
                     )
                 )
             else:
-                content = await self.text_converter.textify(file_path)
+                content = await self.text_converter.textify(tmp_file_path)
                 for chunk in self.splitter.split_text(content):
                     new_metadata = {
                         "chunk-id": str(counter),
-                        "document_name": file.filename,
+                        "document_name": os.path.basename(file_path),
                     }
                     source_chunks.append(
                         Document(page_content=chunk, metadata=new_metadata)

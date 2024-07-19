@@ -17,9 +17,16 @@ services:
       - KAFKA_INDEXER_TOPIC=${KAFKA_INDEXER_TOPIC}
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - WA_API_HOST=${WA_API_HOST}
+      - STORAGE_TYPE=${STORAGE_TYPE}
+      - AZURE_STORAGE_ACCOUNT_URL=${AZURE_STORAGE_ACCOUNT_URL}
+      - AZURE_STORAGE_ACCOUNT_KEY=${AZURE_STORAGE_ACCOUNT_KEY}
+      - AZURE_STORAGE_CONTAINER=${AZURE_STORAGE_CONTAINER}
+      - PUBLIC_URL_PREFIX=${PUBLIC_URL_PREFIX}
     depends_on:
       - kafka
       - postgres
+    volumes:
+      - ./media:/mnt/jb_files
   kafka:
       image: docker.io/bitnami/kafka:3.6
       ports:

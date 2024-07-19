@@ -1,27 +1,28 @@
+import uuid
 from typing import List
 
 from fastapi import APIRouter, HTTPException, Request, UploadFile
-from lib.data_models.indexer import Indexer, SerializableUploadFile, IndexType
+from lib.data_models.indexer import Indexer, IndexType
+from lib.file_storage import StorageHandler
 
-import uuid
-from ...crud import get_chat_history, get_bot_list, get_bot_chat_sessions
+from ...crud import get_bot_chat_sessions, get_bot_list, get_chat_history
+from ...extensions import produce_message
 from ...handlers.v1 import handle_callback, handle_webhook
 from ...handlers.v1.bot_handlers import (
     handle_activate_bot,
     handle_deactivate_bot,
     handle_delete_bot,
-    handle_update_bot,
     handle_install_bot,
+    handle_update_bot,
 )
-from ...jb_schema import JBBotCode, JBBotActivate
-from ...extensions import produce_message
-
+from ...jb_schema import JBBotActivate, JBBotCode
 
 router = APIRouter(
     prefix="/v1",
     tags=["v1"],
 )
 JBMANAGER_KEY = str(uuid.uuid4())
+storage = StorageHandler.get_async_instance()
 
 
 @router.get("/bots")
@@ -159,12 +160,25 @@ async def plugin_webhook(request: Request):
 
 
 @router.post("/index-data")
-async def index_data(request: Request, indexer_type: IndexType, collection_name: str, files: List[UploadFile]):
-    serializable_files = [SerializableUploadFile.from_upload_file(file) for file in files]
+async def index_data(
+    request: Request,
+    indexer_type: IndexType,
+    collection_name: str,
+    files: List[UploadFile],
+):
+    files_list = []
+    for file in files:
+        await storage.write_file(
+            file_path=file.filename,
+            file_content=file.file.read(),
+            mime_type=file.content_type,
+        )
+        public_url = await storage.public_url(file_path=file.filename)
+        files_list.append(public_url)
     indexer_input = Indexer(
         type=indexer_type.value,
         collection_name=collection_name,
-        files=serializable_files,
+        files=files_list,
     )
     # write to indexer
     produce_message(indexer_input)
