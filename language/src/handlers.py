@@ -2,6 +2,7 @@
 Handlers for Language Input and Output
 """
 
+import traceback
 from typing import List
 import logging
 import uuid
@@ -277,6 +278,6 @@ async def handle_output(
                 )
             )
         except Exception as e:
-            logger.error("Error in text to speech: %s", e)
+            logger.error("Error in text to speech: %s %s", e, traceback.format_exc())
 
     return channel_inputs
