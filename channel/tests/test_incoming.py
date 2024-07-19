@@ -1,5 +1,5 @@
 import base64
-from unittest.mock import patch, AsyncMock, MagicMock, Mock
+from unittest.mock import patch, AsyncMock, MagicMock
 import pytest
 
 from lib.data_models import (
@@ -13,53 +13,75 @@ from lib.data_models import (
     LanguageIntent,
     DialogOption,
 )
+from lib.channel_handler import ChannelHandler
+from src.handlers.incoming import process_incoming_messages
 
-# Patch StorageHandler.get_async_instance before importing the module
-mock_storage_instance = MagicMock()
-mock_write_file = AsyncMock()
-mock_public_url = AsyncMock(return_value="https://storage.url/test_audio.ogg")
 
-mock_storage_instance.write_file = mock_write_file
-mock_storage_instance.public_url = mock_public_url
+@pytest.fixture
+def mock_async_storage_instance():
+    async_storage_instance = MagicMock()
+    mock_async_write_file = AsyncMock()
+    mock_async_public_url = AsyncMock(return_value="https://storage.url/test_audio.ogg")
 
-mock_encryption_handler = MagicMock()
-mock_encryption_handler.decrypt_dict = Mock(
-    side_effect=lambda x: {
-        k: v.replace("encrypted_", "decrypted_") for k, v in x.items()
-    }
-)
-mock_encryption_handler.decrypt_text = Mock(
-    side_effect=lambda x: x.replace("encrypted_", "decrypted_")
-)
+    async_storage_instance.write_file = mock_async_write_file
+    async_storage_instance.public_url = mock_async_public_url
+    return async_storage_instance
 
-with patch(
-    "lib.file_storage.StorageHandler.get_async_instance",
-    return_value=mock_storage_instance,
-):
-    with patch("lib.encryption_handler.EncryptionHandler", mock_encryption_handler):
-        import src.handlers.incoming
 
-        process_incoming_messages = src.handlers.incoming.process_incoming_messages
+@pytest.fixture
+def mock_get_channel_by_turn_id():
+    return AsyncMock(return_value=MagicMock(channel_id="test_channel_id"))
+
+
+def patch_all_channel_handler_get_audio_method(cls, method_name, return_value):
+    """
+    Patch the method `method_name` of all subclasses of `cls`.
+    """
+    patchers = []
+    for subclass in cls.__subclasses__()[0].__subclasses__():
+        patcher = patch.object(subclass, method_name, return_value=return_value)
+        patchers.append(patcher)
+    return patchers
+
+
+@pytest.fixture
+def patch_get_audio(request):
+    patchers = patch_all_channel_handler_get_audio_method(
+        ChannelHandler, "get_audio", base64.b64encode(b"audio_bytes")
+    )
+    for patcher in patchers:
+        patcher.start()
+        request.addfinalizer(patcher.stop)
+
+
+text_inputs = {
+    "pinnacle_whatsapp": RestBotInput(
+        channel_name="pinnacle_whatsapp",
+        headers={},
+        query_params={},
+        data={
+            "timestamp": "1714990325",
+            "text": {"body": "How are you?"},
+            "type": "text",
+        },
+    ),
+    "telegram": RestBotInput(
+        channel_name="telegram",
+        headers={},
+        query_params={},
+        data={"message_id": 1234, "date": 1721213755, "text": "How are you?"},
+    ),
+}
 
 
 @pytest.mark.asyncio
-async def test_process_incoming_text_message():
-    mock_get_channel_by_turn_id = AsyncMock(
-        return_value=MagicMock(channel_id="test_channel_id")
-    )
+@pytest.mark.parametrize(
+    "bot_input", list(text_inputs.values()), ids=list(text_inputs.keys())
+)
+async def test_process_incoming_text_message(bot_input, mock_get_channel_by_turn_id):
     with patch(
         "src.handlers.incoming.get_channel_by_turn_id", mock_get_channel_by_turn_id
     ):
-        bot_input = RestBotInput(
-            channel_name="whatsapp",
-            headers={},
-            query_params={},
-            data={
-                "timestamp": "1714990325",
-                "text": {"body": "How are you?"},
-                "type": "text",
-            },
-        )
         message = Channel(
             source="api",
             turn_id="test_turn_id",
@@ -80,50 +102,71 @@ async def test_process_incoming_text_message():
         assert result.message.text.body == "How are you?"
 
 
+audio_messages = {
+    "pinnacle_whatsapp": RestBotInput(
+        channel_name="pinnacle_whatsapp",
+        headers={},
+        query_params={},
+        data={
+            "timestamp": "1714990325",
+            "audio": {
+                "mime_type": "audio/ogg; codecs=opus",
+                "sha256": "random_sha256_value",
+                "id": "audio_id1",
+                "voice": True,
+            },
+            "type": "audio",
+        },
+    ),
+    "telegram": RestBotInput(
+        channel_name="telegram",
+        headers={},
+        query_params={},
+        data={
+            "message_id": 1235,
+            "date": 1721213963,
+            "voice": {
+                "duration": 2,
+                "mime_type": "audio/ogg",
+                "file_id": "test_file_id",
+                "file_unique_id": "test_file_unique_id",
+                "file_size": 45368,
+            },
+        },
+    ),
+}
+
+
 @pytest.mark.asyncio
-async def test_process_incoming_audio_message():
-    mock_get_channel_by_turn_id = AsyncMock(
-        return_value=MagicMock(channel_id="test_channel_id")
-    )
-    mock_wa_get_user_audio = MagicMock(
-        return_value=base64.b64encode(b"audio_bytes").decode("utf-8")
+@pytest.mark.parametrize(
+    "bot_input", list(audio_messages.values()), ids=list(audio_messages.keys())
+)
+async def test_process_incoming_audio_message(
+    bot_input, mock_async_storage_instance, mock_get_channel_by_turn_id, patch_get_audio
+):
+    message = Channel(
+        source="api",
+        turn_id="test_turn_id",
+        intent=ChannelIntent.CHANNEL_IN,
+        bot_input=bot_input,
     )
 
     with patch(
         "src.handlers.incoming.get_channel_by_turn_id", mock_get_channel_by_turn_id
     ):
         with patch(
-            "lib.whatsapp.WhatsappHelper.wa_get_user_audio",
-            mock_wa_get_user_audio,
+            "lib.file_storage.StorageHandler.get_async_instance",
+            return_value=mock_async_storage_instance,
         ):
-            bot_input = RestBotInput(
-                channel_name="whatsapp",
-                headers={},
-                query_params={},
-                data={
-                    "timestamp": "1714990325",
-                    "audio": {
-                        "mime_type": "audio/ogg; codecs=opus",
-                        "sha256": "random_sha256_value",
-                        "id": "audio_id1",
-                        "voice": True,
-                    },
-                    "type": "audio",
-                },
-            )
-            message = Channel(
-                source="api",
-                turn_id="test_turn_id",
-                intent=ChannelIntent.CHANNEL_IN,
-                bot_input=bot_input,
-            )
             result = await process_incoming_messages(
                 turn_id=message.turn_id, bot_input=bot_input
             )
-        mock_write_file.assert_called_once_with(
+        mock_async_storage_instance.write_file.assert_called_once_with(
             "test_turn_id.ogg", b"audio_bytes", "audio/ogg"
         )
-        mock_public_url.assert_called_once_with("test_turn_id.ogg")
+        mock_async_storage_instance.public_url.assert_called_once_with(
+            "test_turn_id.ogg"
+        )
         assert result is not None
         assert isinstance(result, Language)
         assert result.intent == LanguageIntent.LANGUAGE_IN
@@ -133,10 +176,9 @@ async def test_process_incoming_audio_message():
         assert result.message.audio.media_url == "https://storage.url/test_audio.ogg"
 
 
-@pytest.mark.asyncio
-async def test_process_incoming_interactive_message():
-    bot_input = RestBotInput(
-        channel_name="whatsapp",
+interactive_messages = {
+    "pinnacle_whatsapp": RestBotInput(
+        channel_name="pinnacle_whatsapp",
         headers={},
         query_params={},
         data={
@@ -144,18 +186,37 @@ async def test_process_incoming_interactive_message():
             "type": "interactive",
             "interactive": {
                 "type": "button_reply",
-                "button_reply": {"id": "0", "title": "Yes"},
+                "button_reply": {"id": "option_id_1", "title": "option_id_1"},
             },
         },
-    )
+    ),
+    "telegram": RestBotInput(
+        channel_name="telegram",
+        headers={},
+        query_params={},
+        data={
+            "id": "test_callback_id",
+            "chat_instance": "-3027013130390797136",
+            "data": "option_id_1",
+        },
+    ),
+}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "bot_input",
+    list(interactive_messages.values()),
+    ids=list(interactive_messages.keys()),
+)
+async def test_process_incoming_interactive_message(
+    bot_input, mock_get_channel_by_turn_id
+):
     message = Channel(
         source="api",
         turn_id="test_turn_id",
         intent=ChannelIntent.CHANNEL_IN,
         bot_input=bot_input,
-    )
-    mock_get_channel_by_turn_id = AsyncMock(
-        return_value=MagicMock(channel_id="test_channel_id")
     )
     with patch(
         "src.handlers.incoming.get_channel_by_turn_id", mock_get_channel_by_turn_id
@@ -173,14 +234,19 @@ async def test_process_incoming_interactive_message():
     assert result.user_input.message.interactive_reply is not None
     assert result.user_input.message.interactive_reply.options is not None
     assert len(result.user_input.message.interactive_reply.options) == 1
-    assert result.user_input.message.interactive_reply.options[0].option_id == "0"
-    assert result.user_input.message.interactive_reply.options[0].option_text == "Yes"
+    assert (
+        result.user_input.message.interactive_reply.options[0].option_id
+        == "option_id_1"
+    )
+    assert (
+        result.user_input.message.interactive_reply.options[0].option_text
+        == "option_id_1"
+    )
 
 
-@pytest.mark.asyncio
-async def test_process_incoming_language_selection_message():
-    bot_input = RestBotInput(
-        channel_name="whatsapp",
+language_selection_message = {
+    "pinnacle_whatsapp": RestBotInput(
+        channel_name="pinnacle_whatsapp",
         headers={},
         query_params={},
         data={
@@ -194,15 +260,34 @@ async def test_process_incoming_language_selection_message():
                 },
             },
         },
-    )
+    ),
+    "telegram": RestBotInput(
+        channel_name="telegram",
+        headers={},
+        query_params={},
+        data={
+            "id": "test_callback_id",
+            "chat_instance": "-3027013130390797136",
+            "data": "lang_english",
+        },
+    ),
+}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "bot_input",
+    list(language_selection_message.values()),
+    ids=list(language_selection_message.keys()),
+)
+async def test_process_incoming_language_selection_message(
+    bot_input, mock_get_channel_by_turn_id
+):
     message = Channel(
         source="api",
         turn_id="test_turn_id",
         intent=ChannelIntent.CHANNEL_IN,
         bot_input=bot_input,
-    )
-    mock_get_channel_by_turn_id = AsyncMock(
-        return_value=MagicMock(channel_id="test_channel_id")
     )
     with patch(
         "src.handlers.incoming.get_channel_by_turn_id", mock_get_channel_by_turn_id
@@ -225,10 +310,9 @@ async def test_process_incoming_language_selection_message():
     assert result.dialog.message.dialog.dialog_input == "en"
 
 
-@pytest.mark.asyncio
-async def test_process_incoming_form_message():
-    bot_input = RestBotInput(
-        channel_name="whatsapp",
+form_messages = {
+    "pinnacle_whatsapp": RestBotInput(
+        channel_name="pinnacle_whatsapp",
         headers={},
         query_params={},
         data={
@@ -242,14 +326,19 @@ async def test_process_incoming_form_message():
             },
         },
     )
+}
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "bot_input", list(form_messages.values()), ids=list(form_messages.keys())
+)
+async def test_process_incoming_form_message(bot_input, mock_get_channel_by_turn_id):
     message = Channel(
         source="api",
         turn_id="test_turn_id",
         intent=ChannelIntent.CHANNEL_IN,
         bot_input=bot_input,
-    )
-    mock_get_channel_by_turn_id = AsyncMock(
-        return_value=MagicMock(channel_id="test_channel_id")
     )
     with patch(
         "src.handlers.incoming.get_channel_by_turn_id", mock_get_channel_by_turn_id

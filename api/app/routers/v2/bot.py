@@ -1,6 +1,7 @@
 import logging
 from fastapi import APIRouter, HTTPException, Request
-from ...extensions import produce_message, channel_map
+from lib.channel_handler import channel_map
+from ...extensions import produce_message
 from ...handlers.v2.bot import install, delete, add_credentials, list_bots, add_channel
 from ...jb_schema import JBBotCode, JBChannelContent
 

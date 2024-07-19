@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, Request
 import uuid
+import logging
+from fastapi import APIRouter, HTTPException, Request
 from ...crud import get_chat_history, get_bot_list, get_bot_chat_sessions
-from ...handlers.v1 import handle_callback, handle_webhook
+from ...handlers.v1 import handle_webhook
 from ...handlers.v1.bot_handlers import (
     handle_activate_bot,
     handle_deactivate_bot,
@@ -12,12 +13,14 @@ from ...handlers.v1.bot_handlers import (
 from ...jb_schema import JBBotCode, JBBotActivate
 from ...extensions import produce_message
 
+logger = logging.getLogger("jb-manager-api")
 router = APIRouter(
     prefix="/v1",
     tags=["v1"],
 )
 
 KEYS = {"JBMANAGER_KEY": str(uuid.uuid4())}
+
 
 @router.get("/bots")
 async def get_bots():
@@ -32,6 +35,7 @@ async def get_bots():
         bot.status = status
     return bots
 
+
 @router.get("/secret")
 async def get_secret_key():
     return {"secret": KEYS["JBMANAGER_KEY"]}
@@ -42,15 +46,16 @@ async def refresh_secret_key():
     KEYS["JBMANAGER_KEY"] = str(uuid.uuid4())
     return {"status": "success"}
 
+
 @router.post("/bot/install")
-async def install_bot(request:Request, install_content: JBBotCode):
+async def install_bot(request: Request, install_content: JBBotCode):
     headers = dict(request.headers)
     authorization = headers.get("authorization")
     if authorization is None:
         raise HTTPException(status_code=401, detail="Authorization header not provided")
     if authorization != f"Bearer {JBMANAGER_KEY}":
         raise HTTPException(status_code=401, detail="Unauthorized")
-    
+
     flow_input = await handle_install_bot(install_content)
     try:
         produce_message(flow_input)
@@ -127,16 +132,6 @@ async def get_chats(bot_id: str, skip: int = 0, limit: int = 100):
 async def get_chats(bot_id: str) -> list:
     chats = await get_chat_history(bot_id)
     return chats
-
-
-@router.post("/callback")
-async def callback(request: Request):
-    data = await request.json()
-
-    async for channel_input in handle_callback(data, headers={}, query_params={}):
-        produce_message(channel_input)
-
-    return 200
 
 
 @router.post("/webhook")
