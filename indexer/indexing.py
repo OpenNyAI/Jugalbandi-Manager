@@ -1,6 +1,7 @@
 import asyncio
 import io
 import json
+import logging
 import os
 
 import asyncpg
@@ -29,6 +30,10 @@ print("kafka", kafka_topic)
 consumer = KafkaConsumer.from_env_vars(
     group_id="cooler_group_id", auto_offset_reset="latest"
 )
+logging.basicConfig()
+logger = logging.getLogger("indexer")
+logger.setLevel(logging.INFO)
+storage = StorageHandler.get_async_instance()
 
 
 def parse_file(file_path: str) -> str:
@@ -92,7 +97,6 @@ class DataIndexer:
         os.environ["POSTGRES_HOST"] = self.db_host
         os.environ["POSTGRES_PORT"] = self.db_port
         self.text_converter = TextConverter()
-        self.storage = StorageHandler.get_async_instance()
 
     async def create_pg_vector_index_if_not_exists(self):
         connection = await asyncpg.connect(
@@ -118,7 +122,7 @@ class DataIndexer:
         source_chunks = []
         counter = 0
         for file_path in indexer_input.files:
-            tmp_file_path = await self.storage._download_file_to_temp_storage(
+            tmp_file_path = await storage._download_file_to_temp_storage(
                 os.path.basename(file_path)
             )
             if indexer_input.type == "r2r":
@@ -191,11 +195,18 @@ class DataIndexer:
         return OpenAIEmbeddings(client="")
 
 
-indexer = DataIndexer()
-while True:
-    message = consumer.receive_message(kafka_topic)
-    # print("Indexer Message:", message)
-    data = json.loads(message)
-    indexer_input = Indexer(**data)
+async def start_indexer():
+    """Starts the indexer server"""
+    indexer = DataIndexer()
+    logger.info("Starting Listening")
+    while True:
+        message = consumer.receive_message(kafka_topic)
+        print("Indexer Message:", message)
+        data = json.loads(message)
+        indexer_input = Indexer(**data)
 
-    asyncio.run(indexer.index(indexer_input))
+        asyncio.run(indexer.index(indexer_input))
+
+
+if __name__ == "__main__":
+    asyncio.run(start_indexer())
