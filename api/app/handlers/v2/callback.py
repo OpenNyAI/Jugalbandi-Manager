@@ -1,55 +1,25 @@
 import logging
-from typing import Dict, AsyncGenerator, Tuple, Optional
+from typing import Dict, AsyncGenerator, Optional, Tuple
 from lib.channel_handler import ChannelHandler
-from lib.data_models import (
-    Channel,
-    ChannelIntent,
-    RestBotInput,
-    Flow,
-    FlowIntent,
-    Callback,
-    CallbackType,
-)
+from lib.data_models import Channel, ChannelIntent, RestBotInput
 from ...crud import (
     get_active_channel_by_identifier,
     get_user_by_number,
     create_user,
     create_turn,
-    get_plugin_reference,
 )
-from ...utils import extract_reference_id
 
 logger = logging.getLogger("jb-manager-api")
 
 
-async def handle_webhook(webhook_data: str) -> AsyncGenerator[Flow, None]:
-    plugin_uuid = extract_reference_id(webhook_data)
-    if not plugin_uuid:
-        raise ValueError("Plugin UUID not found in webhook data")
-    logger.info("Plugin UUID: %s", plugin_uuid)
-    plugin_reference = await get_plugin_reference(plugin_uuid)
-    turn_id: str = plugin_reference.turn_id
-    logger.info("Webhook Data: %s", webhook_data)
-    flow_input = Flow(
-        source="api",
-        intent=FlowIntent.CALLBACK,
-        callback=Callback(
-            turn_id=turn_id,
-            callback_type=CallbackType.EXTERNAL,
-            external=webhook_data,
-        ),
-    )
-    yield flow_input
-
-
 async def handle_callback(
+    bot_identifier: str,
     callback_data: Dict,
     headers: Dict,
     query_params: Dict,
     chosen_channel: type[ChannelHandler],
 ) -> AsyncGenerator[Tuple[Optional[ValueError], Optional[Channel]], None]:
     for channel_data in chosen_channel.process_message(callback_data):
-        bot_identifier = channel_data.bot_identifier
         user = channel_data.user
         message_data = channel_data.message_data
 

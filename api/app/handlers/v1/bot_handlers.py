@@ -4,6 +4,7 @@ from typing import Dict
 from lib.models import JBBot
 from lib.data_models import Flow, BotConfig, FlowIntent, BotIntent, Bot
 from lib.encryption_handler import EncryptionHandler
+from lib.channel_handler import PinnacleWhatsappHandler
 from ...jb_schema import JBBotActivate, JBBotCode
 from ...crud import (
     create_channel,
@@ -49,7 +50,7 @@ async def handle_activate_bot(bot_id: str, request_body: JBBotActivate):
     if not bot:
         return {"status": "error", "message": "Bot not found"}
     existing_channels = await get_channels_by_identifier(
-        identifier=phone_number, channel_type="whatsapp"
+        identifier=phone_number, channel_type=PinnacleWhatsappHandler.get_channel_name()
     )
     print(existing_channels)
     if existing_channels:
@@ -79,7 +80,7 @@ async def handle_activate_bot(bot_id: str, request_body: JBBotActivate):
     channel_key = EncryptionHandler.encrypt_text(channels["whatsapp"])
     channel_data = {
         "name": "whatsapp",
-        "type": "whatsapp",
+        "type": PinnacleWhatsappHandler.get_channel_name(),
         "key": channel_key,
         "app_id": phone_number,
         "url": os.getenv("WA_API_HOST"),

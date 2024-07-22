@@ -1,3 +1,4 @@
+import logging
 import uuid
 from typing import List
 
@@ -7,7 +8,7 @@ from lib.file_storage import StorageHandler
 
 from ...crud import get_bot_chat_sessions, get_bot_list, get_chat_history
 from ...extensions import produce_message
-from ...handlers.v1 import handle_callback, handle_webhook
+from ...handlers.v1 import handle_webhook
 from ...handlers.v1.bot_handlers import (
     handle_activate_bot,
     handle_deactivate_bot,
@@ -17,12 +18,14 @@ from ...handlers.v1.bot_handlers import (
 )
 from ...jb_schema import JBBotActivate, JBBotCode
 
+logger = logging.getLogger("jb-manager-api")
 router = APIRouter(
     prefix="/v1",
     tags=["v1"],
 )
 JBMANAGER_KEY = str(uuid.uuid4())
 storage = StorageHandler.get_async_instance()
+KEYS = {"JBMANAGER_KEY": str(uuid.uuid4())}
 
 
 @router.get("/bots")
@@ -41,12 +44,12 @@ async def get_bots():
 
 @router.get("/secret")
 async def get_secret_key():
-    return {"secret": JBMANAGER_KEY}
+    return {"secret": KEYS["JBMANAGER_KEY"]}
 
 
 @router.put("/refresh-key")
 async def refresh_secret_key():
-    JBMANAGER_KEY = str(uuid.uuid4())
+    KEYS["JBMANAGER_KEY"] = str(uuid.uuid4())
     return {"status": "success"}
 
 
@@ -135,16 +138,6 @@ async def get_chats(bot_id: str, skip: int = 0, limit: int = 100):
 async def get_chats(bot_id: str) -> list:
     chats = await get_chat_history(bot_id)
     return chats
-
-
-@router.post("/callback")
-async def callback(request: Request):
-    data = await request.json()
-
-    async for channel_input in handle_callback(data, headers={}, query_params={}):
-        produce_message(channel_input)
-
-    return 200
 
 
 @router.post("/webhook")

@@ -1,7 +1,7 @@
 from typing import Dict
 from lib.encryption_handler import EncryptionHandler
+from lib.channel_handler import channel_map
 from ...crud import get_channel_by_id, update_channel
-from ...extensions import channel_map
 
 
 async def list_available_channels():

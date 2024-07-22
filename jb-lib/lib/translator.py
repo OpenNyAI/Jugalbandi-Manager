@@ -314,6 +314,6 @@ class CompositeTranslator(Translator):
                     destination_language,
                 )
             except Exception as exc:
-                excs.append("Exception", exc)
+                excs.append(exc)
 
         raise ExceptionGroup("CompositeTranslator translation failed", excs)
