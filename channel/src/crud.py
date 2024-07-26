@@ -1,11 +1,9 @@
 import uuid
 from typing import Dict
 from sqlalchemy import select
-
 from lib.db_session_handler import DBSessionHandler
-
 from lib.models import JBUser, JBMessage, JBChannel, JBForm, JBTurn
-
+import json
 
 async def get_channel_by_turn_id(turn_id: str) -> JBChannel | None:
     query = (
@@ -35,7 +33,7 @@ async def create_message(
                     turn_id=turn_id,
                     message_type=message_type,
                     is_user_sent=is_user_sent,
-                    message=message,
+                    message=json.loads(message),
                 )
             )
             await session.commit()

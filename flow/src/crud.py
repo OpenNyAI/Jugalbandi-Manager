@@ -12,7 +12,7 @@ from lib.models import (
     JBTurn,
     JBUser,
 )
-
+import json
 
 async def get_state_by_session_id(session_id: str) -> JBFSMState:
     query = select(JBFSMState).where(JBFSMState.session_id == session_id)
@@ -192,7 +192,8 @@ async def create_message(
                     turn_id=turn_id,
                     message_type=message_type,
                     is_user_sent=is_user_sent,
-                    message=message,
+                    message=json.loads(message),
+
                 )
             )
             await session.commit()

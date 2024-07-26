@@ -44,27 +44,37 @@ export const Chat:React.FunctionComponent = (props: props) => {
 
 
   const loadMessage = (message:any, index: number) => {
-    if (message.message_type === 'text' || message.message_type === 'image') {
+    if (message.message_type === 'text') {
       return (
       <div className={message.is_user_sent ? 'message sender': 'message receiver'} key={index}>
         <div className="chat-message-info">
-          <p>{message.message_text}</p>
+          <p>{message.message['body']}</p>
         </div>  
       </div>)
-    } else if (message.message_type === 'interactive') {
+    }
+    else if (message.message_type === 'interactive_reply') {
       return (<div className={message.is_user_sent ? 'message sender': 'message receiver'} key={index}>
         <div className="chat-message-info">
-          <p>{message.message_text || "User selected from the menu (Interactive Msg)"}</p>
+          <p>{message.message['options'][0]['option_text'] || "User selected from the menu (Interactive Msg)"}</p>
+        </div>  
+      </div>)
+    } 
+    else if (message.message_type === 'option_list' || message.message_type === 'button') {
+      return (<div className={message.is_user_sent ? 'message sender': 'message receiver'} key={index}>
+        <div className="chat-message-info">
+          <p>{message.message['body'] || "Interactive List/Button"}</p>
+          {message.message['options'].map(option  => (
+            <p>{option['option_id'] +'. '+ option['option_text']} </p>
+          ))}
         </div>  
       </div>)
     }
      else if (message.message_type === 'audio') {
-      //return <></>;
       return (<div className={message.is_user_sent ? 'message sender': 'message receiver'} key={index}>
       <div className="chat-message-info">
         <AudioPlayer
           key={message.id}
-          src={message.media_url}
+          src={message.message['media_url']}
           isPlaying={playingId === message.id}
           onTogglePlay={() => handleTogglePlay(message.id)}
         />
