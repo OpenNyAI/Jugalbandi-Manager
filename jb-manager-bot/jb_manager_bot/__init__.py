@@ -1,3 +1,3 @@
-__all__ = ["AbstractFSM"]
+__all__ = ["AbstractFSM", "Variables"]
 
-from jb_manager_bot.abstract_fsm import AbstractFSM
+from jb_manager_bot.abstract_fsm import AbstractFSM, Variables
