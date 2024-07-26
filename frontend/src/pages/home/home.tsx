@@ -150,6 +150,7 @@ export const Home:React.FunctionComponent = (props:props) => {
             <div className='columns'>
                 <div className='credits'>Credits</div>
                 <div className='status'>Status</div>
+                <div className='channel'>Channel</div>
                 <div className='added'>Added</div>
                 <div className='modified'>Modifed</div>
             </div>

@@ -95,8 +95,14 @@
     padding-right: 25px;
 }
 
+.channel {
+    width: 150px;
+    padding-right: 25px;
+}
+
 .added {
     width: 150px;
+    padding-right: 25px;
 }
 
 .modified {
