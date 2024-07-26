@@ -53,7 +53,7 @@ async def install_bot(request: Request, install_content: JBBotCode):
     authorization = headers.get("authorization")
     if authorization is None:
         raise HTTPException(status_code=401, detail="Authorization header not provided")
-    if authorization != f"Bearer {JBMANAGER_KEY}":
+    if authorization != f"Bearer {KEYS["JBMANAGER_KEY"]}":
         raise HTTPException(status_code=401, detail="Unauthorized")
 
     flow_input = await handle_install_bot(install_content)
