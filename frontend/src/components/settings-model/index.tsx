@@ -24,7 +24,27 @@ interface Props {
 
 const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelType, title }) => {
   const [inputElements, setInputElements] = useState<Record<string, InputConfig>>({});
+  const [channelTypes, setChannelTypes] = useState<string[]>([]);
   const APIHOST = import.meta.env.VITE_SERVER_HOST;
+
+  useEffect(() => {
+    console.log("useEffect triggered");
+    // Fetch channel types on component mount
+    sendRequest({
+        url: `${APIHOST}/v2/channel/`,
+        method: "GET"
+    }).then((response: any) => {
+        console.log("Response received");
+        if (response) {
+            setChannelTypes(response); // Adjust this according to your API response structure
+            console.log("Channel types:", channelTypes);
+        } else {
+            console.log("Response is empty or does not contain data");
+        }
+    }).catch((error: any) => {
+        console.error("Error fetching channel types:", error);
+    });
+  }, [APIHOST]);
 
   useEffect(() => {
     setInputElements(inputs || {});
@@ -93,6 +113,19 @@ const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelT
           }
           data[key] = inputElements[key].value;
         }
+    } else if (modelType === 'add_channel') {
+        apiEndpoint = `${APIHOST}/v2/bot/${botId}/channel`;
+
+        if (inputElements['channel_type'].required === true && !inputElements['channel_type'].value.toString().trim()) {
+            alert('Channel is required');
+            return;
+        }
+        
+        data['name'] = inputElements['channel_name'].value;
+        data['type'] = inputElements['channel_type'].value;
+        data['url'] = inputElements['url'].value;
+        data['app_id'] = inputElements['app_id'].value;
+        data['key'] = inputElements['key'].value;
     }
     try {
       await sendRequest({
@@ -126,6 +159,8 @@ const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelT
             <div className="input-wrapper" key={key}>
               <label>{key}{inputElements[key]?.required === true? ' *' : ''}</label>
               {inputElements[key].type === 'text' ?
+
+            
                 <textarea
                     className='text-area'
                     value={inputElements[key].value.toString()}
@@ -133,13 +168,27 @@ const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelT
                     onChange={e => updateValue(key, e.target.value)}
                     rows={5}
                 />
+                
+              
               :
-              <input
-              type={getInputType(inputElements[key])}
-                value={inputElements[key].value.toString()}
-                placeholder={inputElements[key].placeholder || ''}
-                onChange={e => updateValue(key, e.target.type === 'number' ? Number(e.target.value) : e.target.value)}
-              />}
+              key === 'channel_type' ?
+                <select
+                  value={inputElements[key].value.toString()}
+                  onChange={e => updateValue(key, e.target.value)}
+                >
+                  <option value="">Select a channel type</option>
+                  {channelTypes.map((type: string) => (
+                    <option key={type} value={type}>{type}</option>
+                  ))}
+                </select>
+              
+              :
+                <input
+                type={getInputType(inputElements[key])}
+                  value={inputElements[key].value.toString()}
+                  placeholder={inputElements[key].placeholder || ''}
+                  onChange={e => updateValue(key, e.target.type === 'number' ? Number(e.target.value) : e.target.value)}
+                />}
             </div>
           ))}
         </div>

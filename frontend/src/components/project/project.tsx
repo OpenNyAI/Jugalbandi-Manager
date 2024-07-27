@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import './project.css'
 import moment from 'moment';
 import { sendRequest } from '@/api';
-import { useState, useEffect } from "react";
 
 interface IProjectProps {
     id: string;
@@ -22,15 +21,9 @@ interface IProjectProps {
 }
 
 function Project(props: IProjectProps) {
-    const { refreshBots, id, name, credits, status, channel, created_at, modified, showModel, setDataForModel, required_credentials, credentials } = props;
+    const { refreshBots, id, name, credits, status, created_at, modified, showModel, setDataForModel, required_credentials, credentials } = props;
     const APIHOST = import.meta.env.VITE_SERVER_HOST;
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [channelTypes, setChannelTypes] = useState<string[]>([]);
-    const [selectedChannelType, setSelectedChannelType] = useState<string>("");
-    const [channelName, setChannelName] = useState('');
-    const [url, setUrl] = useState('');
-    const [appId, setAppId] = useState('');
-    const [key, setKey] = useState('');
+    
 
     const statusColor = status.toLowerCase() === 'active' ? '#009B39' :
                         status.toLowerCase() === 'configuration pending' ? '#F2BB4F' : '#000';
@@ -99,62 +92,45 @@ function Project(props: IProjectProps) {
         }
     }
 
-    useEffect(() => {
-        console.log("useEffect triggered");
-        // Fetch channel types on component mount
-        sendRequest({
-            url: `${APIHOST}/v2/channel/`,
-            method: "GET"
-        }).then((response: any) => {
-            console.log("Response received");
-            console.log(response);
-            if (response) {
-                setChannelTypes(response); // Adjust this according to your API response structure
-                console.log("Channel types:", response);
-            } else {
-                console.log("Response is empty or does not contain data");
-            }
-        }).catch((error: any) => {
-            console.error("Error fetching channel types:", error);
-        });
-    }, [APIHOST]);
-
-    const handleOpenModal = () => {
-        setIsModalOpen(true);
-
-    }
-
-    const handleCloseModal = () => {
-        setIsModalOpen(false);
-    }
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        const body = {
-            name: channelName,
-            type: selectedChannelType,
-            url: url,
-            app_id: appId,
-            key: key,
-            status: "inactive"
-        };
-        console.log(body);
-        // console.log(JSON.stringify(body));
-
-
-        sendRequest({
-            url: `${APIHOST}/v2/bot/${id}/channel`,
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
+    const addChannel = () => {
+        let config: any = {
+            "channel_name": {
+                "value": "",
+                "is_secret": false,
+                "required": true
             },
-            body: JSON.stringify(body)
-        }).then((response: any) => {
-            console.log(response);
-            handleCloseModal();
-            refreshBots();
+            "channel_type": {
+                "value": "",
+                "is_secret": false,
+                "required": true
+            },
+            "url": {
+                "value": "",
+                "is_secret": false,
+                "required": true
+            },
+            "app_id": {
+                "value": "",
+                "is_secret": false,
+                "required": true
+            },
+            "key": {
+                "value": "",
+                "is_secret": true,
+                "required": true
+            }
+        };
+    
+        setDataForModel({
+            title: "Add New Channel",
+            inputs: config,
+            botId: id,
+            modelType: "add_channel"
         });
-    }
+        showModel(true);
+    };
+
+
 
     return (
         <div className='project-container'>
@@ -187,7 +163,8 @@ function Project(props: IProjectProps) {
                     }
                 </div>
                 <div className='channel'>
-                    <button onClick={handleOpenModal}>Add Channel</button>
+                    {/* <button onClick={handleOpenModal}>Add Channel</button> */}
+                    <button onClick={addChannel}>Add Channel</button>
                 </div>
                 <div className='added'>{moment(created_at).format("Do MMM YY")}</div>
                 <div className='modified'>{modified && moment(modified).format("Do MMM YY")}</div>
@@ -195,42 +172,6 @@ function Project(props: IProjectProps) {
                     <path d="M5 2C5 1.46957 5.21071 0.960859 5.58579 0.585786C5.96086 0.210714 6.46957 0 7 0H13C13.5304 0 14.0391 0.210714 14.4142 0.585786C14.7893 0.960859 15 1.46957 15 2V4H19C19.2652 4 19.5196 4.10536 19.7071 4.29289C19.8946 4.48043 20 4.73478 20 5C20 5.26522 19.8946 5.51957 19.7071 5.70711C19.5196 5.89464 19.2652 6 19 6H17.931L17.064 18.142C17.0281 18.6466 16.8023 19.1188 16.4321 19.4636C16.0619 19.8083 15.5749 20 15.069 20H4.93C4.42414 20 3.93707 19.8083 3.56688 19.4636C3.1967 19.1188 2.97092 18.6466 2.935 18.142L2.07 6H1C0.734784 6 0.48043 5.89464 0.292893 5.70711C0.105357 5.51957 0 5.26522 0 5C0 4.73478 0.105357 4.48043 0.292893 4.29289C0.48043 4.10536 0.734784 4 1 4H5V2ZM7 4H13V2H7V4ZM4.074 6L4.931 18H15.07L15.927 6H4.074ZM8 8C8.26522 8 8.51957 8.10536 8.70711 8.29289C8.89464 8.48043 9 8.73478 9 9V15C9 15.2652 8.89464 15.5196 8.70711 15.7071C8.51957 15.8946 8.26522 16 8 16C7.73478 16 7.48043 15.8946 7.29289 15.7071C7.10536 15.5196 7 15.2652 7 15V9C7 8.73478 7.10536 8.48043 7.29289 8.29289C7.48043 8.10536 7.73478 8 8 8ZM12 8C12.2652 8 12.5196 8.10536 12.7071 8.29289C12.8946 8.48043 13 8.73478 13 9V15C13 15.2652 12.8946 15.5196 12.7071 15.7071C12.5196 15.8946 12.2652 16 12 16C11.7348 16 11.4804 15.8946 11.2929 15.7071C11.1054 15.5196 11 15.2652 11 15V9C11 8.73478 11.1054 8.48043 11.2929 8.29289C11.4804 8.10536 11.7348 8 12 8Z" fill="#666666"/>
                 </svg>
             </div>
-
-            {isModalOpen && (
-                <div className="modal">
-                    <div className="modal-content">
-                        <span className="close" onClick={handleCloseModal}>&times;</span>
-                        <form onSubmit={handleSubmit}>
-                            <label>
-                                Channel Name:
-                                <input type="text" value={channelName} onChange={(e) => setChannelName(e.target.value)} />
-                            </label>
-                            <label>
-                                Channel Type:
-                                <select value={selectedChannelType} onChange={(e) => setSelectedChannelType(e.target.value)}>
-                                    <option value="">Select a channel type</option>
-                                    {channelTypes.map((type: string) => (
-                                        <option key={type} value={type}>{type}</option>
-                                    ))}
-                                </select>
-                            </label>
-                            <label>
-                                URL:
-                                <input type="text" value={url} onChange={(e) => setUrl(e.target.value)} />
-                            </label>
-                            <label>
-                                App ID:
-                                <input type="text" value={appId} onChange={(e) => setAppId(e.target.value)} />
-                            </label>
-                            <label>
-                                Key:
-                                <input type="text" value={key} onChange={(e) => setKey(e.target.value)} />
-                            </label>
-                            <button type="submit">Submit</button>
-                        </form>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
