@@ -94,27 +94,27 @@ function Project(props: IProjectProps) {
 
     const addChannel = () => {
         let config: any = {
-            "channel_name": {
+            "Name": {
                 "value": "",
                 "is_secret": false,
                 "required": true
             },
-            "channel_type": {
+            "Provider": {
                 "value": "",
                 "is_secret": false,
                 "required": true
             },
-            "url": {
+            "API URL": {
                 "value": "",
                 "is_secret": false,
                 "required": true
             },
-            "app_id": {
+            "Identifier": {
                 "value": "",
                 "is_secret": false,
                 "required": true
             },
-            "key": {
+            "Key": {
                 "value": "",
                 "is_secret": true,
                 "required": true

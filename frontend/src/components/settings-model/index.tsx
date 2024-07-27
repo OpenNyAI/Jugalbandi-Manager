@@ -116,16 +116,16 @@ const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelT
     } else if (modelType === 'add_channel') {
         apiEndpoint = `${APIHOST}/v2/bot/${botId}/channel`;
 
-        if (inputElements['channel_type'].required === true && !inputElements['channel_type'].value.toString().trim()) {
+        if (inputElements['Provider'].required === true && !inputElements['Provider'].value.toString().trim()) {
             alert('Channel is required');
             return;
         }
         
-        data['name'] = inputElements['channel_name'].value;
-        data['type'] = inputElements['channel_type'].value;
-        data['url'] = inputElements['url'].value;
-        data['app_id'] = inputElements['app_id'].value;
-        data['key'] = inputElements['key'].value;
+        data['name'] = inputElements['Name'].value;
+        data['type'] = inputElements['Provider'].value;
+        data['url'] = inputElements['API URL'].value;
+        data['app_id'] = inputElements['Identifier'].value;
+        data['key'] = inputElements['Key'].value;
     }
     try {
       await sendRequest({
@@ -171,7 +171,7 @@ const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelT
                 
               
               :
-              key === 'channel_type' ?
+              key === 'Provider' ?
                 <select
                   value={inputElements[key].value.toString()}
                   onChange={e => updateValue(key, e.target.value)}
