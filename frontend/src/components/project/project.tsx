@@ -26,6 +26,7 @@ function Project(props: IProjectProps) {
     const APIHOST = import.meta.env.VITE_SERVER_HOST;
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [channelTypes, setChannelTypes] = useState<string[]>([]);
+    const [selectedChannelType, setSelectedChannelType] = useState<string>("");
     const [channelName, setChannelName] = useState('');
     const [url, setUrl] = useState('');
     const [appId, setAppId] = useState('');
@@ -129,17 +130,25 @@ function Project(props: IProjectProps) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        const data = {
-            channelTypes,
-            channelName,
-            url,
-            appId,
-            key
+        const body = {
+            name: channelName,
+            type: selectedChannelType,
+            url: url,
+            app_id: appId,
+            key: key,
+            status: "inactive"
         };
+        console.log(body);
+        // console.log(JSON.stringify(body));
+
+
         sendRequest({
             url: `${APIHOST}/v2/bot/${id}/channel`,
             method: "POST",
-            data
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(body)
         }).then((response: any) => {
             console.log(response);
             handleCloseModal();
@@ -198,7 +207,7 @@ function Project(props: IProjectProps) {
                             </label>
                             <label>
                                 Channel Type:
-                                <select value={channelTypes} onChange={(e) => setChannelTypes(e.target.value)}>
+                                <select value={selectedChannelType} onChange={(e) => setSelectedChannelType(e.target.value)}>
                                     <option value="">Select a channel type</option>
                                     {channelTypes.map((type: string) => (
                                         <option key={type} value={type}>{type}</option>
