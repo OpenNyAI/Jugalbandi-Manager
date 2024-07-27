@@ -2,6 +2,7 @@
 """
 
 from abc import ABC
+from enum import Enum
 from typing import Any, Dict, List, Set
 from pydantic import BaseModel
 from transitions import Machine
@@ -20,6 +21,10 @@ from jb_manager_bot.data_models import (
 from jb_manager_bot.parsers import Parser
 
 
+class ReturnStatus(Enum):
+    SUCCESS = "SUCCESS"
+
+
 class Variables(BaseModel):
     pass
 
@@ -35,6 +40,7 @@ class AbstractFSM(ABC):
     conditions: Set[str] = set()
     output_variables: Set[str] = set()
     variable_names = Variables
+    return_status_values = ReturnStatus
     RUN_TOKEN = "RUNNING"
 
     def __init__(self, send_message: callable):
@@ -50,6 +56,7 @@ class AbstractFSM(ABC):
         self.variables = (
             self.variables if hasattr(self, "variables") else self.variable_names()
         )
+        self.return_status = self.return_status_values.SUCCESS
         self.temp_variables = {}
         transitions = list(
             sorted(
@@ -98,7 +105,7 @@ class AbstractFSM(ABC):
             self.next()
             self.reset_inputs()
         if self.status == Status.END:
-            return self.outputs
+            return self.return_status, self.outputs
         else:
             return self.RUN_TOKEN
 
@@ -374,7 +381,8 @@ class AbstractFSM(ABC):
                 message_payload = FSMOutput(
                     intent=FSMIntent.SEND_MESSAGE,
                     message=Message(
-                        message_type=MessageType.OPTION_LIST, option_list=options_payload
+                        message_type=MessageType.OPTION_LIST,
+                        option_list=options_payload,
                     ),
                 )
 
