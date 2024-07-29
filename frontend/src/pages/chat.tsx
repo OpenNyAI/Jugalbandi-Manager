@@ -63,7 +63,7 @@ export const Chat:React.FunctionComponent = (props: props) => {
       return (<div className={message.is_user_sent ? 'message sender': 'message receiver'} key={index}>
         <div className="chat-message-info">
           <p>{message.message['body'] || "Interactive List/Button"}</p>
-          {message.message['options'].map(option  => (
+          {message.message['options'] && message.message['options'].map(option  => (
             <p>{option['option_id'] +'. '+ option['option_text']} </p>
           ))}
         </div>  
