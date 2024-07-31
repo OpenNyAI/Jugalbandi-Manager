@@ -13,7 +13,6 @@ from lib.models import (
     JBUser,
 )
 
-
 async def get_state_by_session_id(session_id: str) -> JBFSMState:
     query = select(JBFSMState).where(JBFSMState.session_id == session_id)
     async with DBSessionHandler.get_async_session() as session:
@@ -193,6 +192,7 @@ async def create_message(
                     message_type=message_type,
                     is_user_sent=is_user_sent,
                     message=message,
+
                 )
             )
             await session.commit()

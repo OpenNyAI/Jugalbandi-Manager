@@ -224,9 +224,9 @@ async def handle_user_input(user_input: UserInput):
         turn_id=turn_id,
         message_type=message_type.value,
         is_user_sent=True,
-        message=getattr(message, message.message_type.value).model_dump_json(
+        message=json.loads(getattr(message, message.message_type.value).model_dump_json(
             exclude_none=True
-        ),
+        )),
     )
     session = await manage_session(turn_id=turn_id)
     session_id: str = session.id
