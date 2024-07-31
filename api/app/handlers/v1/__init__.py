@@ -25,9 +25,11 @@ logger = logging.getLogger("jb-manager-api")
 async def handle_webhook(webhook_data: str) -> AsyncGenerator[Flow, None]:
     plugin_uuid = extract_reference_id(webhook_data)
     if not plugin_uuid:
-        raise ValueError("Plugin UUID not found in webhook data")
+        return
     logger.info("Plugin UUID: %s", plugin_uuid)
     plugin_reference = await get_plugin_reference(plugin_uuid)
+    if plugin_reference is None:
+        raise ValueError("Plugin reference not found")
     turn_id: str = plugin_reference.turn_id
     logger.info("Webhook Data: %s", webhook_data)
     flow_input = Flow(

@@ -126,6 +126,11 @@ class FSMIntent(Enum):
     LANGUAGE_CHANGE = "LANGUAGE_CHANGE"
     SEND_MESSAGE = "SEND_MESSAGE"
     RAG_CALL = "RAG_CALL"
+    WEBHOOK = "WEBHOOK"
+
+
+class Webhook(BaseModel):
+    reference_id: str
 
 
 class RAGQuery(BaseModel):
@@ -138,6 +143,7 @@ class FSMOutput(BaseModel):
     intent: FSMIntent
     message: Optional[Message] = None
     rag_query: Optional[RAGQuery] = None
+    webhook: Optional[Webhook] = None
 
     @model_validator(mode="before")
     @classmethod
@@ -146,11 +152,14 @@ class FSMOutput(BaseModel):
         intent = values.get("intent")
         message = values.get("message")
         rag_query = values.get("rag_query")
+        webhook = values.get("webhook")
 
         if intent == FSMIntent.SEND_MESSAGE and message is None:
             raise ValueError(f"message cannot be None for intent: {intent.name}")
         elif intent == FSMIntent.RAG_CALL and rag_query is None:
             raise ValueError(f"rag_query cannot be None for intent: {intent.name}")
+        elif intent == FSMIntent.WEBHOOK and webhook is None:
+            raise ValueError(f"webhook cannot be None for intent: {intent.name}")
         return values
 
 
