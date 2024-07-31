@@ -1,5 +1,4 @@
 ---
-title: Jugalbandi Manager
 cover: .gitbook/assets/jb-cover.png
 coverY: 77.769820971867
 layout:
