@@ -2,7 +2,7 @@
 
 ## 🚀 Getting Started
 
-* [💬 About Jugalbandi Manager](README.md)
+* [About Jugalbandi Manager](README.md)
 
 ***
 
