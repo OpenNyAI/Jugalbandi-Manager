@@ -2,7 +2,8 @@ import logging
 import uuid
 from typing import List
 
-from fastapi import APIRouter, HTTPException, Request, UploadFile
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.datastructures import UploadFile
 from lib.data_models.indexer import Indexer, IndexType
 from lib.file_storage import StorageHandler
 
@@ -24,7 +25,6 @@ router = APIRouter(
     tags=["v1"],
 )
 JBMANAGER_KEY = str(uuid.uuid4())
-storage = StorageHandler.get_async_instance()
 KEYS = {"JBMANAGER_KEY": str(uuid.uuid4())}
 
 
@@ -154,11 +154,11 @@ async def plugin_webhook(request: Request):
 
 @router.post("/index-data")
 async def index_data(
-    request: Request,
     indexer_type: IndexType,
     collection_name: str,
     files: List[UploadFile],
 ):
+    storage = StorageHandler.get_async_instance()
     files_list = []
     for file in files:
         await storage.write_file(
@@ -166,8 +166,7 @@ async def index_data(
             file_content=file.file.read(),
             mime_type=file.content_type,
         )
-        public_url = await storage.public_url(file_path=file.filename)
-        files_list.append(public_url)
+        files_list.append(file.filename)
     indexer_input = Indexer(
         type=indexer_type.value,
         collection_name=collection_name,

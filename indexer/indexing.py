@@ -48,27 +48,27 @@ def parse_file(file_path: str) -> str:
     return parser(file_path)
 
 
-def docx_parser(docx_file_path):
+def docx_parser(docx_file_path: str):
     return docx2txt.process(docx_file_path)
 
 
-def pdf_parser(pdf_file_path):
+def pdf_parser(pdf_file_path: str):
     doc = fitz.open(pdf_file_path)
     return "\n".join(page.get_text("text") for page in doc)
 
 
-def xlsx_parser(excel_file_path):
+def xlsx_parser(excel_file_path: str):
     df = pd.read_excel(excel_file_path)
     return df.to_string(index=False)
 
 
-def json_parser(json_file_path):
+def json_parser(json_file_path: str):
     with open(json_file_path, "r") as file:
         data = json.load(file)
     return json.dumps(data, indent=4)
 
 
-def default_parser(file_path):
+def default_parser(file_path: str):
     with open(file_path, "r") as file:
         return file.read()
 
@@ -122,30 +122,28 @@ class DataIndexer:
         source_chunks = []
         counter = 0
         for file_path in indexer_input.files:
-            tmp_file_path = await storage._download_file_to_temp_storage(
-                os.path.basename(file_path)
-            )
-            if indexer_input.type == "r2r":
-                with open(tmp_file_path, "rb") as file_reader:
-                    file_content = file_reader.read()
-                source_files.append(
-                    UploadFile(
-                        file=io.BytesIO(file_content),
-                        size=len(file_content),
-                        filename=os.path.basename(file_path),
+            async with storage.read_file(file_path=file_path, mode="rb") as file:
+                file_content = await file.read()
+                file_path = file.name
+                if indexer_input.type == "r2r":
+                    source_files.append(
+                        UploadFile(
+                            file=io.BytesIO(file_content),
+                            size=len(file_content),
+                            filename=os.path.basename(file_path),
+                        )
                     )
-                )
-            else:
-                content = await self.text_converter.textify(tmp_file_path)
-                for chunk in self.splitter.split_text(content):
-                    new_metadata = {
-                        "chunk-id": str(counter),
-                        "document_name": os.path.basename(file_path),
-                    }
-                    source_chunks.append(
-                        Document(page_content=chunk, metadata=new_metadata)
-                    )
-                    counter += 1
+                else:
+                    content = await self.text_converter.textify(file_path)
+                    for chunk in self.splitter.split_text(content):
+                        new_metadata = {
+                            "chunk-id": str(counter),
+                            "document_name": os.path.basename(file_path),
+                        }
+                        source_chunks.append(
+                            Document(page_content=chunk, metadata=new_metadata)
+                        )
+                        counter += 1
         try:
             if indexer_input.type == "r2r":
                 os.environ["POSTGRES_VECS_COLLECTION"] = indexer_input.collection_name

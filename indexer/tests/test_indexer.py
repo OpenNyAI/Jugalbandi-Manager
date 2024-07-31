@@ -1,5 +1,6 @@
 import json
 import os
+from contextlib import asynccontextmanager
 from unittest.mock import ANY, AsyncMock, MagicMock, mock_open, patch
 
 import pytest
@@ -16,12 +17,18 @@ def mock_env_vars(monkeypatch):
     monkeypatch.setenv("POSTGRES_DATABASE_PORT", "5432")
 
 
+# Mock read_file function
+@asynccontextmanager
+async def mock_read_file(file_path, mode):
+    mock_file = MagicMock()
+    mock_file.read = AsyncMock(return_value=b"test content")
+    mock_file.name = "temp_test.txt"
+    yield mock_file
+
+
 # Mock storage instance
 mock_storage_instance = MagicMock()
-mock_download_file_to_temp_storage = AsyncMock(return_value="temp_test.txt")
-mock_storage_instance._download_file_to_temp_storage = (
-    mock_download_file_to_temp_storage
-)
+mock_storage_instance.read_file = mock_read_file
 
 
 # Patching the StorageHandler in lib.file_storage with the mock
@@ -107,8 +114,7 @@ with patch(
         mock_r2r_app = MagicMock()
         mock_r2r_app.engine.aingest_files = AsyncMock()
 
-        with patch("builtins.open", mock_open(read_data=b"Default Content")):
-            with patch.object(indexer, "get_r2r", return_value=mock_r2r_app):
-                await indexer.index(indexer_input)
-                mock_r2r_app.engine.aingest_files.assert_awaited_once_with(files=[ANY])
-                assert os.environ["POSTGRES_VECS_COLLECTION"] == "test_collection"
+        with patch.object(indexer, "get_r2r", return_value=mock_r2r_app):
+            await indexer.index(indexer_input)
+            mock_r2r_app.engine.aingest_files.assert_awaited_once_with(files=[ANY])
+            assert os.environ["POSTGRES_VECS_COLLECTION"] == "test_collection"
