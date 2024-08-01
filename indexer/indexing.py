@@ -185,6 +185,7 @@ class DataIndexer:
         if os.getenv("OPENAI_API_TYPE") == "azure":
             return AzureOpenAIEmbeddings(
                 model=os.getenv("AZURE_EMBEDDING_MODEL_NAME"),
+                dimensions=1536,  # Default dimension size
                 azure_deployment=os.getenv("AZURE_DEPLOYMENT_NAME"),
                 azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
                 openai_api_type=os.getenv("OPENAI_API_TYPE"),
