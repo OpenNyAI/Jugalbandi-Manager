@@ -6,8 +6,6 @@ import traceback
 from typing import List
 import logging
 import uuid
-from .extension import speech_processor, storage, translator
-from lib.audio_converter import convert_to_wav_with_ffmpeg
 from lib.data_models import (
     Channel,
     ChannelIntent,
@@ -25,7 +23,8 @@ from lib.data_models import (
     ListMessage,
 )
 from lib.model import LanguageCodes
-
+from .extension import speech_processor, storage, translator
+from .audio_converter import convert_to_wav_with_ffmpeg
 
 logger = logging.getLogger("language")
 logger.setLevel(logging.INFO)

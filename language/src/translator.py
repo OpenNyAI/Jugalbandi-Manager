@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 import aiohttp
 import httpx
 
-from .model import InternalServerException, LanguageCodes
+from lib.model import InternalServerException, LanguageCodes
 
 logger = logging.getLogger("translator")
 
