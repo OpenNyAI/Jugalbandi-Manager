@@ -17,6 +17,7 @@ def _is_url(string) -> bool:
     except ValueError:
         return False
 
+
 def get_filename_from_url(url):
     # Parse the URL to get the path
     parsed_url = urlparse(url)
@@ -26,8 +27,11 @@ def get_filename_from_url(url):
     filename = os.path.basename(path)
     return filename
 
+
 def _get_file_extension(file_name_or_url) -> str:
-    if file_name_or_url.startswith("http://") or file_name_or_url.startswith("https://"):
+    if file_name_or_url.startswith("http://") or file_name_or_url.startswith(
+        "https://"
+    ):
         file_name = get_filename_from_url(file_name_or_url)
     else:
         file_name = file_name_or_url
@@ -82,7 +86,9 @@ async def convert_to_wav_with_ffmpeg(
         f"ffmpeg -i {local_filename}"
         f" -acodec pcm_s16le -ar 16000 -ac 1 {wav_filename}"
     )
-    subprocess.run(command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    subprocess.run(
+        command, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+    )
 
     async with aiofiles.open(wav_filename, "rb") as wav_file:
         audio_data = await wav_file.read()

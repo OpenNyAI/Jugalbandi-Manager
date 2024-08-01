@@ -1,12 +1,12 @@
 """This module is used to configure the language extension."""
 
-from lib.speech_processor import (
+from lib.file_storage import StorageHandler
+from .speech_processor import (
     AzureSpeechProcessor,
     CompositeSpeechProcessor,
     DhruvaSpeechProcessor,
 )
-from lib.translator import AzureTranslator, CompositeTranslator, DhruvaTranslator
-from lib.file_storage import StorageHandler
+from .translator import AzureTranslator, CompositeTranslator, DhruvaTranslator
 
 # ---- Speech Processor ----
 speech_processor = CompositeSpeechProcessor(
