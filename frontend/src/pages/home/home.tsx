@@ -139,13 +139,16 @@ export const Home:React.FunctionComponent = (props:props) => {
                         </div>
                     </div>
                 </div>
+                <div className="btn-add-project">
+                    <button onClick={installBot}>Add Project</button>
+                </div>
             </div>
+           
         </div>
         <div className='separator'></div>
         <div className='projects-container'>
             <div className="title-container">
                 <div className='title'>Connected Projects:</div>
-                <button onClick={installBot}>Install New Bot</button>
             </div>
             <div className='columns'>
                 <div className='credits'>Credits</div>
