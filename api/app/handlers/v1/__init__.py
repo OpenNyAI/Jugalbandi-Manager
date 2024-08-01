@@ -25,6 +25,7 @@ logger = logging.getLogger("jb-manager-api")
 async def handle_webhook(webhook_data: str) -> AsyncGenerator[Flow, None]:
     plugin_uuid = extract_reference_id(webhook_data)
     if not plugin_uuid:
+        # Ignoring callbacks without plugin_uuid
         return
     logger.info("Plugin UUID: %s", plugin_uuid)
     plugin_reference = await get_plugin_reference(plugin_uuid)
