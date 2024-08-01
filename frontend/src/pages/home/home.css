@@ -19,9 +19,24 @@
 
 .user-info {
     display: flex;
-    flex-direction: row;
     gap: 10px;
     font-weight: 500;
+    flex-wrap: wrap;
+}
+
+.user-info .btn-add-project{
+    flex: 1 0 100%;
+}
+
+.user-info .btn-add-project button{
+    width: 80%;
+    border: 1px solid #7f63ff45;
+    color: #7f63ff;
+    font-size: 15px;
+    padding: 6px;
+    border-radius: 5px;
+    background-color: #e4e4e4;
+    cursor: pointer;
 }
 
 .user-info svg {
