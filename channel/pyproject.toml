@@ -9,18 +9,7 @@ package-mode = false
 [tool.poetry.dependencies]
 python = "^3.11"
 python-dotenv = "^1.0.0"
-confluent-kafka = "^2.3.0"
-requests = "^2.31.0"
-azure-identity = "^1.15.0"
-pydub = "^0.25.1"
-aiofiles = "^23.2.1"
-pytz = "^2023.3.post1"
-tenacity = "^8.2.3"
-pydantic = "^2.5.3"
-asyncpg = "^0.29.0"
-cachetools = "^5.3.2"
 sqlalchemy = "^2.0.25"
-psycopg2-binary = "^2.9.9"
 
 [tool.poetry.group.test.dependencies]
 pytest = "^8.2.2"

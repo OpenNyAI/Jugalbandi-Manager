@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload
 
 from lib.db_session_handler import DBSessionHandler
 from lib.models import (
-    JBPluginUUID,
+    JBWebhookReference,
     JBSession,
     JBTurn,
     JBUser,
@@ -89,9 +89,8 @@ async def get_chat_history(bot_id: str, skip=0, limit=1000):
     return None
 
 
-async def get_plugin_reference(plugin_uuid: str) -> JBPluginUUID:
-    # Create a query to select JBPluginMapping based on the provided plugin_uuid
-    query = select(JBPluginUUID).where(JBPluginUUID.id == plugin_uuid)
+async def get_plugin_reference(plugin_uuid: str) -> JBWebhookReference:
+    query = select(JBWebhookReference).where(JBWebhookReference.id == plugin_uuid)
 
     async with DBSessionHandler.get_async_session() as session:
         async with session.begin():

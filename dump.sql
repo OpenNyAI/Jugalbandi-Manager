@@ -159,21 +159,6 @@ CREATE TABLE public.jb_message (
 ALTER TABLE public.jb_message OWNER TO postgres;
 
 --
--- Name: jb_plugin_uuid; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.jb_plugin_uuid (
-    id character varying NOT NULL,
-    session_id character varying,
-    created_at timestamp with time zone DEFAULT now() NOT NULL,
-    updated_at timestamp with time zone DEFAULT now() NOT NULL,
-    turn_id character varying
-);
-
-
-ALTER TABLE public.jb_plugin_uuid OWNER TO postgres;
-
---
 -- Name: jb_qa_log; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -309,6 +294,20 @@ CREATE TABLE public.jb_users (
 ALTER TABLE public.jb_users OWNER TO postgres;
 
 --
+-- Name: jb_webhook_reference; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.jb_webhook_reference (
+    id character varying NOT NULL,
+    turn_id character varying,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+ALTER TABLE public.jb_webhook_reference OWNER TO postgres;
+
+--
 -- Name: alembic_version alembic_version_pkc; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -373,14 +372,6 @@ ALTER TABLE ONLY public.jb_message
 
 
 --
--- Name: jb_plugin_uuid jb_plugin_uuid_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.jb_plugin_uuid
-    ADD CONSTRAINT jb_plugin_uuid_pkey PRIMARY KEY (id);
-
-
---
 -- Name: jb_qa_log jb_qa_log_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -434,6 +425,14 @@ ALTER TABLE ONLY public.jb_turn
 
 ALTER TABLE ONLY public.jb_users
     ADD CONSTRAINT jb_users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: jb_webhook_reference jb_webhook_reference_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.jb_webhook_reference
+    ADD CONSTRAINT jb_webhook_reference_pkey PRIMARY KEY (id);
 
 
 --

@@ -259,11 +259,10 @@ class JBFSMState(Base):
     message = Column(String)
 
 
-class JBPluginUUID(Base):
-    __tablename__ = "jb_plugin_uuid"
+class JBWebhookReference(Base):
+    __tablename__ = "jb_webhook_reference"
 
     id = Column(String, primary_key=True)
-    session_id = Column(String)
     turn_id = Column(String)
     created_at = Column(
         TIMESTAMP(timezone=True), server_default=func.now(), nullable=False

@@ -40,7 +40,7 @@ mock_extension.storage = mock_storage_instance
 mock_convert_to_wav = AsyncMock(return_value=b"wav_data")
 
 with patch.dict("sys.modules", {"src.extension": mock_extension}):
-    with patch("lib.audio_converter.convert_to_wav_with_ffmpeg", mock_convert_to_wav):
+    with patch("src.audio_converter.convert_to_wav_with_ffmpeg", mock_convert_to_wav):
         import src.handlers
 
         handle_output = src.handlers.handle_output

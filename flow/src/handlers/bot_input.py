@@ -34,6 +34,7 @@ from ..crud import (
     update_session,
     update_turn,
     update_user_language,
+    insert_jb_webhook_reference,
 )
 from ..extensions import produce_message
 
@@ -224,15 +225,21 @@ async def handle_user_input(user_input: UserInput):
         turn_id=turn_id,
         message_type=message_type.value,
         is_user_sent=True,
-        message=getattr(message, message.message_type.value).model_dump_json(
-            exclude_none=True
+        message=json.loads(
+            getattr(message, message.message_type.value).model_dump_json(
+                exclude_none=True
+            )
         ),
     )
     session = await manage_session(turn_id=turn_id)
     session_id: str = session.id
     async for fsm_output in handle_bot_input(fsm_input, session_id=session_id):
-        flow_output = handle_bot_output(fsm_output, turn_id=turn_id)
-        produce_message(flow_output)
+        if fsm_output.intent == FSMIntent.WEBHOOK:
+            reference_id = fsm_output.webhook.reference_id
+            insert_jb_webhook_reference(reference_id=reference_id, turn_id=turn_id)
+        else:
+            flow_output = handle_bot_output(fsm_output, turn_id=turn_id)
+            produce_message(flow_output)
 
 
 async def handle_callback_input(callback: Callback):
@@ -254,8 +261,12 @@ async def handle_callback_input(callback: Callback):
     session = await manage_session(turn_id=turn_id)
     session_id: str = session.id
     async for fsm_output in handle_bot_input(fsm_input, session_id=session_id):
-        flow_output = handle_bot_output(fsm_output, turn_id=turn_id)
-        produce_message(flow_output)
+        if fsm_output.intent == FSMIntent.WEBHOOK:
+            reference_id = fsm_output.webhook.reference_id
+            insert_jb_webhook_reference(reference_id=reference_id, turn_id=turn_id)
+        else:
+            flow_output = handle_bot_output(fsm_output, turn_id=turn_id)
+            produce_message(flow_output)
 
 
 async def handle_dialog_input(dialog: Dialog):
@@ -278,5 +289,9 @@ async def handle_dialog_input(dialog: Dialog):
     session = await manage_session(turn_id=turn_id, new_session=new_session)
     session_id: str = session.id
     async for fsm_output in handle_bot_input(fsm_input, session_id=session_id):
-        flow_output = handle_bot_output(fsm_output, turn_id=turn_id)
-        produce_message(flow_output)
+        if fsm_output.intent == FSMIntent.WEBHOOK:
+            reference_id = fsm_output.webhook.reference_id
+            insert_jb_webhook_reference(reference_id=reference_id, turn_id=turn_id)
+        else:
+            flow_output = handle_bot_output(fsm_output, turn_id=turn_id)
+            produce_message(flow_output)
