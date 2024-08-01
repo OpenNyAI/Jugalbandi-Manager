@@ -6,12 +6,13 @@ from lib.db_session_handler import DBSessionHandler
 from lib.models import (
     JBFSMState,
     JBSession,
-    JBPluginUUID,
+    JBWebhookReference,
     JBBot,
     JBMessage,
     JBTurn,
     JBUser,
 )
+
 
 async def get_state_by_session_id(session_id: str) -> JBFSMState:
     query = select(JBFSMState).where(JBFSMState.session_id == session_id)
@@ -143,15 +144,12 @@ async def get_all_bots():
             return s
 
 
-def insert_jb_plugin_uuid(session_id: str, turn_id: str):
-    # Create a query to insert a new row into JBPluginMapping
-    JB_IDENTIFIER = "jbkey"
-    reference_id = f"{JB_IDENTIFIER}{str(uuid.uuid4())[:25]}{JB_IDENTIFIER}"
-    plugin_uid = JBPluginUUID(id=reference_id, session_id=session_id, turn_id=turn_id)
+def insert_jb_webhook_reference(reference_id: str, turn_id: str):
+    webhook_reference = JBWebhookReference(id=reference_id, turn_id=turn_id)
 
     with DBSessionHandler.get_sync_session() as session:
         with session.begin():
-            session.add(plugin_uid)
+            session.add(webhook_reference)
             session.commit()
             return reference_id
     return False
@@ -192,7 +190,6 @@ async def create_message(
                     message_type=message_type,
                     is_user_sent=is_user_sent,
                     message=message,
-
                 )
             )
             await session.commit()

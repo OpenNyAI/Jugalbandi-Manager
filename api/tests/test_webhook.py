@@ -28,11 +28,25 @@ async def test_handle_webhook_valid_data():
 
 
 @pytest.mark.asyncio
-async def test_handle_webhook_invalid_data():
-    webhook_data = json.dumps({"data": "test"})
+async def test_handle_webhook_valid_key_not_found():
+    webhook_data = json.dumps({"plugin_uuid": "jbkeyinvalid_uuidjbkey", "data": "test"})
 
-    with pytest.raises(ValueError, match="Plugin UUID not found in webhook data"):
-        flow_input_generator = handle_webhook(webhook_data)
+    # Mocking the extract_reference_id function
+    with patch(
+        "app.handlers.v1.get_plugin_reference",
+        return_value=None,
+    ):
+        with pytest.raises(ValueError, match="Plugin reference not found"):
+            flow_input_generator = handle_webhook(webhook_data)
+            await anext(flow_input_generator)
+
+
+@pytest.mark.asyncio
+async def test_handle_webhook_invalid_key():
+    webhook_data = json.dumps({"plugin_uuid": "invalid_uuid", "data": "test"})
+
+    flow_input_generator = handle_webhook(webhook_data)
+    with pytest.raises(StopAsyncIteration):
         await anext(flow_input_generator)
 
 
@@ -40,6 +54,6 @@ async def test_handle_webhook_invalid_data():
 async def test_handle_webhook_empty_data():
     webhook_data = ""
 
-    with pytest.raises(ValueError, match="Plugin UUID not found in webhook data"):
-        flow_input_generator = handle_webhook(webhook_data)
+    flow_input_generator = handle_webhook(webhook_data)
+    with pytest.raises(StopAsyncIteration):
         await anext(flow_input_generator)

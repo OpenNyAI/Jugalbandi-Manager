@@ -1,6 +1,7 @@
 """Module to define the abstract FSM class.
 """
 
+import uuid
 from abc import ABC
 from enum import Enum
 from typing import Any, Dict, List, Set
@@ -17,6 +18,7 @@ from jb_manager_bot.data_models import (
     ButtonMessage,
     Option,
     ImageMessage,
+    Webhook,
 )
 from jb_manager_bot.parsers import Parser
 
@@ -92,6 +94,20 @@ class AbstractFSM(ABC):
     def current_callback(self):
         """Property to get the current callback value."""
         return self.__callback__
+
+    def get_reference_id(self) -> str:
+        """Method to get the reference id for plugin call"""
+        JB_IDENTIFIER = "jbkey"
+        reference_id = f"{JB_IDENTIFIER}{str(uuid.uuid4())[:25]}{JB_IDENTIFIER}"
+        self.send_message(
+            FSMOutput(
+                intent=FSMIntent.WEBHOOK,
+                webhook=Webhook(
+                    reference_id=reference_id,
+                ),
+            )
+        )
+        return reference_id
 
     def run(self):
         """Method to start the FSM."""
