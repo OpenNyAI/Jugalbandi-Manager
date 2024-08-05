@@ -11,8 +11,7 @@ from langchain_openai import AzureOpenAIEmbeddings, OpenAIEmbeddings
 from lib.data_models import RAG, Flow
 from lib.kafka_utils import KafkaConsumer, KafkaProducer
 from openai import OpenAI
-from r2r import R2R, EmbeddingConfig, R2RBuilder, VectorSearchSettings
-from r2r.providers.embeddings import AzureOpenAIEmbeddingProvider
+from r2r import R2R, VectorSearchSettings
 
 load_dotenv()
 
@@ -48,15 +47,6 @@ os.environ["POSTGRES_PORT"] = db_port
 
 
 def get_r2r():
-    if os.getenv("OPENAI_API_TYPE") == "azure":
-        embedding_provider = AzureOpenAIEmbeddingProvider(
-            EmbeddingConfig(
-                provider="azure-openai",  # provider name for azure
-                base_model=os.getenv("AZURE_EMBEDDING_MODEL_NAME"),
-                base_dimension=512,  # default parameter
-            )
-        )
-        return R2RBuilder().with_embedding_provider(provider=embedding_provider).build()
     return R2R()
 
 
@@ -64,6 +54,7 @@ def get_embeddings():
     if os.getenv("OPENAI_API_TYPE") == "azure":
         return AzureOpenAIEmbeddings(
             model=os.getenv("AZURE_EMBEDDING_MODEL_NAME"),
+            dimensions=1536,  # Default dimension size
             azure_deployment=os.getenv("AZURE_DEPLOYMENT_NAME"),
             azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
             openai_api_type=os.getenv("OPENAI_API_TYPE"),
@@ -132,21 +123,28 @@ async def querying(
         callback(flow_input.model_dump_json())
 
 
-while True:
-    try:
-        # will keep trying until non-null message is received
-        message = consumer.receive_message(retriever_topic, timeout=1.0)
-        data = json.loads(message)
-        data = RAG(**data)
-        retriever_input = data.model_dump(
-            include={
-                "type",
-                "turn_id",
-                "collection_name",
-                "query",
-                "top_chunk_k_value",
-            }
-        )
-        asyncio.run(querying(**retriever_input, callback=send_message))
-    except Exception as e:
-        logger.error("Exception %s :: %s", e, traceback.format_exc())
+async def start_retriever():
+    """Starts the retriever server"""
+    logger.info("Starting Listening")
+    while True:
+        try:
+            # will keep trying until non-null message is received
+            message = consumer.receive_message(retriever_topic, timeout=1.0)
+            data = json.loads(message)
+            data = RAG(**data)
+            retriever_input = data.model_dump(
+                include={
+                    "type",
+                    "turn_id",
+                    "collection_name",
+                    "query",
+                    "top_chunk_k_value",
+                }
+            )
+            await querying(**retriever_input, callback=send_message)
+        except Exception as e:
+            logger.error("Exception %s :: %s", e, traceback.format_exc())
+
+
+if __name__ == "__main__":
+    asyncio.run(start_retriever())

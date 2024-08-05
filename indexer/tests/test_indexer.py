@@ -82,7 +82,7 @@ with patch(
 
     # Test DataIndexer.index method for default input
     @pytest.mark.asyncio
-    async def test_default_data_indexer_index():
+    async def test_default_data_indexer():
         indexer = indexing.DataIndexer()
         indexer_input = Indexer(
             files=["test.txt"], collection_name="test_collection", type="default"
@@ -98,7 +98,7 @@ with patch(
         ), patch.object(
             indexer, "create_pg_vector_index_if_not_exists", AsyncMock()
         ), patch(
-            "langchain_community.vectorstores.PGVector.from_documents", AsyncMock()
+            "langchain_community.vectorstores.PGVector.from_documents", MagicMock()
         ) as mock_pg_vector:
             await indexer.index(indexer_input)
             mock_pg_vector.assert_called_once()
@@ -106,7 +106,7 @@ with patch(
 
     # Test DataIndexer.index method for r2r input
     @pytest.mark.asyncio
-    async def test_r2r_data_indexer_index():
+    async def test_r2r_data_indexer():
         indexer = indexing.DataIndexer()
         indexer_input = Indexer(
             files=["test.txt"], collection_name="test_collection", type="r2r"

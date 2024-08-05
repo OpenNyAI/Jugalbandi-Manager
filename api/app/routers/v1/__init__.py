@@ -24,7 +24,6 @@ router = APIRouter(
     prefix="/v1",
     tags=["v1"],
 )
-JBMANAGER_KEY = str(uuid.uuid4())
 KEYS = {"JBMANAGER_KEY": str(uuid.uuid4())}
 
 

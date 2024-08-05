@@ -18,8 +18,7 @@ from lib.data_models import Indexer
 from lib.file_storage import StorageHandler
 from lib.kafka_utils import KafkaConsumer
 from model import InternalServerException
-from r2r import R2R, EmbeddingConfig, R2RBuilder
-from r2r.providers.embeddings import AzureOpenAIEmbeddingProvider
+from r2r import R2R
 
 load_dotenv()
 
@@ -166,19 +165,6 @@ class DataIndexer:
             raise InternalServerException(e.__str__())
 
     async def get_r2r(self):
-        if os.getenv("OPENAI_API_TYPE") == "azure":
-            embedding_provider = AzureOpenAIEmbeddingProvider(
-                EmbeddingConfig(
-                    provider="azure-openai",  # provider name for azure
-                    base_model=os.getenv("AZURE_EMBEDDING_MODEL_NAME"),
-                    base_dimension=512,  # default parameter
-                )
-            )
-            return (
-                R2RBuilder()
-                .with_embedding_provider(provider=embedding_provider)
-                .build()
-            )
         return R2R()
 
     async def get_embeddings(self):
