@@ -10,7 +10,6 @@ from langchain_community.vectorstores import PGVector
 from langchain_openai import AzureOpenAIEmbeddings, OpenAIEmbeddings
 from lib.data_models import RAG, Flow
 from lib.kafka_utils import KafkaConsumer, KafkaProducer
-from openai import OpenAI
 from r2r import R2R, VectorSearchSettings
 
 load_dotenv()
@@ -32,7 +31,6 @@ print("Connections done", file=sys.stderr)
 
 logger = logging.getLogger("retriever")
 
-client = OpenAI()
 db_name = os.getenv("POSTGRES_DATABASE_NAME")
 db_user = os.getenv("POSTGRES_DATABASE_USERNAME")
 db_password = os.getenv("POSTGRES_DATABASE_PASSWORD")
