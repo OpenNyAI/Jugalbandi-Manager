@@ -1,6 +1,6 @@
 name: New Issue
 description: Create a new Bug / Feature Request / General Issue
-title: "[C4GT Community]: "
+title: ""
 labels: ["Please add the C4GT Community Label on all tickets that you would require C4GT community involvement. In addition to this, please add whichever labels best describe your project from this list: C4GT Community, C4GT Coding, C4GT Design, C4GT Mentorship, C4GT Bounty, C4GT Advisory"]
 body:
   - type: textarea
