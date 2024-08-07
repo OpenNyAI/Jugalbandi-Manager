@@ -96,6 +96,7 @@ def handle_bot_output(fsm_output: FSMOutput, turn_id: str):
             logger.error("RAG query not found in fsm output")
             return
         flow_output = RAG(
+            type=rag_query.type,
             source="flow",
             turn_id=turn_id,
             collection_name=rag_query.collection_name,

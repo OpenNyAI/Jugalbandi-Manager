@@ -7,11 +7,8 @@ readme = "README.md"
 package-mode = false
 
 [tool.poetry.dependencies]
-python = "^3.11"
-fastapi = "^0.108.0"
+python = ">=3.11,<3.13"
 python-dotenv = "^1.0.0"
-uvicorn = "^0.25.0"
-pgvector = "^0.2.4"
 psycopg2-binary = "^2.9.9"
 asyncpg = "^0.29.0"
 pandas = "^2.1.4"
@@ -20,15 +17,26 @@ docx2txt = "^0.8"
 fitz = "^0.0.1.dev2"
 aiofiles = "^23.2.1"
 confluent-kafka = "^2.3.0"
-langchain = "^0.2.3"
-langchain-openai = "^0.1.8"
-langchain-postgres = "^0.0.7"
+langchain = "^0.2.8"
+langchain-openai = "^0.1.16"
 psycopg = {extras = ["binary", "pool"], version = "^3.1.19"}
 pymupdf = "^1.24.5"
+langchain-community = "^0.2.7"
+r2r = "^0.2.78"
 
 [tool.poetry.group.dev.dependencies]
 lib = {path = "../jb-lib", develop = true}
 
+[tool.poetry.group.test]
+
+[tool.poetry.group.test.dependencies]
+pytest-mock = "*"
+pytest-asyncio = "^0.23.7"
+pytest = "^8.2.2"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+pythonpath = "./"

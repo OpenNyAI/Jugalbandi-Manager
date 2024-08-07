@@ -1,7 +1,7 @@
 import os
 import logging
 from lib.kafka_utils import KafkaProducer, KafkaException
-from lib.data_models import Flow, Channel
+from lib.data_models import Flow, Channel, Indexer
 
 logger = logging.getLogger("jb-manager-api")
 
@@ -11,19 +11,25 @@ if not channel_topic:
 flow_topic = os.getenv("KAFKA_FLOW_TOPIC")
 if not flow_topic:
     raise ValueError("KAFKA_FLOW_TOPIC is not set in the environment")
+indexer_topic = os.getenv("KAFKA_INDEXER_TOPIC")
+if not indexer_topic:
+    raise ValueError("KAFKA_INDEXER_TOPIC is not set in the environment")
 logger.info("Channel Topic: %s", channel_topic)
 logger.info("Flow Topic: %s", flow_topic)
+logger.info("Indexer Topic: %s", indexer_topic)
 
 # Connect Kafka Producer automatically using env variables
 # and SASL, if applicable
 producer = KafkaProducer.from_env_vars()
 
 
-def produce_message(message: Flow | Channel):
+def produce_message(message: Flow | Channel | Indexer):
     if isinstance(message, Flow):
         topic = flow_topic
     elif isinstance(message, Channel):
         topic = channel_topic
+    elif isinstance(message, Indexer):
+        topic = indexer_topic
     else:
         raise ValueError("Invalid message type")
     try:

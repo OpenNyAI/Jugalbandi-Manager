@@ -33,3 +33,4 @@ from .flow import (
     FSMIntent,
 )
 from .retriever import RAG, RAGResponse
+from .indexer import Indexer

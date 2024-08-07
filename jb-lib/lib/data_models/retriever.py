@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 
 class RAG(BaseModel):
+    type: str
     source: str
     turn_id: str
     collection_name: str
