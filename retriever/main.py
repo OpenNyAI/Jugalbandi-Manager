@@ -10,7 +10,7 @@ from langchain_openai import AzureOpenAIEmbeddings, OpenAIEmbeddings
 from langchain_postgres.vectorstores import PGVector
 from openai import OpenAI
 
-from lib.data_models import FlowInput, RAGInput
+from lib.data_models import Flow,FlowIntent, Callback, CallbackType, RAG, RAGResponse
 from lib.kafka_utils import KafkaConsumer, KafkaProducer
 
 load_dotenv()
@@ -47,7 +47,7 @@ def send_message(data):
 
 
 async def querying_with_langchain(
-    session_id: str,
+    source: str,
     turn_id: str,
     collection_name: str,
     query: str,
@@ -82,13 +82,7 @@ async def querying_with_langchain(
     data = []
     for document in documents:
         data.append({"chunk": document.page_content, "metadata": document.metadata})
-    flow_input = {
-        "source": "retriever",
-        "session_id": session_id,
-        "turn_id": turn_id,
-        "rag_response": data,
-    }
-    flow_input = FlowInput(**flow_input)
+    flow_input = Flow(source="retriever", intent=FlowIntent.CALLBACK,callback=Callback(turn_id=turn_id,callback_type=CallbackType.RAG,rag_response=data))
     # logging.info("flow Input %s", flow_input)
 
     if callback:
@@ -100,10 +94,10 @@ while True:
         # will keep trying until non-null message is received
         message = consumer.receive_message(retriever_topic, timeout=1.0)
         data = json.loads(message)
-        data = RAGInput(**data)
+        data = RAG(**data)
         retriver_input = data.model_dump(
             include={
-                "session_id",
+                "source",
                 "turn_id",
                 "collection_name",
                 "query",
