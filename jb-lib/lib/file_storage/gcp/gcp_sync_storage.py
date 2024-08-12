@@ -35,8 +35,13 @@ class GCPSyncStorage(SyncStorage):
         bucket = self.__client__.bucket(self.__bucket_name__)
         blob = bucket.blob(file_path)
 
-        content_type = mime_type if mime_type else "application/octet-stream"
-        blob.upload_from_string(file_content, content_type=content_type)
+        if mime_type is None:
+            mime_type = (
+                "audio/mpeg"
+                if file_path.lower().endswith(".mp3")
+                else "application/octet-stream"
+            )
+        blob.upload_from_string(file_content, content_type=mime_type)
 
 
     def _download_file_to_temp_storage(
