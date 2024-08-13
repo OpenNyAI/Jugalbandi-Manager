@@ -10,4 +10,4 @@ Jugalbandi (JB) Manager is a full AI-powered conversational chatbot platform. It
 
 See [Quickstart Guide](https://opennyai.github.io/Jugalbandi-Manager/tutorials/quickstart.html)
 
-Read the full documentation [here](https://opennyai.github.io/Jugalbandi-Manager/)
+Read the full documentation [here](https://docs.jugalbandi.opennyai.org/)
