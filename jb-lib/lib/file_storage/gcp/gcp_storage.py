@@ -2,7 +2,7 @@ import os
 from typing import Union, Optional
 from datetime import datetime, timedelta, timezone
 import logging
-from google.cloud import storage
+from gcloud.aio.storage import Storage
 from ..storage import AsyncStorage
 
 logger = logging.getLogger("storage")
@@ -19,7 +19,7 @@ class GCPAsyncStorage(AsyncStorage):
             raise ValueError(
                 "GCPAsyncStorage client not initialized. Missing bucket_name ")
         self.__bucket_name__ = bucket_name
-        self.__client__ = storage.Client()
+        self.__client__ = Storage()
         os.makedirs(self.tmp_folder, exist_ok=True)
 
     async def write_file(
@@ -30,9 +30,6 @@ class GCPAsyncStorage(AsyncStorage):
     ):
         if not self.__client__:
             raise Exception("GCPAsyncStorage client not initialized")
-
-        bucket = self.__client__.bucket(self.__bucket_name__)
-        blob = bucket.blob(file_path)
         
         if mime_type is None:
             mime_type = (
@@ -40,7 +37,7 @@ class GCPAsyncStorage(AsyncStorage):
                 if file_path.lower().endswith(".mp3")
                 else "application/octet-stream"
             )
-        blob.upload_from_string(file_content, content_type=mime_type)
+        await self.__client__.upload(self.__bucket_name__, file_path, file_content, content_type=mime_type)
 
     async def _download_file_to_temp_storage(
         self, file_path: Union[str, os.PathLike]
@@ -48,19 +45,20 @@ class GCPAsyncStorage(AsyncStorage):
         if not self.__client__:
             raise Exception("GCPAsyncStorage client not initialized")
 
-        bucket = self.__client__.bucket(self.__bucket_name__)
-        blob = bucket.blob(file_path)
-
         tmp_file_path = os.path.join(self.tmp_folder, file_path)
-        blob.download_to_filename(tmp_file_path)
+        await self.__client__.download_to_filename(
+            self.__bucket_name__, file_path, tmp_file_path
+        )
+
         return tmp_file_path
 
     async def public_url(self, file_path: str) -> str:
         if not self.__client__:
             raise Exception("GCPAsyncStorage client not initialized")
 
-        bucket = self.__client__.bucket(self.__bucket_name__)
-        blob = bucket.blob(file_path)
-
-        url = blob.generate_signed_url(expiration=timedelta(days=1))
+        url = await self.__client__.get_signed_url(
+                    self.__bucket_name__,
+                    file_path,
+                    expiration=86400  # 1 day 
+        )
         return url

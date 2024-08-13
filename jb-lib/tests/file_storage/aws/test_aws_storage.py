@@ -51,6 +51,7 @@ class TestAWSAsyncStorage:
         with pytest.raises(ValueError):
             AWSAsyncStorage()
 
+    @patch("aioboto3.client")
     @pytest.mark.asyncio
     async def test_write_file(self):
         with patch("lib.file_storage.aws.aws_storage.os.getenv") as mock_getenv, patch("aioboto3.client") as mock_aioboto3_client:
@@ -75,6 +76,7 @@ class TestAWSAsyncStorage:
                 ContentType="application/octet-stream",
             )
 
+    @patch("aioboto3.client")
     @pytest.mark.asyncio
     async def test_download_file_to_temp_storage(self):
         with patch("lib.file_storage.aws.aws_storage.os.getenv") as mock_getenv, patch("aioboto3.client") as mock_aioboto3_client:
@@ -101,7 +103,8 @@ class TestAWSAsyncStorage:
                 Bucket="test_bucket", Key="test.txt"
             )
             stream.iter_chunks.assert_called_once()
-
+    
+    @patch("aioboto3.client")
     @pytest.mark.asyncio
     async def test_public_url(self):
         with patch("lib.file_storage.aws.aws_storage.os.getenv") as mock_getenv, patch("aioboto3.client") as mock_aioboto3_client:
