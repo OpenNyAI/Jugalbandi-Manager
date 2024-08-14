@@ -1,0 +1,13 @@
+# What is Jugalbandi?
+
+_<mark style="color:purple;">Jugalbandi, at its core, is an information and action tool.</mark>_
+
+In today's information age, access to justice relies on the availability of quick, accurate, and verified information—be it regarding rights, entitlements, policies, or laws or any other matter that significantly impacts our lives. Yet many times, the intricate language and interconnected nature of such information scattered across various documents, departments, and institutions makes it intimidating for anyone to access it without formal assistance or training. Even those with formal training may struggle, losing precious time navigating the complex landscape to find the right information. Overall, this results in significant financial, opportunity, and time costs for everyone involved.
+
+Institutions around the world, both private and government, have tried to tackle these issues across various domains, aiming to provide accessible and actionable information to all. However, these efforts are often limited in terms of both reach and resources, leaving many without the benefits they can potentially offer.
+
+More importantly, information is only as powerful as the actions it can enable/inspire; without an added capability to act on the provided information, its potential remains unrealized. This is where Jugalbandi comes into play. Jugalbandi offers the potential of a transformative AI technology stack, leveraging conversational AI to make information on anything and everything - be it policies, laws, rights, or simply information required to navigate any task, both accessible and understandable. This stack allows the user to ask any query directly through an interface such as WhatsApp, in their native language. For instance, a user can ask a question in Malayalam using their voice and receive a response in Malayalam voice, making the interaction as natural as speaking to a human assistant.
+
+Jugalbandi doesn’t stop at providing information. If a citizen wishes to take action based on the answer to their query, such as booking an appointment with a service provider or even initiating legal proceedings, such as filling out a legal notice or complaint, they can successfully do so through the same WhatsApp interface. Any entrepreneur, working in any field, can leverage this stack to build their conversational and action services at scale. Developers can pick and choose the components of Jugalbandi most suitable for them to build or improve their web apps, mobile apps, IVRS, etc. We will detail out these components in sections to follow.&#x20;
+
+\

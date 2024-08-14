@@ -1,0 +1,14 @@
+# How can maintenance of the stack be open-sourced?
+
+
+
+The developments to Jugalbandi have evolved from a publicly accessible API (which has been deprecated recently) for information retrieval, to a framework for quickly building applications using a manager, and finally to the no-code Jugalbandi Studio. All of these initiatives have been led and anchored by OpenNyAI which comprises an extensive network of organisations, volunteers and resources made available through value and mission aligned initiatives/contributions to steer this development. As this community of builders and users continues to grow, more aspects surrounding Jugalbandi, such as its management and maintenance will also open up to the community.&#x20;
+
+While the codebase is already open-sourced, the eventual goal is open-sourcing the ownership, maintenance and governance of the stack, to serve as a DPG in all aspects. A few measures that have been taken to this end are:
+
+1. In-depth documentation in the codebase: The stack has been designed to be modular, with clear instructions on the workings of each component and how they interact with one another. Interested developers will also find reference implementations and tutorials on how they can quickly start using Jugalbandi for their own service.
+2. Open to issue identification & contributions: The repository for the codebase is publicly accessible through Github. This allows anyone with a registered Github account to raise an issue with the workings of the stack, or make their own contributions to the stack through a pull request. Upon review of the contribution by the repository owners, currently the OpenNyAI team, it may be merged with the main branch of the codebase, provided that it contributes to the working of the stack.
+3. Licensed as open-source: With the project having an Apache License (Version 2.0, January 2004) there are no limitations on who can use, modify, distribute the stack or combine it with their own solution. The only limiting condition imposed by the licence is that when distributing the software, the distributor must include a copy of the licence, provide a notice of any changes made to the original files, and ensure the availability of the source code.
+4. Transparent governance: All key decisions taken in the development and adoption of the stack continue to be documented on the Coda dashboard.&#x20;
+5. C4GT: C4GT is a one-of-its-kind initiative that aims to build communities around Digital Public Goods (DPG), Digital Public Infrastructure (DPI) & Tech for Good products. It encourage ongoing contributions and strengthen collaboration between DPG/DPI builders, adopters, and contributors (students or working professionals). Jugalbandi has had many volunteers who connected with us to solve unique problem statements through C4GT.
+6. Volunteer Contributions: This has already been detailed out in the previous section on our volunteer organizations and individual contributors.

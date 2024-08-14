@@ -1,0 +1,9 @@
+# Understanding the community-led spirit of our mission
+
+The OpenNyAI team holds makerspaces annually, where developers and entrepreneurs gather to explore and co-develop AI solutions. These residencies, designed as hackathons, enable participants to innovate and prototype impactful AI-based applications, particularly targeting challenges for access to Justice. Through hands-on sessions/prototyping, mentorship, networking etc., participants refine their ideas and contribute to the creation of accessible, scalable AI tools that can democratize legal assistance and improve judicial processes. This initiative underscores the power of community-driven innovation in addressing societal issues with technology
+
+The Openyai and Jugalbandi mission in its truest sense is community led and community born. In fact, Jugalbandi was first announced to the world at the Agami Summit 2022, presented as an idea in Vivek Raghavan’s (Co-founder, Sarvam AI and a member of the OpenyAI community)  Keynote address. It was in the next Agami Summit in 2023, Sameer Segal (Scientist, Microsoft Research) publically announced the work OpenNyAI and the Microsoft Research team had been undertaking with support of several other community members including ……. .in the months leading up to the summit.
+
+Maker residency, as forums aren’t meant to serve as product releases, rather as collectives where the possibilities of AI for increasing access to justice are formulated. They serve as the antithesis of the black box approach that’s been associated with the development and usage of AI. Instead of focusing on the tools, these communities seek to identify the problems that can be reasonably tackled using technology, and to find ways of deploying solutions in an inclusive, transparent, open and collaborative manner.&#x20;
+
+\
