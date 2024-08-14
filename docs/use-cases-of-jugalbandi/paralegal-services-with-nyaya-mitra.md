@@ -30,7 +30,7 @@ Periodic Follow-ups: After a specified period, the action items for the paralega
 
 **What’s happening in the backend?**&#x20;
 
-Understanding Grievances: The bot analyzes user-provided details (including documents) to understand the issue.
+Understanding Grievances: The bot analyzes user-provided details to understand the issue.
 
 Finding Relevant Categories: It searches through a dataset with descriptions of different legal categories to find matches.
 
