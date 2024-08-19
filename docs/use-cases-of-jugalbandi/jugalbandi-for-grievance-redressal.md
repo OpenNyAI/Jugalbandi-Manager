@@ -43,21 +43,22 @@ The bot automatically populates the required fields in CPGRAMS' submission form 
 
 5. **User Confirmation:** To ensure accuracy, the system may ask the user to confirm the selected category or provide feedback, helping to clarify any uncertainties.\
 
-6. **Automating Form Completion:** Once the category is confirmed, the system fills out the necessary fields in a format suitable for submission to the appropriate portal. (For eg - the CPGRAMS portal or Karnataka - Janaspandana, CM Helplines, IT Grievance etc.)&#x20;
+6. **Automating Form Completion:** Once the category is confirmed, the system fills out the necessary fields in a format suitable for submission to the appropriate portal. (For eg - the CPGRAMS portal or Karnataka -[ Janaspandana](https://ipgrs.karnataka.gov.in/), [CM Helplines,](https://cmhelpline.tnega.org/portal/en/home) [IT Grievance ](https://eportal.incometax.gov.in/iec/foservices/#/fo-greivance/submit)etc.)&#x20;
 
 **Implementation Requirements**
 
-* Tools:
-*
-  * GPT-4 and GPT-3.5 models for parsing existing grievance categories and generating example grievances for each category
-  * Cleaned dataset for storing grievance categories.
-  * Jugalbandi’s Retriever component for category selection.
-  * Third party APIs for submission of grievances to the relevant departments
-* Team:
-*
-  * Development team for bot implementation, including AI model integration and cloud migration
-  * Functional consultants for domain expertise in grievance management and workflow design.
-  * Quality assurance team for testing and validation of bot functionalities.
+**Tools:**
+
+* GPT-4 and GPT-3.5 models for parsing existing grievance categories and generating example grievances for each category
+* Cleaned dataset for storing grievance categories.
+* Jugalbandi’s Retriever component for category selection.
+* Third party APIs for submission of grievances to the relevant departments
+
+**Team:**
+
+* Development team for bot implementation, including AI model integration and cloud migration
+* Functional consultants for domain expertise in grievance management and workflow design.
+* Quality assurance team for testing and validation of bot functionalities.
 
 **Learnings**
 

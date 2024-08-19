@@ -49,6 +49,6 @@ Additionally, while the scope of AI is constantly widening, not every problem re
 
 Yes, Jugalbandi Manager can be integrated with various existing systems and platforms through APIs (and other integration tools such as webhooks, zapier, custom scripts and ETL tools), making it adaptable to the specific needs of different organisations.
 
-8. What kind of support and training is available for adopters of Jugalbandi Manager?
+7. What kind of support and training is available for adopters of Jugalbandi Manager?
 
-Support and training are available in the documentation of Jugalbandi manager, replete with reference implementations, how-to guides and explanations of the stack and its operations. The OpenNyAI team is also available to facilitate teams to quickly adopt and start using the stack, and anyone can readily seek support through the discord channel.&#x20;
+Support and training are available in the documentation of Jugalbandi [manager](https://github.com/OpenNyAI/Jugalbandi-Manager/tree/main/docs), replete with reference implementations, how-to guides and explanations of the stack and its operations. The OpenNyAI team is also available to facilitate teams to quickly adopt and start using the stack, and anyone can readily seek support through the discord [channel. ](https://discord.gg/krtkpgwF)

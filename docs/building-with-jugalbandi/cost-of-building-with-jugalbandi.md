@@ -1,6 +1,6 @@
 # Cost of building with Jugalbandi
 
-Accessing the Jugalbandi stack is and will remain free, through the project’s GitHub repository. To be able to utilise the stack to build and offer solutions, any individual or organisation needs to consider the cost of operating the application and the associated data & infrastructure.
+Accessing the Jugalbandi stack is and will remain free, through the project’s GitHub [repository.](https://github.com/OpenNyAI/Jugalbandi-Manager) To be able to utilise the stack to build and offer solutions, any individual or organisation needs to consider the cost of operating the application and the associated data & infrastructure.
 
 The key considerations in budgeting for a conversational service is as follows:&#x20;
 

@@ -1,53 +1,50 @@
 ---
-layout: default
 title: Example Grievance Bots
 ---
 
-This is an example of building a grievance bot. We consider an organization like [CPGRAMS](https://pgportal.gov.in/) that allows Indian citizens to lodge complaints with any department of the government. 
+# Example Grievance Bots
 
-Review the notbooks [indexer.ipynb](indexer.html) and [retriever.ipynb](retriever.html) in this directory for the entire source code.
+This is an example of building a grievance bot. We consider an organization like [CPGRAMS](https://pgportal.gov.in/) that allows Indian citizens to lodge complaints with any department of the government.
 
-# Final User experience
+Review the notbooks [indexer.ipynb](../../../../references/example-grievance-bot/indexer.html) and [retriever.ipynb](../../../../references/example-grievance-bot/retriever.html) in this directory for the entire source code.
 
-||||
-|:-:|:-:|:-:|
-|![](../../assets/grievance-bot/whatsapp-1.jpeg)|![](../../assets/grievance-bot/whatsapp-2.jpeg)|![](../../assets/grievance-bot/whatsapp-3.jpeg)|
+## Final User experience
 
+|                                                       |                                                       |                                                       |
+| :---------------------------------------------------: | :---------------------------------------------------: | :---------------------------------------------------: |
+| ![](../../../../assets/grievance-bot/whatsapp-1.jpeg) | ![](../../../../assets/grievance-bot/whatsapp-2.jpeg) | ![](../../../../assets/grievance-bot/whatsapp-3.jpeg) |
 
-# Step 1: Data Indexing Pipeline
+## Step 1: Data Indexing Pipeline
 
-## Intial Data
+### Intial Data
 
 We scrape the following information from the CPGRAMS website:
 
-| Ministry                          | Category                                                                                | Subcategory 1                                     | Subcategory 2                                  | Subcategory 3           | Subcategory 4 | Subcategory 5    |
-|-----------------------------------|-----------------------------------------------------------------------------------------|--------------------------------------------------|-----------------------------------------------|-------------------------|---------------|------------------|
-| Department of Science and Technology | Removed/ Retrenched Employee/ Service Matter/ Transfer/ Compassionate Appointment/ other | SMP Division                                      | Survey of India                                | Chhattishgarh GDC Raipur |               |                  |
-| Department of Science and Technology | Allegation of Harassment/ Atrocities                                                   | Cash ACR Library                                  |                                               |                         |               |                  |
-| Housing and Urban Affairs         | NBCC                                                                                    | NBCC                                              | Regarding Contract/ Tax/ Bill Payment/ Project | INDIA                   | Madhya Pradesh |                  |
-| Ministry of Panchayati Raj        | Corruption Related to Panchayats                                                        | Panchayat Embezzlement or Misappropriation of Funds | Madhya Pradesh                                |                         |               |                  |
-| Telecommunications                | Employee Related / Services Related                                                     | Pending any type of Bill/dues for payment         |                                               |                         |               |                  |
-| Housing and Urban Affairs         | NBCC                                                                                    | NBCC                                              | Regarding Contract/ Tax/ Bill Payment/ Project | INDIA                   | Delhi         | East Kidwai Nagar |
-| Department of Ex Servicemen Welfare | Service Related                                                                        | Outstanding Dues                                  | Monetary Allowance for Gallantry Awards        | Navy                    |               |                  |
-| NITI Aayog                        | Administration and Establishment Matters                                                | Recruitment                                       | Young Professionals and Consultants            | Declaration of Result   |               |                  |
-| Housing and Urban Affairs         | NBO (National Buildings Organisation)                                                   | Various Service Matters                           | Service                                       |                         |               |                  |
-| Housing and Urban Affairs         | Directorate of Estates                                                                  | Allotment Related-Delhi                           | Type-I & II                                   | Waiting List            |               |                  |
+| Ministry                             | Category                                                                                 | Subcategory 1                                       | Subcategory 2                                  | Subcategory 3            | Subcategory 4  | Subcategory 5     |
+| ------------------------------------ | ---------------------------------------------------------------------------------------- | --------------------------------------------------- | ---------------------------------------------- | ------------------------ | -------------- | ----------------- |
+| Department of Science and Technology | Removed/ Retrenched Employee/ Service Matter/ Transfer/ Compassionate Appointment/ other | SMP Division                                        | Survey of India                                | Chhattishgarh GDC Raipur |                |                   |
+| Department of Science and Technology | Allegation of Harassment/ Atrocities                                                     | Cash ACR Library                                    |                                                |                          |                |                   |
+| Housing and Urban Affairs            | NBCC                                                                                     | NBCC                                                | Regarding Contract/ Tax/ Bill Payment/ Project | INDIA                    | Madhya Pradesh |                   |
+| Ministry of Panchayati Raj           | Corruption Related to Panchayats                                                         | Panchayat Embezzlement or Misappropriation of Funds | Madhya Pradesh                                 |                          |                |                   |
+| Telecommunications                   | Employee Related / Services Related                                                      | Pending any type of Bill/dues for payment           |                                                |                          |                |                   |
+| Housing and Urban Affairs            | NBCC                                                                                     | NBCC                                                | Regarding Contract/ Tax/ Bill Payment/ Project | INDIA                    | Delhi          | East Kidwai Nagar |
+| Department of Ex Servicemen Welfare  | Service Related                                                                          | Outstanding Dues                                    | Monetary Allowance for Gallantry Awards        | Navy                     |                |                   |
+| NITI Aayog                           | Administration and Establishment Matters                                                 | Recruitment                                         | Young Professionals and Consultants            | Declaration of Result    |                |                   |
+| Housing and Urban Affairs            | NBO (National Buildings Organisation)                                                    | Various Service Matters                             | Service                                        |                          |                |                   |
+| Housing and Urban Affairs            | Directorate of Estates                                                                   | Allotment Related-Delhi                             | Type-I & II                                    | Waiting List             |                |                   |
 
+### Data Augmentation
 
-## Data Augmentation
 We have generated an elaborate description for each grievance by using GPT-4, with appropriate system prompt and providing the ministry name, category and subcategories. The generated description is in following format:
 
-| Ministry           | Category                           | Subcategory 1                             | Description                                                                                                                                                                                                                                                    |
-|--------------------|------------------------------------|-------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Telecommunications | Employee Related / Services Related | Pending any type of Bill/dues for payment | This grievance category pertains to issues related to pending bills or dues for payment in the telecommunications sector, specifically in relation to employees or services. <br>Individuals may file complaints if they have not received bills for their telecommunications services, if there are errors or discrepancies in the billing, if they are facing challenges in making payments for their bills, or if there are delays in the processing of payments resulting in overdue dues. <br> Some common examples of how people may refer to this grievance include:<br>- Unpaid bills for telecommunications services<br>- Overdue payments for phone/internet services<br>- Outstanding dues for mobile network usage<br>- Pending invoices for employee phone plans<br>It is important for the Department/Ministry of Telecommunications to address these grievances promptly in order to ensure smooth operation of services and fair treatment of employees. |
+| Ministry           | Category                            | Subcategory 1                             | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------ | ----------------------------------- | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Telecommunications | Employee Related / Services Related | Pending any type of Bill/dues for payment | <p>This grievance category pertains to issues related to pending bills or dues for payment in the telecommunications sector, specifically in relation to employees or services.<br>Individuals may file complaints if they have not received bills for their telecommunications services, if there are errors or discrepancies in the billing, if they are facing challenges in making payments for their bills, or if there are delays in the processing of payments resulting in overdue dues.<br>Some common examples of how people may refer to this grievance include:<br>- Unpaid bills for telecommunications services<br>- Overdue payments for phone/internet services<br>- Outstanding dues for mobile network usage<br>- Pending invoices for employee phone plans<br>It is important for the Department/Ministry of Telecommunications to address these grievances promptly in order to ensure smooth operation of services and fair treatment of employees.</p> |
 
-
-
-
-
-## Schema for Vector DB
+### Schema for Vector DB
 
 We need to make this available in a VectorDB to fetch the data based on similarity. We create the following schema. `embedding` is the vector representation of `description` column.
+
 ```
 class GrievanceCategory(Base):
     __tablename__ = "grievance_category"
@@ -62,18 +59,20 @@ class GrievanceCategory(Base):
 
 `fields` stores an array of fields that the user needs to provide to lodge their compliant.
 
-## Data Indexing
+### Data Indexing
 
-# Step 2: Data Retriever Pipeline
+## Step 2: Data Retriever Pipeline
 
-![](../../assets/grievance-bot/retriever-flow.jpg)
+![](../../../../assets/grievance-bot/retriever-flow.jpg)
 
 Conversation so far,
+
 ```python
 llm_system_prompt = sm(system_prompt)
 messages = conversation_history + [llm_system_prompt]
 pprint(messages)
 ```
+
 ```json
 [
     {
@@ -94,11 +93,14 @@ pprint(messages)
     }
 ]
 ```
-## Summarizing details provided so far
+
+### Summarizing details provided so far
+
 ```python
 summary, cost = llm(messages, model="gpt-4-turbo-preview")
 print(summary)
 ```
+
 ```
 The user's grievance revolves around an issue with accessing their Permanent Account Number (PAN) card from DigiLocker. DigiLocker is a digital platform launched by the Government of India aimed at ensuring that citizens have access to authentic digital documents in a digital wallet provided by the government. The user's inability to access their PAN card from this platform can be attributed to several potential causes, such as technical glitches within the DigiLocker system, issues related to the linking of the PAN with the user's DigiLocker account, or discrepancies in the user's personal information that may be causing a mismatch.
 
@@ -118,7 +120,8 @@ Key elements to extract and analyze for effectively categorizing and addressing 
 
 This detailed analysis helps in understanding the complexity of the issue, which spans across technical, procedural, and personal information verification aspects, requiring a coordinated response from multiple government departments.
 ```
-## Fetching matching records from VectorDB
+
+### Fetching matching records from VectorDB
 
 ```python
 top_k = 10
@@ -128,6 +131,7 @@ relevant_categories = session.scalars(
     .limit(top_k)
 ).all()
 ```
+
 ```
 [<GrievanceCategory(ministry=Unique Identification Authority of India, category=Linking of Aadhaar related issues, subcategory=['Linking of Aadhaar with PAN']>,
 
@@ -150,7 +154,7 @@ relevant_categories = session.scalars(
 <GrievanceCategory(ministry=Unique Identification Authority of India, category=Linking of Aadhaar related issues, subcategory=['Linking of Aadhaar with Bank Account']>]
 ```
 
-## Ask clarifying question or are we done?
+### Ask clarifying question or are we done?
 
 ```python
 def determine_grievance_bucket_and_followup_questions(
@@ -209,6 +213,7 @@ grievance_buckets, _ = determine_grievance_bucket_and_followup_questions(
 )
 pprint(grievance_buckets)
 ```
+
 ```json
 {
     "follow_up_questions": [],
@@ -226,8 +231,7 @@ pprint(grievance_buckets)
 }
 ```
 
-## Asking for details required to lodge the complaint.
-
+### Asking for details required to lodge the complaint.
 
 ```python
 def generate_field_questions(grievance_bucket, required_fields, conversation_summary):

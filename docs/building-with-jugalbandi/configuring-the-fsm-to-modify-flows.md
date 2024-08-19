@@ -23,8 +23,8 @@ Status Indicators: Used to indicate the flow manager's actions:
 * Transition: The switch from one state to another.
 * Condition: Determines whether a transition should occur, and specifies the logic to trigger said transition.&#x20;
 * This refers to the prompts which give the LLMs context about their specific tasks in the application that’s utilising them.
-* Lookup changes in the how-to guide of the indexer if any modifications are required in how the application would have to process the provided knowledge base.&#x20;
+* Lookup changes in the how-to guide of the [indexer](../how-tos/Developer.md#indexer) if any modifications are required in how the application would have to process the provided knowledge base.&#x20;
 
-When configured properly, the FSM allows any developer to manage how their application interacts with users, in order to provide a structured and predictable user experience. Detailed explanations on how the FSMs can be built can be found in the how-to section of the technical documentation, along with a reference implementation of an FSM.&#x20;
+When configured properly, the FSM allows any developer to manage how their application interacts with users, in order to provide a structured and predictable user experience. Detailed explanations on how the FSMs can be built can be found in the how-to section of the technical [documentation](../how-tos/fsm\_building.md), along with a reference implementation of an [FSM. ](../references/fsm-output.md)
 
 \

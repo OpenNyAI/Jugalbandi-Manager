@@ -8,7 +8,7 @@ While the Jugalbandi stack is not restricted to any particular sector or domain,
 
 
 
-Although LLMs like GPT have been advancing rapidly from GPT-3 to newer versions like GPT-4, GPT-4 Turbo, and GPT-4 Mini, their quick development rate poses a challenge. While the digitally equipped can fully utilize these technologies, people lacking digital and language skills risk being left behind, widening the gap between those who are digitally literate and those who aren't. Additionally, these LLMs many times run the risk of hallucination which is an unaffordable flaw when providing with crucial information that directly impacts the actions that a user may take, Jugalbandi’s value add to address this problem is three-fold:&#x20;
+Although LLMs like GPT have been advancing rapidly from GPT-3 to newer versions like GPT-4, and GPT-4o, their quick development rate poses a challenge. While the digitally equipped can fully utilize these technologies, people lacking digital and language skills risk being left behind, widening the gap between those who are digitally literate and those who aren't. Additionally, these LLMs many times run the risk of hallucination which is an unaffordable flaw when providing with crucial information that directly impacts the actions that a user may take, Jugalbandi’s value add to address this problem is three-fold:&#x20;
 
 1. Make the conversational interfaces accessible across many more Indian languages&#x20;
 2. Restrict the possibility of the LLMs hallucinating. Overcoming a key roadblock to ensure that AI based solutions are more reliable for someone without the time or capability to immediately fact check the information provided to them

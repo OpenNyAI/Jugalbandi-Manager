@@ -1,23 +1,22 @@
 ---
-layout: default
 title: JB Manager Architecture
 ---
 
-This document explains the inner workings of the JB Manager. 
+# JB Manager Architecture
 
-## Architecture
+This document explains the inner workings of the JB Manager.
+
+### Architecture
 
 All the services are generic i.e. they are designed for multiple bots or use cases. The only customization that exists lies in the tiny bot code (finite state machine code) which is published by the Studio.
 
-![](../assets/JB-Manager-Architecture.jpg)
-To change this diagram edit this [file](../assests/JB-Manager-Architecture.drawio.png)
+![](../../../assets/JB-Manager-Architecture.jpg) To change this diagram edit this [file](../../../assests/JB-Manager-Architecture.drawio.png)
 
-
-## DB Structure
+### DB Structure
 
 **Bot**
 
-bot_id (e.g. "12345") is at the highest level. All other entries like person, sessions are against a particular bot. We support multiple bots from the same backend.
+bot\_id (e.g. "12345") is at the highest level. All other entries like person, sessions are against a particular bot. We support multiple bots from the same backend.
 
 **User**
 
@@ -35,11 +34,12 @@ Every message received from the user creates a new turn in the conversation. Aga
 
 Every message received or sent is logged to the DB.
 
-## Services
+### Services
 
-### API
+#### API
 
 Provides APIs to interact with JB Manager. Here are the top buckets of APIs:
+
 1. Callback from channels like WhatsApp or Telegram
 2. JB Studio like publishing the bot
 3. Managing bots changing their states and variables
@@ -50,11 +50,11 @@ Provides APIs to interact with JB Manager. Here are the top buckets of APIs:
 
 1. Figure out `bot_id` based on the callback
 2. Create person if doesn't exists. Fetch `pid`
-3. Create `session_id` if session has expired (> 24 hours). 
+3. Create `session_id` if session has expired (> 24 hours).
 4. Creates `turn_id` for the new conversation
 5. Create `msg_id`
 
-### Channel
+#### Channel
 
 Responsible for both input and output communication with the channel (WhatsApp / Telegram). It needs to handle channel specific API calls and rendering of UI messages (e.g. WhatsApp Flow, List & Buttons)
 
@@ -64,14 +64,16 @@ Responsible for both input and output communication with the channel (WhatsApp /
    2. Reset (not yet there)
 
 In the inbound scenario:
+
 * It mostly enqueues messages for the Language service
 * Unless the message related to a dialogue (e.g. language), WhatsApp Flow or Button. In this case it directly talks to the Flow service.
 
 In the outbound scenario:
+
 * It mostly receives messages from the Language service.
 * Unless the message is related to WhatsApp flow in which case Flow directly writes to it's queue.
 
-### Language
+#### Language
 
 1. There are two flows:
    1. Receiving users message
@@ -82,6 +84,7 @@ It's responsible for translating labels in case of interactives messages e.g. Li
 We assume that all messages sent by the user obey the user's `preferred_language`.
 
 For outbound messages, Language service will look at the message type from the Flow Service and then decide on the following:
+
 1. If `text`
    1. Then fetch details about the turn -- In what mode did the user ask their question:
       1. If user asks in text / form / interactive, we respond in text
@@ -89,15 +92,15 @@ For outbound messages, Language service will look at the message type from the F
       3. In all other cases, send text
 2. If `document`,
    1. Translate the caption
-3.  `image`
-   1. Translate the caption
+3. `image`
+4. Translate the caption
 5. If `interactive`
    1. Translate the text, header, footer
    2. Translate the labels for buttons
 
-### Flow
+#### Flow
 
-1. Retrieve session from DB based on session_id. This provides it memory of the current state (stage of the workflow), variables.
+1. Retrieve session from DB based on session\_id. This provides it memory of the current state (stage of the workflow), variables.
 2. Process the message via a finite state machine code (this code is generated in the Studio and pushed to the JB Manager)
    1. It can send multiple messages for every user message
    2. It can make API calls or use plugins
@@ -107,11 +110,11 @@ For outbound messages, Language service will look at the message type from the F
       3. Documents, Images
       4. Dialogues -- it uses keywords `language` to trigger Channel service into sending a standardized dialogue.
 3. On complete (or logical pause in the workflow e.g. user input or plugin input), save the state and variables.
-  
-### Retrieval
+
+#### Retrieval
 
 This fetches data from the Vector DB (PG Vector / Postgres) based on query and metadata if any. The metadata is used to create filter query to restrict the similarity search even further.
 
-### Indexer 
+#### Indexer
 
 This service receives input files (urls from Azure) and pre-processes them and indexes them into the Vector DB.

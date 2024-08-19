@@ -17,7 +17,7 @@ While the technical architecture of deploying and using Jugalbandi is slightly m
 
 <figure><img src="https://lh7-rt.googleusercontent.com/docsz/AD_4nXfxhTgVhYm_SYqGLMH9msE6UMSBtH1-KHn-aNJ3zILJuSbNI4hlNGN5xU9zR_DyO0szPXJHOiAj363xSZrvAOukDyy6616IjSfXz3BRk2wBJYlyl3TqYrcHUWab36lrsSVQZeiDpRHE-aV1GS9gy7F1Oog?key=BpTZdnbJWNo5iqrctUDI4Q" alt=""><figcaption></figcaption></figure>
 
-_A Typical RAG Pipeline ; Source: Hirokazu Suzuki for Beatrust_
+_A Typical RAG Pipeline ; Source: Hirokazu Suzuki for_ [_Beatrust_](https://tech.beatrust.com/entry/2024/05/02/RAG\_Evaluation%3A\_Necessity\_and\_Challenge)
 
 6\. Flow Manager: This component acts like a guide or a manager of conversations. It controls how the interaction flows, making sure the conversation is smooth and logical. For example, if you ask a vague question, it will prompt you for more details. It can categorize your needs, ask for more specific information, provide the right answers, and handle unexpected inputs. It’s highly customizable to fit different sectors and use cases.
 
