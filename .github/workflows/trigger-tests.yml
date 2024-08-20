@@ -46,4 +46,15 @@ jobs:
       - name: Test flow with pytest
         working-directory: ./flow
         run: poetry run pytest
-
+      - name: Install dependencies indexer
+        working-directory: ./indexer
+        run: poetry install --with test
+      - name: Test indexer with pytest
+        working-directory: ./indexer
+        run: poetry run pytest
+      - name: Install dependencies retriever
+        working-directory: ./retriever
+        run: poetry install --with test
+      - name: Test retriever with pytest
+        working-directory: ./retriever
+        run: poetry run pytest

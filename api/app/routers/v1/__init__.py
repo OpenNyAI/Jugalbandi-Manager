@@ -1,24 +1,29 @@
-import uuid
 import logging
+import uuid
+from typing import List
+
 from fastapi import APIRouter, HTTPException, Request
-from ...crud import get_chat_history, get_bot_list, get_bot_chat_sessions
+from fastapi.datastructures import UploadFile
+from lib.data_models.indexer import Indexer, IndexType
+from lib.file_storage import StorageHandler
+
+from ...crud import get_bot_chat_sessions, get_bot_list, get_chat_history
+from ...extensions import produce_message
 from ...handlers.v1 import handle_webhook
 from ...handlers.v1.bot_handlers import (
     handle_activate_bot,
     handle_deactivate_bot,
     handle_delete_bot,
-    handle_update_bot,
     handle_install_bot,
+    handle_update_bot,
 )
-from ...jb_schema import JBBotCode, JBBotActivate
-from ...extensions import produce_message
+from ...jb_schema import JBBotActivate, JBBotCode
 
 logger = logging.getLogger("jb-manager-api")
 router = APIRouter(
     prefix="/v1",
     tags=["v1"],
 )
-
 KEYS = {"JBMANAGER_KEY": str(uuid.uuid4())}
 
 
@@ -144,3 +149,29 @@ async def plugin_webhook(request: Request):
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     return 200
+
+
+@router.post("/index-data")
+async def index_data(
+    indexer_type: IndexType,
+    collection_name: str,
+    files: List[UploadFile],
+):
+    storage = StorageHandler.get_async_instance()
+    files_list = []
+    for file in files:
+        await storage.write_file(
+            file_path=file.filename,
+            file_content=file.file.read(),
+            mime_type=file.content_type,
+        )
+        files_list.append(file.filename)
+    indexer_input = Indexer(
+        type=indexer_type.value,
+        collection_name=collection_name,
+        files=files_list,
+    )
+    # write to indexer
+    produce_message(indexer_input)
+
+    return {"message": f"Indexing started for the files in {collection_name}"}

@@ -134,6 +134,7 @@ class Webhook(BaseModel):
 
 
 class RAGQuery(BaseModel):
+    type: str
     collection_name: str
     query: str
     top_chunk_k_value: int

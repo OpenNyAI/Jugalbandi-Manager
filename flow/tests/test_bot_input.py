@@ -15,7 +15,6 @@ from lib.data_models import (
     FSMOutput,
     FSMIntent,
     MessageType,
-    RAGResponse,
     Message,
     TextMessage,
     InteractiveReplyMessage,
@@ -357,6 +356,7 @@ fsm_and_assertions = {
         FSMOutput(
             intent=FSMIntent.RAG_CALL,
             rag_query=RAGQuery(
+                type="default",
                 collection_name="test_collection",
                 query="test_query",
                 top_chunk_k_value=5,
@@ -364,6 +364,7 @@ fsm_and_assertions = {
         ),
         RAG(
             source="flow",
+            type="default",
             turn_id="test_turn_id",
             collection_name="test_collection",
             query="test_query",
