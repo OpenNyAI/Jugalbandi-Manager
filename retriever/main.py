@@ -71,6 +71,7 @@ async def querying(
     collection_name: str,
     query: str,
     top_chunk_k_value: int = 5,
+    do_hybrid_search: bool = False,
     metadata: dict = None,
     callback: callable = None,
 ):
@@ -79,10 +80,14 @@ async def querying(
         r2r_app = get_r2r()
         vector_search_settings = (
             VectorSearchSettings(
-                search_filters=metadata, search_limit=top_chunk_k_value
+                search_filters=metadata,
+                search_limit=top_chunk_k_value,
+                do_hybrid_search=do_hybrid_search,
             )
             if metadata
-            else VectorSearchSettings(search_limit=top_chunk_k_value)
+            else VectorSearchSettings(
+                search_limit=top_chunk_k_value, do_hybrid_search=do_hybrid_search
+            )
         )
         search_results = await r2r_app.engine.asearch(
             query=query,
@@ -137,6 +142,7 @@ async def start_retriever():
                     "collection_name",
                     "query",
                     "top_chunk_k_value",
+                    "do_hybrid_search",
                 }
             )
             await querying(**retriever_input, callback=send_message)

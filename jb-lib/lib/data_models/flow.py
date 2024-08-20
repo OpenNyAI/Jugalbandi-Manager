@@ -1,6 +1,8 @@
 from enum import Enum
-from typing import Optional, List, Dict
-from pydantic import BaseModel, model_validator, Field
+from typing import Dict, List, Optional
+
+from pydantic import BaseModel, Field, model_validator
+
 from .message import Message, MessageType
 from .retriever import RAGResponse
 
@@ -138,6 +140,7 @@ class RAGQuery(BaseModel):
     collection_name: str
     query: str
     top_chunk_k_value: int
+    do_hybrid_search: bool
 
 
 class FSMOutput(BaseModel):

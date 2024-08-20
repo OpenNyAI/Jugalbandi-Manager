@@ -9,6 +9,7 @@ class RAG(BaseModel):
     collection_name: str
     query: str
     top_chunk_k_value: int
+    do_hybrid_search: bool
 
 
 class RAGResponse(BaseModel):

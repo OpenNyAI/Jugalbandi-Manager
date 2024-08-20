@@ -18,7 +18,7 @@ from lib.data_models import Indexer
 from lib.file_storage import StorageHandler
 from lib.kafka_utils import KafkaConsumer
 from model import InternalServerException
-from r2r import R2R
+from r2r import ChunkingConfig, R2RBuilder, R2RConfig
 
 load_dotenv()
 
@@ -79,11 +79,6 @@ class TextConverter:
 
 class DataIndexer:
     def __init__(self):
-        self.splitter = RecursiveCharacterTextSplitter(
-            chunk_size=4 * 1024,
-            chunk_overlap=200,
-            separators=["\n\n", "\n", ".", " ", ""],
-        )
         self.db_name = os.getenv("POSTGRES_DATABASE_NAME")
         self.db_user = os.getenv("POSTGRES_DATABASE_USERNAME")
         self.db_password = os.getenv("POSTGRES_DATABASE_PASSWORD")
@@ -133,8 +128,13 @@ class DataIndexer:
                         )
                     )
                 else:
+                    text_splitter = RecursiveCharacterTextSplitter(
+                        chunk_size=indexer_input.chunk_size,
+                        chunk_overlap=indexer_input.chunk_overlap,
+                        separators=["\n\n", "\n", ".", " ", ""],
+                    )
                     content = await self.text_converter.textify(file_path)
-                    for chunk in self.splitter.split_text(content):
+                    for chunk in text_splitter.split_text(content):
                         new_metadata = {
                             "chunk-id": str(counter),
                             "document_name": os.path.basename(file_path),
@@ -146,7 +146,10 @@ class DataIndexer:
         try:
             if indexer_input.type == "r2r":
                 os.environ["POSTGRES_VECS_COLLECTION"] = indexer_input.collection_name
-                r2r_app = await self.get_r2r()
+                r2r_app = await self.get_r2r(
+                    chunk_size=indexer_input.chunk_size,
+                    chunk_overlap=indexer_input.chunk_overlap,
+                )
                 await r2r_app.engine.aingest_files(files=source_files)
             else:
                 embeddings = await self.get_embeddings()
@@ -164,8 +167,15 @@ class DataIndexer:
         except Exception as e:
             raise InternalServerException(e.__str__())
 
-    async def get_r2r(self):
-        return R2R()
+    async def get_r2r(self, chunk_size: int, chunk_overlap: int):
+        config = R2RConfig(
+            config_data={
+                "chunking": ChunkingConfig(
+                    chunk_size=chunk_size, chunk_overlap=chunk_overlap
+                ),
+            }
+        )
+        return R2RBuilder(config=config).build()
 
     async def get_embeddings(self):
         if os.getenv("OPENAI_API_TYPE") == "azure":
