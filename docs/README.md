@@ -1,7 +1,20 @@
 ---
 cover: .gitbook/assets/jb-cover.png
 coverY: 77.769820971867
-layout: landing
+layout:
+  cover:
+    visible: true
+    size: full
+  title:
+    visible: true
+  description:
+    visible: true
+  tableOfContents:
+    visible: true
+  outline:
+    visible: true
+  pagination:
+    visible: true
 ---
 
 # About Jugalbandi Manager
