@@ -85,14 +85,16 @@ with patch(
     async def test_default_data_indexer():
         indexer = indexing.DataIndexer()
         indexer_input = Indexer(
-            files=["test.txt"], collection_name="test_collection", type="default"
+            files=["test.txt"],
+            collection_name="test_collection",
+            type="default",
+            chunk_size=2000,
+            chunk_overlap=100,
         )
         with patch.object(
             indexer.text_converter,
             "textify",
             AsyncMock(return_value="File Content"),
-        ), patch.object(
-            indexer.splitter, "split_text", return_value=["Chunk1", "Chunk2"]
         ), patch.object(
             indexer, "get_embeddings", AsyncMock()
         ), patch.object(
@@ -109,7 +111,11 @@ with patch(
     async def test_r2r_data_indexer():
         indexer = indexing.DataIndexer()
         indexer_input = Indexer(
-            files=["test.txt"], collection_name="test_collection", type="r2r"
+            files=["test.txt"],
+            collection_name="test_collection",
+            type="r2r",
+            chunk_size=4000,
+            chunk_overlap=200,
         )
         mock_r2r_app = MagicMock()
         mock_r2r_app.engine.aingest_files = AsyncMock()

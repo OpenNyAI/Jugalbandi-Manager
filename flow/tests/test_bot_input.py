@@ -360,6 +360,7 @@ fsm_and_assertions = {
                 collection_name="test_collection",
                 query="test_query",
                 top_chunk_k_value=5,
+                do_hybrid_search=False,
             ),
         ),
         RAG(
@@ -369,6 +370,7 @@ fsm_and_assertions = {
             collection_name="test_collection",
             query="test_query",
             top_chunk_k_value=5,
+            do_hybrid_search=False
         ),
     ),
 }

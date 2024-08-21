@@ -156,6 +156,8 @@ async def index_data(
     indexer_type: IndexType,
     collection_name: str,
     files: List[UploadFile],
+    indexing_chunk_size: int = 4000,
+    indexing_chunk_overlap_size: int = 200,
 ):
     storage = StorageHandler.get_async_instance()
     files_list = []
@@ -168,6 +170,8 @@ async def index_data(
         files_list.append(file.filename)
     indexer_input = Indexer(
         type=indexer_type.value,
+        chunk_size=indexing_chunk_size,
+        chunk_overlap=indexing_chunk_overlap_size,
         collection_name=collection_name,
         files=files_list,
     )

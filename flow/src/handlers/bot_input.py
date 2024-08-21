@@ -102,6 +102,7 @@ def handle_bot_output(fsm_output: FSMOutput, turn_id: str):
             collection_name=rag_query.collection_name,
             query=rag_query.query,
             top_chunk_k_value=rag_query.top_chunk_k_value,
+            do_hybrid_search=rag_query.do_hybrid_search
         )
     else:
         logger.error("Invalid intent in fsm output")

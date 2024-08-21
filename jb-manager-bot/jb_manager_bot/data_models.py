@@ -1,5 +1,6 @@
 from enum import Enum
-from typing import List, Optional, Dict
+from typing import Dict, List, Optional
+
 from pydantic import BaseModel, model_validator
 
 
@@ -184,9 +185,11 @@ class Webhook(BaseModel):
 
 
 class RAGQuery(BaseModel):
+    type: str
     collection_name: str
     query: str
     top_chunk_k_value: int
+    do_hybrid_search: bool
 
 
 class FSMInput(BaseModel):

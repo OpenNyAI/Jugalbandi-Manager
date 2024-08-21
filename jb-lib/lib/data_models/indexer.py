@@ -1,5 +1,6 @@
 from enum import Enum
 from typing import List
+
 from pydantic import BaseModel
 
 
@@ -10,5 +11,7 @@ class IndexType(str, Enum):
 
 class Indexer(BaseModel):
     type: str
+    chunk_size: int
+    chunk_overlap: int
     collection_name: str
     files: List[str]
