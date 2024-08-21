@@ -14,7 +14,7 @@ async def install_bot(
     bot_id: str, bot_fsm_code: str, bot_requirements_txt: str, index_urls: List[str]
 ):
     requirements_txt = (
-        "openai\ncryptography\njb-manager-bot==0.2.1\n" + bot_requirements_txt
+        "openai\ncryptography\njb-manager-bot==0.2.2\n" + bot_requirements_txt
     )
 
     bots_parent_directory = Path(__file__).parent.parent.parent
