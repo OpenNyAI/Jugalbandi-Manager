@@ -8,6 +8,13 @@ from abc import ABC, abstractmethod
 
 import azure.cognitiveservices.speech as speechsdk
 import httpx
+import boto3
+from google.cloud import speech_v1p1beta1 as speech
+from google.cloud import texttospeech
+import requests
+from botocore.exceptions import BotoCoreError, ClientError
+import asyncio
+import requests
 
 from lib.model import InternalServerException, LanguageCodes
 from .audio_converter import convert_wav_bytes_to_mp3_bytes
@@ -391,27 +398,188 @@ class AzureSpeechProcessor(SpeechProcessor):
         # )
         return new_audio_content
 
+class AWSSpeechProcessor(SpeechProcessor):
+    def __init__(self):
+        # Set AWS credentials using environment variables
+        os.environ['AWS_ACCESS_KEY_ID'] = os.getenv('AWS_ACCESS_KEY_ID')
+        os.environ['AWS_SECRET_ACCESS_KEY'] = os.getenv('AWS_SECRET_ACCESS_KEY')
+        os.environ['AWS_DEFAULT_REGION'] = os.getenv('AWS_DEFAULT_REGION')
+
+        self.transcribe = boto3.client('transcribe')
+        self.s3 = boto3.client('s3') 
+        self.polly = boto3.client('polly')
+        self.bucket_name = os.get_env('BUCKET_NAME')    
+
+        self.language_dict = {
+            "EN": "en-US",
+            "HI": "hi-IN",
+            "BN": "bn-IN",
+            "GU": "gu-IN",
+            "MR": "mr-IN",
+        }
+
+    async def speech_to_text(
+        self,
+        wav_data: bytes,
+        input_language: LanguageCodes,
+    ) -> str:
+        logger.info("Performing speech to text using AWS Transcribe")
+        logger.info(f"Input Language: {input_language.name}")
+
+        try:
+            # Upload the audio data to S3
+            file_name = f"temp_audio_{input_language.name}.wav"
+            self.s3.put_object(Bucket=self.bucket_name, Key=file_name, Body=wav_data)
+
+            # Generate the S3 URI
+            job_uri = f's3://{self.bucket_name}/{file_name}'
+
+            # Start transcription job
+            job_name = f"transcription_job_{input_language.name}"
+            self.transcribe.start_transcription_job(
+                TranscriptionJobName=job_name,
+                Media={'MediaFileUri': job_uri},
+                MediaFormat='wav',
+                LanguageCode=self.language_dict.get(input_language.name, 'en-US')
+            )
+
+            # Wait for the job to complete
+            while True:
+                status = self.transcribe.get_transcription_job(TranscriptionJobName=job_name)
+                if status['TranscriptionJob']['TranscriptionJobStatus'] in ['COMPLETED', 'FAILED']:
+                    break
+                await asyncio.sleep(5)  # Wait for 5 seconds before checking again
+
+            if status['TranscriptionJob']['TranscriptionJobStatus'] == 'COMPLETED':
+                file_url = status['TranscriptionJob']['Transcript']['TranscriptFileUri']
+                response = requests.get(file_url)
+                data = response.json()
+                transcript = data['results']['transcripts'][0]['transcript']
+
+                # Clean up: delete the temporary audio file from S3
+                self.s3.delete_object(Bucket=self.bucket_name, Key=file_name)
+
+                return transcript
+            else:
+                raise Exception("Transcription job failed")
+
+        except (BotoCoreError, ClientError) as error:
+            error_message = f"AWS STT Request failed with this error: {error}"
+            logger.error(error_message)
+            raise InternalServerException(error_message)
+
+    async def text_to_speech(
+        self,
+        text: str,
+        input_language: LanguageCodes,
+    ) -> bytes:
+        logger.info("Performing text to speech using AWS Polly")
+        logger.info(f"Input Language: {input_language.name}")
+        logger.info(f"Input Text: {text}")
+
+        try:
+            response = self.polly.synthesize_speech(
+                Text=text,
+                OutputFormat='mp3',
+                VoiceId='Joanna',  # You might want to choose appropriate voices for different languages
+                LanguageCode=self.language_dict.get(input_language.name, 'en-US')
+            )
+
+            return response['AudioStream'].read()
+
+        except (BotoCoreError, ClientError) as error:
+            error_message = f"AWS TTS Request failed with this error: {error}"
+            logger.error(error_message)
+            raise InternalServerException(error_message)
+
+
+class GCPSpeechProcessor(SpeechProcessor):
+    def __init__(self):
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+        self.speech_client = speech.SpeechClient()
+        self.tts_client = texttospeech.TextToSpeechClient()
+        self.language_dict = {
+            "EN": "en-US",
+            "HI": "hi-IN",
+            "BN": "bn-IN",
+            "GU": "gu-IN",
+            "MR": "mr-IN",
+            "OR": "or-IN",
+            "PA": "pa-IN",
+            "KN": "kn-IN",
+            "ML": "ml-IN",
+            "TA": "ta-IN",
+            "TE": "te-IN",
+        }
+
+    async def speech_to_text(
+        self,
+        wav_data: bytes,
+        input_language: LanguageCodes,
+    ) -> str:
+        logger.info("Performing speech to text using Google Cloud Platform")
+        logger.info(f"Input Language: {input_language.name}")
+
+        audio = speech.RecognitionAudio(content=wav_data)
+        config = speech.RecognitionConfig(
+            encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
+            language_code=self.language_dict.get(input_language.name, "en-US"),
+        )
+
+        try:
+            response = self.speech_client.recognize(config=config, audio=audio)
+            transcribed_text = response.results[0].alternatives[0].transcript
+            return_message = "GCP speech to text is successful"
+            logger.info(return_message)
+            logger.info(f"Transcribed text: {transcribed_text}")
+            return transcribed_text
+        except Exception as exception:
+            error_message = f"GCP STT Request failed with this error: {exception}"
+            logger.error(error_message)
+            raise InternalServerException(error_message)
+
+    async def text_to_speech(
+        self,
+        text: str,
+        input_language: LanguageCodes,
+    ) -> bytes:
+        logger.info("Performing text to speech using Google Cloud Platform")
+        logger.info(f"Input Language: {input_language.name}")
+        logger.info(f"Input Text: {text}")
+
+        synthesis_input = texttospeech.SynthesisInput(text=text)
+
+        voice = texttospeech.VoiceSelectionParams(
+            language_code=self.language_dict.get(input_language.name, "en-US"),
+            ssml_gender=texttospeech.SsmlVoiceGender.FEMALE,
+        )
+
+        audio_config = texttospeech.AudioConfig(
+            audio_encoding=texttospeech.AudioEncoding.MP3
+        )
+
+        try:
+            response = self.tts_client.synthesize_speech(
+                input=synthesis_input, voice=voice, audio_config=audio_config
+            )
+            return_message = "GCP text to speech is successful"
+            logger.info(return_message)
+            return response.audio_content
+        except Exception as exception:
+            error_message = f"GCP TTS Request failed with this error: {exception}"
+            logger.error(error_message)
+            raise InternalServerException(error_message)
+
 
 class CompositeSpeechProcessor(SpeechProcessor):
     def __init__(self, *speech_processors: SpeechProcessor):
         self.speech_processors = speech_processors
         self.european_language_codes = [
-            "EN",
-            "AF",
-            "AR",
-            "ZH",
-            "FR",
-            "DE",
-            "ID",
-            "IT",
-            "JA",
-            "KO",
-            "PT",
-            "RU",
-            "ES",
-            "TR",
+            "EN", "AF", "AR", "ZH", "FR", "DE", "ID", "IT", "JA", "KO", "PT", "RU", "ES", "TR"
         ]
         self.azure_not_supported_language_codes = ["OR", "PA"]
+        self.gcp_not_supported_language_codes = []  # Add any unsupported languages for GCP
+        self.aws_not_supported_language_codes = []  # Add any unsupported languages for AWS
 
     async def speech_to_text(
         self,
@@ -420,21 +588,30 @@ class CompositeSpeechProcessor(SpeechProcessor):
     ) -> str:
         excs = []
         for speech_processor in self.speech_processors:
-            # try:
             if input_language.name in self.european_language_codes and isinstance(
                 speech_processor, DhruvaSpeechProcessor
             ):
-                pass
+                continue
             elif (
                 input_language.name in self.azure_not_supported_language_codes
                 and isinstance(speech_processor, AzureSpeechProcessor)
             ):
-                pass
+                continue
+            elif (
+                input_language.name in self.gcp_not_supported_language_codes
+                and isinstance(speech_processor, GCPSpeechProcessor)
+            ):
+                continue
+            elif (
+                input_language.name in self.aws_not_supported_language_codes
+                and isinstance(speech_processor, AWSSpeechProcessor)
+            ):
+                continue
             else:
-                return await speech_processor.speech_to_text(wav_data, input_language)
-            # except Exception as exc:
-            #     print("EXCEPTION", exc)
-            #     excs.append(exc)
+                try:
+                    return await speech_processor.speech_to_text(wav_data, input_language)
+                except Exception as exc:
+                    excs.append(exc)
 
         raise ExceptionGroup("CompositeSpeechProcessor speech to text failed", excs)
 
@@ -445,19 +622,29 @@ class CompositeSpeechProcessor(SpeechProcessor):
     ) -> bytes:
         excs = []
         for speech_processor in self.speech_processors:
-            # try:
             if input_language.name in self.european_language_codes and isinstance(
                 speech_processor, DhruvaSpeechProcessor
             ):
-                pass
+                continue
             elif (
                 input_language.name in self.azure_not_supported_language_codes
                 and isinstance(speech_processor, AzureSpeechProcessor)
             ):
-                pass
+                continue
+            elif (
+                input_language.name in self.gcp_not_supported_language_codes
+                and isinstance(speech_processor, GCPSpeechProcessor)
+            ):
+                continue
+            elif (
+                input_language.name in self.aws_not_supported_language_codes
+                and isinstance(speech_processor, AWSSpeechProcessor)
+            ):
+                continue
             else:
-                return await speech_processor.text_to_speech(text, input_language)
-        #     except Exception as exc:
-        #         excs.append(exc)
+                try:
+                    return await speech_processor.text_to_speech(text, input_language)
+                except Exception as exc:
+                    excs.append(exc)
 
-        # raise ExceptionGroup("CompositeSpeechProcessor text to speech failed", excs)
+        raise ExceptionGroup("CompositeSpeechProcessor text to speech failed", excs)
