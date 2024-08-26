@@ -34,7 +34,7 @@ services:
       volumes:
         - "kafka_data:/bitnami"
         - ./scripts/create-all-topics.sh:/usr/bin/create-topics.sh
-      command: "sh -c './run.sh & /usr/bin/create-topics.sh && tail -f /dev/null'"
+      command: "sh -c './run.sh && tail -f /dev/null'"
       environment:        
         - KAFKA_CFG_NODE_ID=0
         - KAFKA_CFG_PROCESS_ROLES=controller,broker
@@ -78,6 +78,11 @@ services:
       - AZURE_STORAGE_ACCOUNT_KEY=${AZURE_STORAGE_ACCOUNT_KEY}
       - AZURE_STORAGE_CONTAINER=${AZURE_STORAGE_CONTAINER}
       - PUBLIC_URL_PREFIX=${PUBLIC_URL_PREFIX}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+      - BUCKET_NAME=${BUCKET_NAME}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
     depends_on:
         - kafka
         - postgres
