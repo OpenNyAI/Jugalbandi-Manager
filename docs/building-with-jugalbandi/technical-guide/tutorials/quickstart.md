@@ -11,8 +11,9 @@ This quickstart is designed for linux based systems such as Linux distros and Ma
 1. **Docker** - Ensure that your system has docker engine installed and running. For installation, please refer to [docker engine installation instruction](https://docs.docker.com/engine/install/).
    * The recommended way is to install docker desktop for your system. If using WSL with Windows, Enable docker for you WSL distro. Please refer to [docker desktop installation](https://learn.microsoft.com/en-us/windows/wsl/tutorials/wsl-containers#install-docker-desktop) for more details.
 2. **Docker Compose** - Ensure docker compose is enabled along with docker engine. Please refer to [docker compose installation instruction](https://docs.docker.com/compose/install/).
-3. **Loophole** - Loophole is required to expose your local system to the services on the web by tunneling the external calls to your local system. Please refer to the [Loophole Quickstart Guide](https://loophole.cloud/download/) for installation.
-   * **Ngrok** can be used alternatively which allows you to create secure tunnels to your localhost, exposing your local web server to the public internet. You can download and set up ngrok by following the [ngrok quickstart guide](https://ngrok.com/docs#getting-started).
+3. **Tunnel** - Tunneling exposes your local system to the services on the web by tunneling the external calls to your local system. Either of these two popular services can be used:
+   - **Loophole** - Please refer to the [Loophole Quickstart Guide](https://loophole.cloud/download/) for installation.
+   - **Ngrok** - Please refer to the [Ngrok Quickstart Guide](https://ngrok.com/docs#getting-started) for installation.
 4. **Translation and Speech API** - JBManager uses speech processing API to handle audio and translation API to handle user input in various languages. Please refer to Translation and Speech API [setup guide](../references/speech-and-translation.md) for more details.
 5. **Whatsapp Interface** - This quickstart will focus on setup your own through whatsapp as channel. Please refer to [channel setup guide](../references/whatsapp.md) for more details.
 
@@ -71,7 +72,7 @@ $ cd media
 $ python3 -m http.server 5000
 ```
 
-6. Start a new shell session and start loophole tunnel for port 5000 on your system
+6. Start a new shell session and start tunnel for port 5000 on your system
 
    - For **Loophole**, use the following command:
      ```bash
@@ -83,7 +84,7 @@ $ python3 -m http.server 5000
      $ ngrok http 5000
      ```
 
-Copy the tunnel url from the loophole shell and add it to `PUBLIC_URL_PREFIX` in `.env-dev` file. ![](../../../assets/quickstart-loophole-5000.png)
+Copy the tunnel url from the shell (loophole example shown below) and add it to `PUBLIC_URL_PREFIX` in `.env-dev` file. ![](../../../assets/quickstart-loophole-5000.png)
 
 ```
 PUBLIC_URL_PREFIX= # Set Tunnel URL if using local storage
@@ -126,7 +127,7 @@ To start the JB Manager, you can use the following command with or without the `
 3. Once the bot is created, click on the **settings (⚙) icon** to enter the given credentials values and click save to save the credentials values. For this example, put the values of `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_API_VERSION`, `AZURE_OPENAI_API_ENDPOINT`, `FAST_MODEL` (typically, `gpt-3.5-turbo`) and `SLOW_MODEL` (typically, `gpt-4`). **Note: Remember to verify your model names. If you are using Azure OpenAI, this corresponds to Deployment Name and not model type** ![](../../../assets/quickstart-credentials.png)
 4. Then click on the **play (▶️) icon** to activate the bot by providing the whatsapp business phone number in `phone number` and whatsapp api key in the `whatsapp` field. ![](../../../assets/quickstart-botactivate.png)
 5. Once the above steps are completed, the bot status will be changed from **inactive** to **active**. ![](../../../assets/quickstart-activebot.png)
-6. Start a new shell session and start loophole tunnel for port 8000 on your system
+6. Start a new shell session and start tunnel for port 8000 on your system
 
    - For **Loophole**, use the following command:
      ```bash
@@ -138,7 +139,7 @@ To start the JB Manager, you can use the following command with or without the `
      $ ngrok http 8000
      ```
 
-7. Copy the tunnel url from the loophole/ngrok shell. ![](../../../assets/quickstart-loophole-8000.png)
+7. Copy the tunnel url from the shell (loophole example shown below). ![](../../../assets/quickstart-loophole-8000.png)
 8. Add this url to register the callback URL for Whatsapp service provider. Your callback url will look like this `<Tunnel URL>/v2/callback/pinnacle_whatsapp/<Whatsapp business account number>`.
 
     For this tutorial, we are using the shell script to add the callback URL using Whatsapp API host. Run the script on a new shell session with the appropriate values to register the callback URL.
@@ -163,24 +164,22 @@ To start the JB Manager, you can use the following command with or without the `
 
 ### Quickstart FAQs 
 
-##### Cannot install loophole on Apple Silicon-based Mac?
-* Try setting up ngrok with a free tier subscription. Creating a single tunnel does not require any paid plan.
-
-##### Which OpenAI Model to use?
-* You can use any model just make sure it supports generating output in JSON mode. 
-
-##### How to Integrate a Telegram Bot
+1. ##### Cannot install loophole on Apple Silicon-based Mac?
+Try setting up ngrok with a free tier subscription. Creating a single tunnel does not require any paid plan.
+2. ##### Which OpenAI Model to use?
+You can use any model just make sure it supports generating output in JSON mode.
+3. ##### How to Integrate a Telegram Bot
 
 The Telegram feature is currently under development. However, below steps can be used 
 
-1. **Create a JB Manager Bot**:
+a. **Create a JB Manager Bot**:
    - Set up a bot with dummy WhatsApp credentials as described in the documentation.
 
-2. **Create a Telegram Bot**:
+b. **Create a Telegram Bot**:
    - Use the *BotFather* chatbot on Telegram to create your bot.
    - Acquire the token provided by *BotFather*. This token will be used to set up the webhook.
 
-3. **Register the Telegram Channel**:
+c. **Register the Telegram Channel**:
    - To register the channel for your Telegram-based JB Manager bot, send a POST request to the localhost port 8000 (the API server running locally). Use the route `/v2/bot/<botID>/channel` with the following body:
 
      ```json
@@ -194,7 +193,7 @@ The Telegram feature is currently under development. However, below steps can be
      }
      ```
 
-4. **Set Up the Webhook**:
+d. **Set Up the Webhook**:
    - Set the webhook by sending a POST request to `https://api.telegram.org/bot<token>/setWebhook` with the URL of the endpoint as the body under the `url` key. The format should be: `<tunnel_url>/v2/callback/telegram/<app_id>`.
    - Example using `curl`:
 
