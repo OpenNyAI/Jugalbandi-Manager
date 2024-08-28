@@ -408,7 +408,7 @@ class AWSSpeechProcessor(SpeechProcessor):
         self.transcribe = boto3.client('transcribe')
         self.s3 = boto3.client('s3') 
         self.polly = boto3.client('polly')
-        self.bucket_name = os.get_env('BUCKET_NAME')    
+        self.bucket_name = os.get_env('S3_BUCKET_NAME')    
 
         self.language_dict = {
             "EN": "en-US",
@@ -416,6 +416,14 @@ class AWSSpeechProcessor(SpeechProcessor):
             "BN": "bn-IN",
             "GU": "gu-IN",
             "MR": "mr-IN",
+            "KN": "kn-IN",
+            "LU": "lg-IN",
+            "EN-IN": "en-IN",
+            "MA": "ml-IN",
+            "OD": "or-IN",
+            "PA": "pa-IN",
+            "TA": "ta-IN",
+            "TE": "te-IN",
         }
 
     async def speech_to_text(
@@ -505,11 +513,13 @@ class GCPSpeechProcessor(SpeechProcessor):
             "GU": "gu-IN",
             "MR": "mr-IN",
             "OR": "or-IN",
-            "PA": "pa-IN",
+            "PA": "pa-Guru-IN",
             "KN": "kn-IN",
             "ML": "ml-IN",
             "TA": "ta-IN",
             "TE": "te-IN",
+            "UR": "ur-IN",
+            "EN-IN": "en-IN",
         }
 
     async def speech_to_text(
