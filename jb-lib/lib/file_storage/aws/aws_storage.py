@@ -7,6 +7,10 @@ from ..storage import AsyncStorage
 
 logger = logging.getLogger("storage")
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 class AWSAsyncStorage(AsyncStorage):
     __client__ = None

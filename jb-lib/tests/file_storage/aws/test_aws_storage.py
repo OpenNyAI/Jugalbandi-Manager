@@ -1,7 +1,7 @@
+import os
 from unittest.mock import patch, MagicMock, AsyncMock
 import pytest
-import aioboto3
-from lib.file_storage import AWSAsyncStorage
+from lib.file_storage.aws.aws_storage import AWSAsyncStorage
 
 
 class TestAWSAsyncStorage:
@@ -26,28 +26,20 @@ class TestAWSAsyncStorage:
         mock_makedirs.assert_called_once_with("/tmp/jb_files", exist_ok=True)
 
         # Test missing AWS credentials or region
-        mock_getenv.side_effect = lambda key: (
-            None
-            if key == "AWS_ACCESS_KEY_ID"
-            else {
-                "AWS_SECRET_ACCESS_KEY": "fake_secret_key",
-                "AWS_REGION": "us-east-1",
-                "AWS_S3_BUCKET_NAME": "test_bucket",
-            }.get(key, None)
-        )
+        mock_getenv.side_effect = lambda key: {
+            "AWS_SECRET_ACCESS_KEY": "fake_secret_key",
+            "AWS_REGION": "us-east-1",
+            "AWS_S3_BUCKET_NAME": "test_bucket"
+        }.get(key, None) if key != "AWS_ACCESS_KEY_ID" else None
         with pytest.raises(ValueError):
             AWSAsyncStorage()
 
         # Test missing bucket name
-        mock_getenv.side_effect = lambda key: (
-            None
-            if key == "AWS_S3_BUCKET_NAME"
-            else {
-                "AWS_ACCESS_KEY_ID": "fake_access_key",
-                "AWS_SECRET_ACCESS_KEY": "fake_secret_key",
-                "AWS_REGION": "us-east-1",
-            }.get(key, None)
-        )
+        mock_getenv.side_effect = lambda key: {
+            "AWS_ACCESS_KEY_ID": "fake_access_key",
+            "AWS_SECRET_ACCESS_KEY": "fake_secret_key",
+            "AWS_REGION": "us-east-1"
+        }.get(key, None) if key != "AWS_S3_BUCKET_NAME" else None
         with pytest.raises(ValueError):
             AWSAsyncStorage()
 
@@ -97,7 +89,8 @@ class TestAWSAsyncStorage:
             storage = AWSAsyncStorage()
             file_path = await storage._download_file_to_temp_storage("test.txt")
 
-            assert file_path == "/tmp/jb_files/test.txt"
+            # Normalize path separators for comparison
+            assert os.path.normpath(file_path) == os.path.normpath("/tmp/jb_files/test.txt")
             mock_aioboto3_client_instance.get_object.assert_called_once_with(
                 Bucket="test_bucket", Key="test.txt"
             )
