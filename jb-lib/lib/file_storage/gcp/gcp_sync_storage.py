@@ -1,12 +1,13 @@
 import os
 from typing import Union, Optional
-from datetime import datetime, timedelta, timezone
+from dotenv import load_dotenv
 import logging
 from google.cloud import storage
 from ..storage import SyncStorage
 
 logger = logging.getLogger("storage")
 
+load_dotenv()
 
 class GCPSyncStorage(SyncStorage):
     __client__ = None

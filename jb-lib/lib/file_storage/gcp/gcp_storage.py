@@ -1,6 +1,6 @@
 import os
-from dotenv import load_dotenv
 from typing import Union, Optional
+from dotenv import load_dotenv
 import logging
 from gcloud.aio.storage import Storage, Blob
 from ..storage import AsyncStorage

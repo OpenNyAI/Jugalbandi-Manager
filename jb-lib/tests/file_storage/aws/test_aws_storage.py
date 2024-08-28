@@ -3,7 +3,6 @@ from unittest.mock import patch, MagicMock, AsyncMock
 import pytest
 from lib.file_storage.aws.aws_storage import AWSAsyncStorage
 
-
 class TestAWSAsyncStorage:
     
     @patch("lib.file_storage.aws.aws_storage.os.makedirs")
