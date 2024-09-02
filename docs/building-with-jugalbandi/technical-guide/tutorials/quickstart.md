@@ -164,47 +164,9 @@ To start the JB Manager, you can use the following command with or without the `
 
 ### Quickstart FAQs 
 
-1. ##### Cannot install loophole on Apple Silicon-based Mac?
-Try setting up ngrok with a free tier subscription. Creating a single tunnel does not require any paid plan.
-2. ##### Which OpenAI Model to use?
-You can use any model just make sure it supports generating output in JSON mode.
-3. ##### How to Integrate a Telegram Bot
-
-The Telegram feature is currently under development. However, below steps can be used 
-
-a. **Create a JB Manager Bot**:
-   - Set up a bot with dummy WhatsApp credentials as described in the documentation.
-
-b. **Create a Telegram Bot**:
-   - Use the *BotFather* chatbot on Telegram to create your bot.
-   - Acquire the token provided by *BotFather*. This token will be used to set up the webhook.
-
-c. **Register the Telegram Channel**:
-   - To register the channel for your Telegram-based JB Manager bot, send a POST request to the localhost port 8000 (the API server running locally). Use the route `/v2/bot/<botID>/channel` with the following body:
-
-     ```json
-     {
-       "name": "telegram",
-       "type": "telegram",
-       "url": "https://api.telegram.org/",
-       "app_id": "<app_id>",
-       "key": "<telegram token>",
-       "status": "active"
-     }
-     ```
-
-d. **Set Up the Webhook**:
-   - Set the webhook by sending a POST request to `https://api.telegram.org/bot<token>/setWebhook` with the URL of the endpoint as the body under the `url` key. The format should be: `<tunnel_url>/v2/callback/telegram/<app_id>`.
-   - Example using `curl`:
-
-     ```bash
-     curl -X POST "https://api.telegram.org/bot<token>/setWebhook" -d "url=<tunnel_url>/v2/callback/telegram/<app_id>"
-     ```
-
-**Note:**
-
-- **Dummy WhatsApp Credentials**: Ensure you have the necessary dummy credentials set up as per the initial bot creation instructions.
-- **BotFather**: This is an official Telegram bot that helps you create and manage your Telegram bots. You can find it by searching for "BotFather" in the Telegram app.
-- **Webhook URL**: The `<deployed_api_url>` should be the URL where your API is hosted. Ensure it is accessible from the internet for Telegram to send updates to your bot.
-
-By following these steps, you can set up, integrate and test your Telegram-based JB Manager bot.
+1. #### Cannot install loophole on Apple Silicon-based Mac?
+    Try setting up ngrok with a free tier subscription. Creating a single tunnel does not require any paid plan.
+2. #### Which OpenAI Model to use?
+    You can use any model just make sure it supports generating output in JSON mode.
+3. #### How to Integrate a Telegram Bot
+    The telegram integration documentation and frontend is still being worked on.
