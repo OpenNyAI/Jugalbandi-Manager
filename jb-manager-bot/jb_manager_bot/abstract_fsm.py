@@ -599,20 +599,24 @@ class AbstractFSM(ABC):
                 )
             )
 
-        plugin_input = {
-            key: (
-                getattr(self.variables, value)
-                if hasattr(self.variables, value)
-                else value
-            )
-            for key, value in input_variables.items()
-        }
-        plugin_output = plugin(**plugin_input)
+        plugin_input = {}
+        for key, value in input_variables.items():
+            if hasattr(self.variables, value):
+                plugin_input[key] = getattr(self.variables, value)
+            elif value in self.credentials:
+                plugin_input[key] = self.credentials[value]
+            else:
+                plugin_input[key] = value
+        if (
+            run_plugin_output := self.run_plugin(plugin, **plugin_input)
+        ) == self.RUN_TOKEN:
+            return
+        plugin_status, plugin_output = run_plugin_output
 
         for key, value in output_variables.items():
             setattr(self.variables, value, plugin_output[key])
 
-        self.temp_variables["error_code"] = plugin_output["error_code"]
+        self.temp_variables["error_code"] = plugin_status
 
         self.status = Status.MOVE_FORWARD
 
