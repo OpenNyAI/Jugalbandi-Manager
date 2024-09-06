@@ -33,6 +33,7 @@
       * [Speech and Translation](building-with-jugalbandi/technical-guide/references/speech-and-translation.md)
       * [Azure Storage](building-with-jugalbandi/technical-guide/references/storage.md)
       * [Whatsapp](building-with-jugalbandi/technical-guide/references/whatsapp.md)
+      * [Telegram](building-with-jugalbandi/technical-guide/references/telegram.md)
       * [example-grievance-bot](building-with-jugalbandi/technical-guide/references/example-grievance-bot/README.md)
         * [Example Grievance Bots](building-with-jugalbandi/technical-guide/references/example-grievance-bot/index.md)
     * [tutorials](building-with-jugalbandi/technical-guide/tutorials/README.md)
