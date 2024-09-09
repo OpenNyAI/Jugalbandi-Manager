@@ -273,3 +273,39 @@ For more details, see FSMOutput documentation.
 1. `out` - The message will follow translation(if applicable) and converted to speech and sent it to user.
 2. `channel` - There are some messages which don't require translation and should be interpreted as a special message. Those could be either flags for language selection or metadata for the forms which will be displayed to user.
 3. `rag` - The message will go to RAG component of JBManager instead of user.  
+
+
+## Handling Files
+To handle Files in the FSM, supplied in the form of bytes. You can access the file bytes using the current_input variable if the state is waiting for user input or current_callback if waiting for a webhook callback.
+
+```python
+class BotCode(AbstractFSM):
+    states = [
+        ...
+        "file_processing_state",
+        ...
+    ]
+
+    def on_enter_file_processing_state(self):
+        self.status = Status.WAIT_FOR_ME
+        ...
+        file_bytes = self.current_input  
+        # Process the imafilege bytes
+        ...
+        self.send_message(
+            FSMOutput(
+                message_data=MessageData(
+                    body="Thanks for sharing the file."  # Acknowledgment message
+                ),
+                type=MessageType.TEXT,
+                dest="out",
+            )
+        )
+        self.status = Status.MOVE_FORWARD
+```
+#### Note:
+   Follow the below steps to ensure th FSM receives the file.
+ - Modify the `process_incoming_messages` function inside the `incoming` file under Channel section to create ImageMessage or DocumentMessage data object accordingly
+ - Modify the `handle_user_input` function inside the `bot_input` file under flow section to add file data received from the user.
+   - Ensure that the `fsm_input` object is populated with the file data.
+
