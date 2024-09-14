@@ -14,7 +14,6 @@ from google.cloud import texttospeech
 import requests
 from botocore.exceptions import BotoCoreError, ClientError
 import asyncio
-import requests
 
 from lib.model import InternalServerException, LanguageCodes
 from .audio_converter import convert_wav_bytes_to_mp3_bytes
@@ -398,6 +397,7 @@ class AzureSpeechProcessor(SpeechProcessor):
         # )
         return new_audio_content
 
+
 class AWSSpeechProcessor(SpeechProcessor):
     def __init__(self):
         # Set AWS credentials using environment variables
@@ -658,3 +658,4 @@ class CompositeSpeechProcessor(SpeechProcessor):
                     excs.append(exc)
 
         raise ExceptionGroup("CompositeSpeechProcessor text to speech failed", excs)
+    

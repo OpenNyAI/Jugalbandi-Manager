@@ -294,6 +294,7 @@ class AzureTranslator(Translator):
                 print(response)
                 return response[0]["text"]
 
+
 class AWSTranslator(Translator):
     def __init__(self):
         self.translate = boto3.client(
@@ -322,7 +323,8 @@ class AWSTranslator(Translator):
             TargetLanguageCode=destination_language_code,
         )
         return response['TranslatedText']
-    
+
+
 class GCPTranslator(Translator):
     def __init__(self):
         os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
@@ -347,6 +349,7 @@ class GCPTranslator(Translator):
             target_language=destination_language_code,
         )
         return response['translatedText']
+
 
 class CompositeTranslator(Translator):
     def __init__(self, *translators: Translator):
