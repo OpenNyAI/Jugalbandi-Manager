@@ -94,4 +94,10 @@
   .input-wrapper input,.modal-body .text-area {
     width: 48%;
   }
+  .input-wrapper select {
+    width: 48%;
+    /* margin-bottom: -10rem; */
+    /* margin-top: -20px; */
+    height: 40px;
+  }
   
