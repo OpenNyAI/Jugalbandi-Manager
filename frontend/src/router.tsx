@@ -4,6 +4,7 @@ import Home from "./pages/home/home";
 import Chat from "./pages/chat";
 import Analytics from "./pages/analytics";
 import { useEffect } from "react";
+import { BotSettings } from "./pages/BotSettings/BotSettings";
 
 function Router() {
     let location = useLocation();
@@ -32,6 +33,11 @@ function Router() {
                 analyticsNav.style.background = "#EBE7FF";
                 analyticsNav.style.fill = "#7F63FF";
                 break;
+            case "/settings":
+                const settingsNav = document.getElementById("settingsNav") as HTMLElement;
+                settingsNav.style.background = "#EBE7FF";
+                settingsNav.style.fill = "#7F63FF";
+                break;
         }
     },[location]);
 
@@ -41,6 +47,7 @@ function Router() {
                 <Route index element={<Home />} />
                 <Route path="chat" element={<Chat />} />
                 <Route path="analytics" element={<Analytics />} />
+                <Route path="settings" element={<BotSettings />} />
                 <Route path="*" element={<NoPage />} />
             </Route>
         </Routes>

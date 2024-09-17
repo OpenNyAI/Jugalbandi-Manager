@@ -2,13 +2,15 @@ import React, { useState, useEffect } from 'react';
 import './settings-model.css';
 import { sendRequest } from '@/api';
 import { fetchSecret } from '@/pages/home/home';
+import { channel } from 'diagnostics_channel';
 
 interface InputConfig {
   value: string | number | boolean;
   is_secret?: boolean;
-  type: 'string' | 'number' | 'boolean' | 'list' | 'text';
+  type: 'string' | 'number' | 'boolean' | 'list' | 'text'; 
   placeholder?: string;
   required: boolean;
+  options?: string[]; 
 }
 
 interface Props {
@@ -20,9 +22,10 @@ interface Props {
   onSave: (inputs: Record<string, InputConfig>) => void;
   modelType: string;
   botId?: string;
+  channelID?: string;
 }
 
-const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelType, title }) => {
+const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelType, title, channelID=null }) => {
   const [inputElements, setInputElements] = useState<Record<string, InputConfig>>({});
   const APIHOST = import.meta.env.VITE_SERVER_HOST;
 
@@ -94,6 +97,48 @@ const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelT
           data[key] = inputElements[key].value;
         }
     }
+    else if(modelType === 'channelInstall'){
+      apiEndpoint = `${APIHOST}/v2/bot/${botId}/channel`;
+        try {
+          accessToken = await fetchSecret();
+      } catch (error) {
+          console.error("Failed to fetch the access token:", error);
+          alert("Failed to fetch the access token");
+          return;
+      }
+        for (let key in inputElements) {
+          if (inputElements[key].required === true && !inputElements[key].value.toString().trim()) {
+            alert(`${key} is required`);
+            return;
+          }
+          if (inputElements[key].type === 'list') {
+            data[key] = inputElements[key].value.toString();
+            continue;
+          }
+          data[key] = inputElements[key].value;
+        }
+    }
+    else if(modelType === 'channelUpdate'){
+      apiEndpoint = `${APIHOST}/v2/channel/${channelID}`;
+        try {
+          accessToken = await fetchSecret();
+      } catch (error) {
+          console.error("Failed to fetch the access token:", error);
+          alert("Failed to fetch the access token");
+          return;
+      }
+        for (let key in inputElements) {
+          if (inputElements[key].required === true && !inputElements[key].value.toString().trim()) {
+            alert(`${key} is required`);
+            return;
+          }
+          if (inputElements[key].type === 'list') {
+            data[key] = inputElements[key].value.toString().split(',').map((item: string) => item.trim());
+            continue;
+          }
+          data[key] = inputElements[key].value;
+        }
+    }
     try {
       await sendRequest({
         url: apiEndpoint,
@@ -118,28 +163,40 @@ const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelT
       <div className="modal-overlay" onClick={onClose} />
       <div className="modal-container">
         <div className="modal-header">
-          <h2>{title ? title : 'Settings'}</h2>
+          <h2>{title || 'Settings'}</h2>
           <button className="close-button" onClick={onClose}>×</button>
         </div>
         <div className="modal-body">
           {Object.keys(inputElements).map((key) => (
             <div className="input-wrapper" key={key}>
-              <label>{key}{inputElements[key]?.required === true? ' *' : ''}</label>
-              {inputElements[key].type === 'text' ?
+              <label>{key}{inputElements[key]?.required ? ' *' : ''}</label>
+              {inputElements[key].type === 'list' && inputElements[key].options ? (
+                <select
+                  value={inputElements[key].value.toString()}
+                  onChange={e => updateValue(key, e.target.value)}
+                >
+                  {inputElements[key].options.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              ) : inputElements[key].type === 'text' ? (
                 <textarea
-                    className='text-area'
-                    value={inputElements[key].value.toString()}
-                    placeholder={inputElements[key].placeholder || ''}
-                    onChange={e => updateValue(key, e.target.value)}
-                    rows={5}
+                  className="text-area"
+                  value={inputElements[key].value.toString()}
+                  placeholder={inputElements[key].placeholder || ''}
+                  onChange={e => updateValue(key, e.target.value)}
+                  rows={5}
                 />
-              :
-              <input
-              type={getInputType(inputElements[key])}
-                value={inputElements[key].value.toString()}
-                placeholder={inputElements[key].placeholder || ''}
-                onChange={e => updateValue(key, e.target.type === 'number' ? Number(e.target.value) : e.target.value)}
-              />}
+              ) : (
+                <input
+                  type={getInputType(inputElements[key])}
+                  value={inputElements[key].value.toString()}
+                  placeholder={inputElements[key].placeholder || ''}
+                  onChange={e => updateValue(key, e.target.type === 'number' ? Number(e.target.value) : e.target.value)}
+                />
+              )}
             </div>
           ))}
         </div>
