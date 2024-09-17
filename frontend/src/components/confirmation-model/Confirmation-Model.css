@@ -27,7 +27,7 @@
   }
   
   .confirm-btn {
-    background-color: #6200ea; /* Purple accent */
+    background-color: #6a0dad; /* Purple accent */
     color: white;
     padding: 10px 20px;
     border: none;
@@ -36,7 +36,7 @@
   }
   
   .confirm-btn:hover {
-    background-color: #3700b3;
+    background-color: #4b0082;
   }
   
   .cancel-btn {
