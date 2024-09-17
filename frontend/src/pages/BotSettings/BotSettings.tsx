@@ -310,7 +310,7 @@ export const BotSettings: React.FunctionComponent = () => {
               ))}
           </ul>
           <div className="btn-add-project">
-              <button onClick={() => handleAddChannel()}>Add Project</button>
+              <button onClick={() => handleAddChannel()}>Add Channel</button>
           </div>
         </div>
       )}
