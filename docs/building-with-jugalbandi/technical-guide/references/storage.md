@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Azure Storage
+title: Storage Integration
 ---
 
 # Integrate Azure/Local Storage with Jugalbandi-Manager
@@ -22,7 +22,7 @@ In this document, we have covered the below-mentioned aspects for utilizing eith
    - **High Availability and Durability**: When you require high availability and durability with data redundancy across multiple locations
    - **Managed Services**: When you want to offload hardware maintenance, updates, and critical issue management to a cloud provider
  - **Prerequisites**:
-   - **Azure Storage Account**: First, you will need to setup an Azure Storage Account on the portal (refer the following [link](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create?tabs=azure-portal))
+   - **Azure Storage Account**: First, you will need to setup an Azure Storage Account on the portal (refer the [link](https://learn.microsoft.com/en-us/azure/storage/common/storage-account-create?tabs=azure-portal))
    - **Containers**: Next, you will create a container which will be used to store the files
 
 ### Local Storage
@@ -52,7 +52,7 @@ In this document, we have covered the below-mentioned aspects for utilizing eith
    
 ### FAQs:
  - What is the significance of `PUBLIC_URL_PREFIX`? 
-   - To reference the inputted file across services in the JB Manager i.e. `Language` service in case of audio files
+   - To refer and access the inputted files across services in the JB Manager i.e. `Language` service in case of audio files
  
  - What are the default storage paths in both cases?
    - In case of Azure Blob Storage, default location is `/tmp/jb_files` within the defined container
