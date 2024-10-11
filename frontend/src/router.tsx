@@ -1,4 +1,4 @@
-import { Routes, Route, useLocation } from "react-router-dom";
+import { Routes, Route, useLocation, useParams } from "react-router-dom";
 import Navbar from "./components/navbar/navbar";
 import Home from "./pages/home/home";
 import Chat from "./pages/chat";
@@ -33,7 +33,7 @@ function Router() {
                 analyticsNav.style.background = "#EBE7FF";
                 analyticsNav.style.fill = "#7F63FF";
                 break;
-            case "/settings":
+            case `/settings/${location.pathname.split("/")[2]}`:
                 const settingsNav = document.getElementById("settingsNav") as HTMLElement;
                 settingsNav.style.background = "#EBE7FF";
                 settingsNav.style.fill = "#7F63FF";
@@ -47,7 +47,8 @@ function Router() {
                 <Route index element={<Home />} />
                 <Route path="chat" element={<Chat />} />
                 <Route path="analytics" element={<Analytics />} />
-                <Route path="settings" element={<BotSettings />} />
+                <Route path="settings" element={<BotSettingsWrapper />} />
+                <Route path="settings/:botID" element={<BotSettingsWrapper />} />
                 <Route path="*" element={<NoPage />} />
             </Route>
         </Routes>
@@ -58,4 +59,8 @@ export default Router;
 
 const NoPage = () => {
     return <h1 style={{width: '100vw', textAlign: 'center'}}>Page does not exist !</h1>;
+};
+const BotSettingsWrapper = () => {
+    const { botID } = useParams();
+    return <BotSettings botID={botID} />;
 };

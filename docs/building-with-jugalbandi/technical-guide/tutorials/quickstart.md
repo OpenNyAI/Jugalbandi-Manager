@@ -117,17 +117,18 @@ To start the JB Manager, you can use the following command with or without the `
 
 ### Bot Installation and Go Live
 
-1. Go to [JB Manager UI](http://localhost:4173) ![](../../../assets/quickstart-frontend.png)
-2. Click on install new bot and provide the required data to create your bot. ![](../../../assets/quickstart-botdetails.png) The detailed information about the fields are given below:
+1. Go to [JB Manager UI](http://localhost:4173) ![](../../../assets/Home_Page.png)
+2. Click on Add Project and provide the required data to create your bot. ![](../../../assets/Bot_Creation_Form.png) The detailed information about the fields are given below:
    1. **Name \[Mandatory]** is the name of the bot. It should be same as the name of class defined within below-mentioned bot code (fsm.py). For this example, use `CarWashDealerFSM`.
    2. **Code \[Mandatory]** is the fsm.py file python code. Copy the contents of [python file](../../../tutorials/car\_wash.py) and paste it.
    3. **version \[Mandatory]** - version of the bot. Put `1.0.0`.
    4. **required\_credentials \[Mandatory]** - Credentials required by the bot to access various external services. Enter the following: `AZURE_OPENAI_API_KEY,AZURE_OPENAI_API_VERSION,AZURE_OPENAI_API_ENDPOINT,FAST_MODEL,SLOW_MODEL` , so put these keys in this section seperated by comma.
-   5. Click on `Install` button.
-3. Once the bot is created, click on the **settings (⚙) icon** to enter the given credentials values and click save to save the credentials values. For this example, put the values of `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_API_VERSION`, `AZURE_OPENAI_API_ENDPOINT`, `FAST_MODEL` (typically, `gpt-3.5-turbo`) and `SLOW_MODEL` (typically, `gpt-4`). **Note: Remember to verify your model names. If you are using Azure OpenAI, this corresponds to Deployment Name and not model type** ![](../../../assets/quickstart-credentials.png)
-4. Then click on the **play (▶️) icon** to activate the bot by providing the whatsapp business phone number in `phone number` and whatsapp api key in the `whatsapp` field. ![](../../../assets/quickstart-botactivate.png)
-5. Once the above steps are completed, the bot status will be changed from **inactive** to **active**. ![](../../../assets/quickstart-activebot.png)
-6. Start a new shell session and start tunnel for port 8000 on your system
+   5. Click on `Save` button.
+3. Once the bot is created, click on the **settings (⚙) icon** to enter the given credentials values and click save to save the credentials values. For this example, put the values of `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_API_VERSION`, `AZURE_OPENAI_API_ENDPOINT`, `FAST_MODEL` (typically, `gpt-3.5-turbo`) and `SLOW_MODEL` (typically, `gpt-4`). **Note: Remember to verify your model names. If you are using Azure OpenAI, this corresponds to Deployment Name and not model type** ![](../../../assets/Edit_Bot_Settings.png)
+4. Then click on the **play (▶️) icon** to open the Channel Settings Page for the Bot, then click on Add Channel button ![](../../../assets/Bot_Channel_Settings.png)
+5. Fill in the Channel details and click on save ![](../../../assets/Add_New_Channel_Form.png)
+6. Toggle on the channel using the toggle switch at right hand side. This makes the channel active. To verify, go to home page by clicking `Home` icon on the left Navigation pane and you will see a `Pause` button next to the bot ![](../../../assets/Created_Channel_Active.png)
+7. Start a new shell session and start tunnel for port 8000 on your system
 
    - For **Loophole**, use the following command:
      ```bash
@@ -139,8 +140,8 @@ To start the JB Manager, you can use the following command with or without the `
      $ ngrok http 8000
      ```
 
-7. Copy the tunnel url from the shell (loophole example shown below). ![](../../../assets/quickstart-loophole-8000.png)
-8. Add this url to register the callback URL for Whatsapp service provider. Your callback url will look like this `<Tunnel URL>/v2/callback/pinnacle_whatsapp/<Whatsapp business account number>`.
+8. Copy the tunnel url from the shell (loophole example shown below). ![](../../../assets/quickstart-loophole-8000.png)
+9. Add this url to register the callback URL for Whatsapp service provider. Your callback url will look like this `<Tunnel URL>/v2/callback/pinnacle_whatsapp/<Whatsapp business account number>`.
 
     For this tutorial, we are using the shell script to add the callback URL using Whatsapp API host. Run the script on a new shell session with the appropriate values to register the callback URL.
 
@@ -160,7 +161,7 @@ To start the JB Manager, you can use the following command with or without the `
     --header 'Content-Type: application/json' \
     --data-raw "$BODY"
     ```
-9. Your bot is running. Send a `Hi` message to whatsapp business number to start conversation with the bot.
+10. Your bot is running. Send a `Hi` message to whatsapp business number to start conversation with the bot.
 
 ### Quickstart FAQs 
 
@@ -168,5 +169,3 @@ To start the JB Manager, you can use the following command with or without the `
     Try setting up ngrok with a free tier subscription. Creating a single tunnel does not require any paid plan.
 2. #### Which OpenAI Model to use?
     You can use any model just make sure it supports generating output in JSON mode.
-3. #### How to Integrate a Telegram Bot
-    The telegram integration documentation and frontend is still being worked on.

@@ -27,7 +27,11 @@ interface Channel {
   key: string;
 }
 
-export const BotSettings: React.FunctionComponent = () => {
+interface BotSettingsProps {
+  botID?: string;
+}
+
+export const BotSettings: React.FunctionComponent<BotSettingsProps> = ({botID}) => {
   const [bots, setBots] = useState<Bot[]>([]);
   const [selectedBot, setSelectedBot] = useState<Bot | null>(null);
   const [isSettingsModelOpen, showModel] = React.useState(false);
@@ -46,7 +50,12 @@ export const BotSettings: React.FunctionComponent = () => {
         url: `${APIHOST}/v2/bot`
       }).then((response: any) => {
         setBots(response);
-        if(selectedBot!=null){
+        console.log("URL Bot ID: ",botID);
+        if(botID!=null){
+          const bot = response.find((b) => b.id === botID) || null;
+          setSelectedBot(bot);
+        }
+        else if(selectedBot!=null){
           const bot = response.find((b) => b.id === selectedBot.id) || null;
           setSelectedBot(bot);
         }

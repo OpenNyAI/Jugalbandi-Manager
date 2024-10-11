@@ -30,18 +30,49 @@ const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelT
   const APIHOST = import.meta.env.VITE_SERVER_HOST;
 
   useEffect(() => {
-    setInputElements(inputs || {});
+    const initialInputs = { ...inputs }; // Create a copy to avoid modifying props directly
+
+    // Auto-populate url based on initial type value
+    if (initialInputs.type && initialInputs.url) { // Check if both fields exist
+      if (initialInputs.type.value === "pinnacle_whatsapp") {
+        initialInputs.url.value = "www.whatsapp.org";
+      } else if (initialInputs.type.value === "telegram") {
+        initialInputs.url.value = "https://api.telegram.org/";
+      }
+      // else { ... handle other cases or reset url } //  (Optional)
+    }
+
+    setInputElements(initialInputs);
   }, [inputs]);
 
   const updateValue = (key: string, newValue: string | number | boolean) => {
-    setInputElements(prevState => ({
-      ...prevState,
+    const updatedInputs = {
+      ...inputElements,
       [key]: {
-        ...prevState[key],
+        ...inputElements[key],
         value: newValue,
       },
-    }));
+    };
+
+    if (key === "type") {
+      if (newValue === "pinnacle_whatsapp") {
+        updatedInputs["url"] = {
+          ...updatedInputs["url"],  
+          value: "www.whatsapp.org",
+        };
+      } else if (newValue === "telegram") {
+        updatedInputs["url"] = {
+          ...updatedInputs["url"], 
+          value: "https://api.telegram.org/",
+        };
+      } else {
+      }
+    }
+
+
+    setInputElements(updatedInputs);
   };
+
 
   const getInputType = (inputConfig: InputConfig): string => {
     if (inputConfig.is_secret) return 'password';
