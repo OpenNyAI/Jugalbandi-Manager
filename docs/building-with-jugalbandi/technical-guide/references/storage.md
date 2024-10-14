@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Storage Integration
+title: Storage
 ---
 
 # Integrate Azure/Local Storage with Jugalbandi-Manager
