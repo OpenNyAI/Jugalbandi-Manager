@@ -34,9 +34,7 @@ const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelT
 
     // Auto-populate url based on initial type value
     if (initialInputs.type && initialInputs.url) { // Check if both fields exist
-      if (initialInputs.type.value === "pinnacle_whatsapp") {
-        initialInputs.url.value = "www.whatsapp.org";
-      } else if (initialInputs.type.value === "telegram") {
+      if (initialInputs.type.value === "telegram") {
         initialInputs.url.value = "https://api.telegram.org/";
       }
       // else { ... handle other cases or reset url } //  (Optional)
@@ -55,17 +53,16 @@ const SettingsModal: React.FC<Props> = ({ botId, isOpen, onClose, inputs, modelT
     };
 
     if (key === "type") {
-      if (newValue === "pinnacle_whatsapp") {
-        updatedInputs["url"] = {
-          ...updatedInputs["url"],  
-          value: "www.whatsapp.org",
-        };
-      } else if (newValue === "telegram") {
+      if (newValue === "telegram") {
         updatedInputs["url"] = {
           ...updatedInputs["url"], 
           value: "https://api.telegram.org/",
         };
       } else {
+        updatedInputs["url"] = {
+          ...updatedInputs["url"], 
+          value: "",
+        };
       }
     }
 
