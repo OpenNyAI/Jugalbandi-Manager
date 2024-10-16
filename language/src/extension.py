@@ -5,16 +5,18 @@ from .speech_processor import (
     AzureSpeechProcessor,
     CompositeSpeechProcessor,
     DhruvaSpeechProcessor,
+    AWSSpeechProcessor,
+    GCPSpeechProcessor,
 )
-from .translator import AzureTranslator, CompositeTranslator, DhruvaTranslator
+from .translator import AzureTranslator, CompositeTranslator, DhruvaTranslator, AWSTranslator, GCPTranslator
 
 # ---- Speech Processor ----
 speech_processor = CompositeSpeechProcessor(
-    DhruvaSpeechProcessor(), AzureSpeechProcessor()
+    DhruvaSpeechProcessor(), AzureSpeechProcessor(), AWSSpeechProcessor(), GCPSpeechProcessor()
 )
 
 # ---- Translator ----
-translator = CompositeTranslator(DhruvaTranslator(), AzureTranslator())
+translator = CompositeTranslator(DhruvaTranslator(), AzureTranslator(), AWSTranslator(), GCPTranslator())
 
 # ---- Storage ----
 storage = StorageHandler.get_async_instance()
