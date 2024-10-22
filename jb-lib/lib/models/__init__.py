@@ -292,6 +292,17 @@ class JBForm(Base):
         onupdate=func.now(),
     )
 
+class JBApiLogger(Base):
+    __tablename__ = "jb_api_logger"
+
+    msg_id = Column(String, primary_key=True)
+    user_id = Column(String)
+    turn_id = Column(String)  
+    session_id = Column(String)  
+    status = Column(String)
+    created_at = Column(
+        TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
+    )
 
 # class LangchainPgCollection(Base):
 #     __tablename__ = 'langchain_pg_collection'

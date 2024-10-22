@@ -1,15 +1,17 @@
 import logging
 from typing import Dict, AsyncGenerator, Optional, Tuple
 from lib.channel_handler import ChannelHandler
-from lib.data_models import Channel, ChannelIntent, RestBotInput
+from lib.data_models import Channel, ChannelIntent, RestBotInput, Logger, APILogger
 from ...crud import (
     get_active_channel_by_identifier,
     get_user_by_number,
     create_user,
     create_turn,
+    get_data_for_api_logger
 )
 
 logger = logging.getLogger("jb-manager-api")
+logger.setLevel(logging.DEBUG)
 
 
 async def handle_callback(
@@ -18,7 +20,7 @@ async def handle_callback(
     headers: Dict,
     query_params: Dict,
     chosen_channel: type[ChannelHandler],
-) -> AsyncGenerator[Tuple[Optional[ValueError], Optional[Channel]], None]:
+) -> AsyncGenerator[Tuple[Optional[ValueError], Optional[Channel], Optional[Logger]], None]:
     for channel_data in chosen_channel.process_message(callback_data):
         user = channel_data.user
         message_data = channel_data.message_data
@@ -56,4 +58,24 @@ async def handle_callback(
                 query_params=query_params,
             ),
         )
-        yield None, channel_input
+        api_logger_data = await get_data_for_api_logger(turn_id = turn_id)
+        if(api_logger_data.session_id == None):
+            session_id: str = ""
+        else:
+            session_id: str = api_logger_data.session_id
+        api_logger_input = Logger(
+            source = "api",
+            api_logger = APILogger(
+                    msg_id = api_logger_data.msg_id,
+                    user_id = api_logger_data.user_id,
+                    turn_id = api_logger_data.turn_id,
+                    session_id = session_id,
+                    status = api_logger_data.status,
+            )
+        ) 
+        yield None, channel_input, api_logger_input
+
+# async def handle_logger_callback(
+# ) -> AsyncGenerator[Tuple[Optional[ValueError], Optional[Channel]], None]:
+#     apidata = await get_data_for_api_logger
+#     yield apidata

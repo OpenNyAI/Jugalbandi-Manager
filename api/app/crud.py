@@ -1,4 +1,5 @@
 from typing import Sequence
+import logging
 import uuid
 from sqlalchemy import select, update
 from sqlalchemy.orm import joinedload
@@ -11,8 +12,10 @@ from lib.models import (
     JBUser,
     JBBot,
     JBChannel,
+    JBApiLogger,
 )
 
+logger = logging.getLogger("jb-manager-api")
 
 async def create_user(
     channel_id: str, phone_number: str, first_name: str, last_name: str
@@ -243,3 +246,28 @@ async def update_channel_by_bot_id(bot_id: str, data):
             await session.execute(stmt)
             await session.commit()
             return bot_id
+
+async def get_data_for_api_logger(turn_id: str) -> JBApiLogger:
+    msg_id = str(uuid.uuid4())
+    query = (
+        select(JBTurn).where(JBTurn.id == turn_id)
+    )
+    async with DBSessionHandler.get_async_session() as session:
+        async with session.begin():
+            result = await session.execute(query)
+            data = result.scalars().unique().all()
+            for row in data:
+                user_id = row.user_id
+                session_id = row.session_id
+            if turn_id is not None:
+                status = "Success"
+            else:
+                status = "Error"
+            api_logger_data = JBApiLogger(
+                msg_id = msg_id,
+                user_id = user_id,
+                turn_id = turn_id,
+                session_id = session_id, 
+                status = status,
+            )
+            return api_logger_data
