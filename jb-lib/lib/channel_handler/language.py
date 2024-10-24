@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class LanguageCodes(Enum):
     ENGLISH = "EN"
     HINDI = "HI"
@@ -25,6 +26,7 @@ class LanguageCodes(Enum):
     RUSSIAN = "RU"
     SPANISH = "ES"
     TURKISH = "TR"
+
 
 class LanguageMapping(Enum):
     ENGLISH = "English"
