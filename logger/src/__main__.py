@@ -4,7 +4,7 @@ import os
 import logging
 import traceback
 from dotenv import load_dotenv
-from .crud import create_api_logger
+from .crud import create_api_logger, create_channel_logger
 from lib.data_models import (
     Logger,
 )
@@ -52,14 +52,25 @@ async def start_logger():
             )
 
             if(service_name == "api"):
-                await create_api_logger(msg_id = input_data.api_logger.msg_id,
-                                        user_id = input_data.api_logger.user_id,
-                                        turn_id = input_data.api_logger.turn_id,
-                                        session_id = input_data.api_logger.session_id,
-                                        status = input_data.api_logger.status)
-            elif(service_name == "Channel"):
+                logger.info("Coming fron Api")
+                await create_api_logger(msg_id = input_data.logger_obj.msg_id,
+                                        user_id = input_data.logger_obj.user_id,
+                                        turn_id = input_data.logger_obj.turn_id,
+                                        session_id = input_data.logger_obj.session_id,
+                                        status = input_data.logger_obj.status)
+            elif(service_name == "channel"):
                 logger.info("Coming fron Channel")
-            elif(service_name == "Flow"):
+                await create_channel_logger(
+                    id = input_data.logger_obj.id,
+                    turn_id=input_data.logger_obj.turn_id, 
+                    channel_id=input_data.logger_obj.channel_id, 
+                    channel_name=input_data.logger_obj.channel_name, 
+                    msg_intent = input_data.logger_obj.msg_intent,
+                    msg_type=input_data.logger_obj.msg_type, 
+                    sent_to_service = input_data.logger_obj.sent_to_service,
+                    status = input_data.logger_obj.status
+                )
+            elif(service_name == "flow"):
                 logger.info("Coming from Flow")
             else:
                 logger.info("Service name not found")

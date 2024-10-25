@@ -65,7 +65,7 @@ async def handle_callback(
             session_id: str = api_logger_data.session_id
         api_logger_input = Logger(
             source = "api",
-            api_logger = APILogger(
+            logger_obj = APILogger(
                     msg_id = api_logger_data.msg_id,
                     user_id = api_logger_data.user_id,
                     turn_id = api_logger_data.turn_id,
@@ -74,8 +74,3 @@ async def handle_callback(
             )
         ) 
         yield None, channel_input, api_logger_input
-
-# async def handle_logger_callback(
-# ) -> AsyncGenerator[Tuple[Optional[ValueError], Optional[Channel]], None]:
-#     apidata = await get_data_for_api_logger
-#     yield apidata

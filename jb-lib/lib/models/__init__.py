@@ -295,10 +295,25 @@ class JBForm(Base):
 class JBApiLogger(Base):
     __tablename__ = "jb_api_logger"
 
-    msg_id = Column(String, primary_key=True)
+    turn_id = Column(String, primary_key=True)
+    msg_id = Column(String)
     user_id = Column(String)
-    turn_id = Column(String)  
     session_id = Column(String)  
+    status = Column(String)
+    created_at = Column(
+        TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
+    )
+
+class JBChannelLogger(Base):
+    __tablename__ = "jb_channel_logger"
+
+    id = Column(String, primary_key=True)
+    turn_id = Column(String, ForeignKey("jb_api_logger.turn_id"))
+    channel_id = Column(String)
+    channel_name = Column(String)
+    msg_intent = Column(String)
+    msg_type = Column(String) 
+    sent_to_service = Column(String)
     status = Column(String)
     created_at = Column(
         TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
