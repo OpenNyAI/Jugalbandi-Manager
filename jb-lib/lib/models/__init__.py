@@ -319,6 +319,24 @@ class JBChannelLogger(Base):
         TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
     )
 
+class JBLanguageLogger(Base):
+    __tablename__ = "jb_language_logger"
+
+    id = Column(String, primary_key=True)
+    turn_id = Column(String, ForeignKey("jb_api_logger.turn_id"))
+    msg_id = Column(String)
+    msg_state = Column(String)
+    msg_language = Column(String)
+    msg_type = Column(String) 
+    translated_to_language = Column(String)
+    translation_type = Column(String)
+    model_for_translation = Column(String)
+    response_time = Column(String)
+    status = Column(String)
+    created_at = Column(
+        TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
+    )
+    
 # class LangchainPgCollection(Base):
 #     __tablename__ = 'langchain_pg_collection'
 

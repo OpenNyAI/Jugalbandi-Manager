@@ -2,6 +2,7 @@ from lib.db_session_handler import DBSessionHandler
 from lib.models import (
     JBApiLogger,
     JBChannelLogger,
+    JBLanguageLogger,
 )
 
 async def create_api_logger(
@@ -47,3 +48,35 @@ async def create_channel_logger(
             return channel_logger_data
     return None
     
+async def create_language_logger(
+        id : str,
+        turn_id : str,
+        msg_id : str,
+        msg_state : str,
+        msg_language : str,
+        msg_type : str,
+        translated_to_language : str,
+        translation_type : str,
+        translation_model : str,
+        response_time : str,
+        status : str) -> JBLanguageLogger:
+     
+    language_logger_data = JBLanguageLogger(
+                    id = id,
+                    turn_id = turn_id,
+                    msg_id = msg_id,
+                    msg_state = msg_state,
+                    msg_language = msg_language,
+                    msg_type = msg_type,
+                    translated_to_language = translated_to_language,
+                    translation_type = translation_type,
+                    model_for_translation = translation_model,
+                    response_time = response_time,
+                    status = status
+                    )
+    async with DBSessionHandler.get_async_session() as session:
+        async with session.begin():
+            session.add(language_logger_data)
+            await session.commit()
+            return language_logger_data
+    return None

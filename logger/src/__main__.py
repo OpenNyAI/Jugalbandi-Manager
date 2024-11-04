@@ -4,7 +4,7 @@ import os
 import logging
 import traceback
 from dotenv import load_dotenv
-from .crud import create_api_logger, create_channel_logger
+from .crud import create_api_logger, create_channel_logger, create_language_logger
 from lib.data_models import (
     Logger,
 )
@@ -68,6 +68,21 @@ async def start_logger():
                     msg_intent = input_data.logger_obj.msg_intent,
                     msg_type=input_data.logger_obj.msg_type, 
                     sent_to_service = input_data.logger_obj.sent_to_service,
+                    status = input_data.logger_obj.status
+                )
+            elif(service_name == "language"):
+                logger.info("Coming from Language")
+                await create_language_logger(
+                    id = input_data.logger_obj.id,
+                    turn_id=input_data.logger_obj.turn_id, 
+                    msg_id=input_data.logger_obj.msg_id, 
+                    msg_state=input_data.logger_obj.msg_state, 
+                    msg_language = input_data.logger_obj.msg_language,
+                    msg_type = input_data.logger_obj.msg_type,
+                    translated_to_language = input_data.logger_obj.translated_to_language,
+                    translation_type = input_data.logger_obj.translation_type,
+                    translation_model = input_data.logger_obj.translation_model,
+                    response_time = input_data.logger_obj.response_time,
                     status = input_data.logger_obj.status
                 )
             elif(service_name == "flow"):

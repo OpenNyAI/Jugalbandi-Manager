@@ -18,6 +18,19 @@ class ChannelLogger(BaseModel):
     sent_to_service: str
     status: str
 
+class LanguageLogger(BaseModel):
+    id : str
+    turn_id : str
+    msg_id : str
+    msg_state : str
+    msg_language : str
+    msg_type : str
+    translated_to_language : str
+    translation_type : str
+    translation_model : str
+    response_time : str
+    status : str
+
 class Logger(BaseModel):
     source: str
-    logger_obj: Union[APILogger, ChannelLogger]
+    logger_obj: Union[APILogger, ChannelLogger, LanguageLogger]
