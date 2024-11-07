@@ -20,7 +20,7 @@ async def handle_callback(
     headers: Dict,
     query_params: Dict,
     chosen_channel: type[ChannelHandler],
-) -> AsyncGenerator[Tuple[Optional[ValueError], Optional[Channel], Optional[Logger]], None]:
+)-> AsyncGenerator[Tuple[Optional[ValueError], Optional[Channel]], None]:
     for channel_data in chosen_channel.process_message(callback_data):
         user = channel_data.user
         message_data = channel_data.message_data
@@ -73,4 +73,4 @@ async def handle_callback(
                     status = api_logger_data.status,
             )
         ) 
-        yield None, channel_input, api_logger_input
+        yield None, channel_input #, api_logger_input
