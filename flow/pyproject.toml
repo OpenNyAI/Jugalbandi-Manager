@@ -10,6 +10,7 @@ package-mode = false
 python = "^3.11"
 python-dotenv = "^1.0.0"
 sqlalchemy = "^2.0.25"
+tiktoken ="^0.8.0"
 
 [tool.poetry.group.dev.dependencies]
 lib = {path = "../jb-lib", develop = true}

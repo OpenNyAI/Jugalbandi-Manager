@@ -31,6 +31,19 @@ class LanguageLogger(BaseModel):
     response_time : str
     status : str
 
+class FlowLogger(BaseModel):
+    id :str
+    turn_id :str
+    session_id :str
+    msg_id :str
+    msg_intent :str
+    flow_intent :str
+    response_model_used :str
+    models_response_time :str
+    tokens :str
+    sent_to_service :str
+    status :str
+
 class Logger(BaseModel):
     source: str
-    logger_obj: Union[APILogger, ChannelLogger, LanguageLogger]
+    logger_obj: Union[APILogger, ChannelLogger, LanguageLogger, FlowLogger]

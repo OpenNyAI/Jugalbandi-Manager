@@ -4,7 +4,7 @@ import os
 import logging
 import traceback
 from dotenv import load_dotenv
-from .crud import create_api_logger, create_channel_logger, create_language_logger
+from .crud import create_api_logger, create_channel_logger, create_language_logger, create_flow_logger
 from lib.data_models import (
     Logger,
 )
@@ -87,6 +87,19 @@ async def start_logger():
                 )
             elif(service_name == "flow"):
                 logger.info("Coming from Flow")
+                await create_flow_logger(
+                    id = input_data.logger_obj.id,
+                    turn_id = input_data.logger_obj.turn_id,
+                    session_id = input_data.logger_obj.session_id,
+                    msg_id = input_data.logger_obj.msg_id,
+                    msg_intent = input_data.logger_obj.msg_intent,
+                    flow_intent = input_data.logger_obj.flow_intent,
+                    response_model_used = input_data.logger_obj.response_model_used,
+                    models_response_time = input_data.logger_obj.models_response_time,
+                    tokens = input_data.logger_obj.tokens,
+                    sent_to_service = input_data.logger_obj.sent_to_service,
+                    status = input_data.logger_obj.status
+                )
             else:
                 logger.info("Service name not found")
         except Exception as e:

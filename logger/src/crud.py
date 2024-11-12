@@ -3,6 +3,7 @@ from lib.models import (
     JBApiLogger,
     JBChannelLogger,
     JBLanguageLogger,
+    JBFlowLogger,
 )
 
 async def create_api_logger(
@@ -79,4 +80,37 @@ async def create_language_logger(
             session.add(language_logger_data)
             await session.commit()
             return language_logger_data
+    return None
+
+async def create_flow_logger(
+        id :str,
+        turn_id :str,
+        session_id :str,
+        msg_id :str,
+        msg_intent :str,
+        flow_intent :str,
+        response_model_used :str,
+        models_response_time :str,
+        tokens :str,
+        sent_to_service :str,
+        status :str) -> JBFlowLogger:
+     
+    flow_logger_data = JBFlowLogger(
+                    id = id,
+                    turn_id = turn_id,
+                    session_id = session_id,
+                    msg_id = msg_id,
+                    msg_intent =msg_intent,
+                    flow_intent = flow_intent,
+                    response_model_used = response_model_used,
+                    model_response_time = models_response_time,
+                    tokens = tokens,
+                    sent_to_service = sent_to_service,
+                    status = status
+                    )
+    async with DBSessionHandler.get_async_session() as session:
+        async with session.begin():
+            session.add(flow_logger_data)
+            await session.commit()
+            return flow_logger_data
     return None

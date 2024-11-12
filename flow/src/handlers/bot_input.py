@@ -1,4 +1,6 @@
 import logging
+import tiktoken
+import uuid
 import json
 import subprocess
 from datetime import datetime
@@ -22,6 +24,8 @@ from lib.data_models import (
     UserInput,
     Callback,
     CallbackType,
+    Logger,
+    FlowLogger,
 )
 from ..crud import (
     get_bot_by_session_id,
@@ -37,11 +41,52 @@ from ..crud import (
     insert_jb_webhook_reference,
 )
 from ..extensions import produce_message
+from ..crud import get_msg_id_by_turn_id
 
 logger = logging.getLogger("flow")
 
+async def create_flow_logger_input(
+        turn_id: str, 
+        session_id: str, 
+        msg_intent: str, 
+        flow_intent: str, 
+        models_response_time: str,
+        tokens: int,
+        sent_to_service: str):
 
-def handle_bot_output(fsm_output: FSMOutput, turn_id: str):
+    id = str(uuid.uuid4())
+    if msg_intent == "incoming":
+        msg_id = await get_msg_id_by_turn_id(turn_id = turn_id, msg_intent = msg_intent)
+        if msg_id is None :
+            msg_id = ""
+    else:
+        msg_id = str(uuid.uuid4())
+    flow_logger_input = Logger(
+        source = "flow",
+        logger_obj = FlowLogger(
+            id = id,
+            turn_id = turn_id,
+            session_id = session_id,
+            msg_id =msg_id,
+            msg_intent = msg_intent,
+            flow_intent = flow_intent,
+            response_model_used = "gpt 3.5",
+            models_response_time = models_response_time,
+            tokens = str(tokens),
+            sent_to_service = sent_to_service,
+            status = "Success/Failure",
+        )
+    )
+    return flow_logger_input
+
+def get_token_count(model="gpt-3.5-turbo"):
+    text ="text"
+    encoder = tiktoken.encoding_for_model(model)
+    tokens = encoder.encode(text)
+    return len(tokens)
+
+async def handle_bot_output(fsm_output: FSMOutput, turn_id: str, session_id: str, flow_intent: str):
+    flow_logger_object: Logger
     intent = fsm_output.intent
     if intent == FSMIntent.SEND_MESSAGE:
         message = fsm_output.message
@@ -106,9 +151,35 @@ def handle_bot_output(fsm_output: FSMOutput, turn_id: str):
         )
     else:
         logger.error("Invalid intent in fsm output")
-        return NotImplemented
+        flow_logger_object = await create_flow_logger_input(
+            turn_id=turn_id, 
+            session_id=session_id, 
+            msg_intent = "Not Implemented", 
+            flow_intent = "Not Implemented", 
+            models_response_time = "",
+            tokens = "",
+            sent_to_service="",
+        )
+        return NotImplemented, flow_logger_object
+    
     logger.info("Output to %s: %s", destination, flow_output)
-    return flow_output
+    if isinstance(flow_output, Flow) or isinstance(flow_output, RAG):
+        msg_intent = "incoming"
+        sent_to_service = "Flow" if isinstance(flow_output, Flow) else "Retriever"
+    elif isinstance(flow_output, Channel) or isinstance(flow_output, Language):
+        msg_intent = "outgoing"
+        sent_to_service = "Channel" if isinstance(flow_output, Channel) else "Language"
+
+    flow_logger_object = await create_flow_logger_input(
+            turn_id=turn_id, 
+            session_id=session_id, 
+            msg_intent = msg_intent, 
+            flow_intent = flow_intent, 
+            models_response_time = "",
+            tokens = get_token_count(model="gpt-3.5-turbo"),
+            sent_to_service=sent_to_service,
+        )
+    return flow_output, flow_logger_object
 
 
 async def manage_session(turn_id: str, new_session: bool = False):
@@ -240,8 +311,9 @@ async def handle_user_input(user_input: UserInput):
             reference_id = fsm_output.webhook.reference_id
             insert_jb_webhook_reference(reference_id=reference_id, turn_id=turn_id)
         else:
-            flow_output = handle_bot_output(fsm_output, turn_id=turn_id)
+            flow_output, flow_logger_object = await handle_bot_output(fsm_output, turn_id=turn_id, session_id=session_id, flow_intent = "user_input")
             produce_message(flow_output)
+            produce_message(flow_logger_object)
 
 
 async def handle_callback_input(callback: Callback):
@@ -267,8 +339,9 @@ async def handle_callback_input(callback: Callback):
             reference_id = fsm_output.webhook.reference_id
             insert_jb_webhook_reference(reference_id=reference_id, turn_id=turn_id)
         else:
-            flow_output = handle_bot_output(fsm_output, turn_id=turn_id)
+            flow_output, flow_logger_object = await handle_bot_output(fsm_output, turn_id=turn_id, session_id=session_id, flow_intent = "callback")
             produce_message(flow_output)
+            produce_message(flow_logger_object)
 
 
 async def handle_dialog_input(dialog: Dialog):
@@ -295,5 +368,6 @@ async def handle_dialog_input(dialog: Dialog):
             reference_id = fsm_output.webhook.reference_id
             insert_jb_webhook_reference(reference_id=reference_id, turn_id=turn_id)
         else:
-            flow_output = handle_bot_output(fsm_output, turn_id=turn_id)
+            flow_output, flow_logger_object = await handle_bot_output(fsm_output, turn_id=turn_id, session_id=session_id, flow_intent = "dialog")
             produce_message(flow_output)
+            produce_message(flow_logger_object)
