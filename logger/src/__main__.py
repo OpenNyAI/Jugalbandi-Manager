@@ -97,9 +97,6 @@ async def start_logger():
                     msg_id = input_data.logger_obj.msg_id,
                     msg_intent = input_data.logger_obj.msg_intent,
                     flow_intent = input_data.logger_obj.flow_intent,
-                    response_model_used = input_data.logger_obj.response_model_used,
-                    models_response_time = input_data.logger_obj.models_response_time,
-                    tokens = input_data.logger_obj.tokens,
                     sent_to_service = input_data.logger_obj.sent_to_service,
                     status = input_data.logger_obj.status
                 )

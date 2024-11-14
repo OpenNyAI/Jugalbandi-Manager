@@ -346,9 +346,6 @@ class JBFlowLogger(Base):
     msg_id = Column(String)
     msg_intent = Column(String)
     flow_intent = Column(String)
-    response_model_used = Column(String)
-    model_response_time = Column(String)
-    tokens = Column(String)
     sent_to_service = Column(String)
     status = Column(String)
     created_at = Column(

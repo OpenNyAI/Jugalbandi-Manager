@@ -91,9 +91,6 @@ async def create_flow_logger(
         msg_id :str,
         msg_intent :str,
         flow_intent :str,
-        response_model_used :str,
-        models_response_time :str,
-        tokens :str,
         sent_to_service :str,
         status :str) -> JBFlowLogger:
      
@@ -104,9 +101,6 @@ async def create_flow_logger(
                     msg_id = msg_id,
                     msg_intent =msg_intent,
                     flow_intent = flow_intent,
-                    response_model_used = response_model_used,
-                    model_response_time = models_response_time,
-                    tokens = tokens,
                     sent_to_service = sent_to_service,
                     status = status
                     )

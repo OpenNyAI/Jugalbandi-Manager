@@ -38,9 +38,6 @@ class FlowLogger(BaseModel):
     msg_id :str
     msg_intent :str
     flow_intent :str
-    response_model_used :str
-    models_response_time :str
-    tokens :str
     sent_to_service :str
     status :str
 
