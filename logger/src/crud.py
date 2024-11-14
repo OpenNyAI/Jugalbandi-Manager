@@ -1,9 +1,11 @@
 from lib.db_session_handler import DBSessionHandler
+from typing import List
 from lib.models import (
     JBApiLogger,
     JBChannelLogger,
     JBLanguageLogger,
     JBFlowLogger,
+    JBRetrieverLogger
 )
 
 async def create_api_logger(
@@ -113,4 +115,33 @@ async def create_flow_logger(
             session.add(flow_logger_data)
             await session.commit()
             return flow_logger_data
+    return None
+
+async def create_retriever_logger(
+        id : str,
+        turn_id : str,
+        msg_id : str,
+        retriever_type : str,
+        collection_name : str,
+        number_of_chunks : str,
+        chunks : List[str],
+        query : str,
+        status : str) -> JBRetrieverLogger:
+     
+    retriever_logger_data = JBRetrieverLogger(
+                    id = id,
+                    turn_id = turn_id,
+                    msg_id = msg_id,
+                    retriever_type = retriever_type,
+                    collection_name = collection_name,
+                    number_of_chunks = number_of_chunks,
+                    chunks = chunks,
+                    query = query,
+                    status = status,
+                    )
+    async with DBSessionHandler.get_async_session() as session:
+        async with session.begin():
+            session.add(retriever_logger_data)
+            await session.commit()
+            return retriever_logger_data
     return None

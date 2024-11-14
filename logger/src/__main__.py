@@ -4,7 +4,7 @@ import os
 import logging
 import traceback
 from dotenv import load_dotenv
-from .crud import create_api_logger, create_channel_logger, create_language_logger, create_flow_logger
+from .crud import create_api_logger, create_channel_logger, create_language_logger, create_flow_logger, create_retriever_logger
 from lib.data_models import (
     Logger,
 )
@@ -25,6 +25,7 @@ if not language_topic:
 flow_topic = os.getenv("KAFKA_FLOW_TOPIC")
 if not flow_topic:
     raise ValueError("KAFKA_FLOW_TOPIC is not set in the environment")
+
 logger_topic = os.getenv("KAFKA_LOGGER_TOPIC")
 if not logger_topic:
     raise ValueError("KAFKA_LOGGER_TOPIC is not set in the environment")
@@ -43,7 +44,9 @@ async def start_logger():
         try:
             msg = consumer.receive_message(logger_topic)
             msg = json.loads(msg)
+            logger.error(f"Message in Logger is: {msg}")
             service_name = msg.get("source")
+            logger.error(f"Service name is: {service_name}")
             logger.info("Input received: %s", msg)
             input_data = Logger(**msg)
             logger.info(
@@ -52,14 +55,14 @@ async def start_logger():
             )
 
             if(service_name == "api"):
-                logger.info("Coming fron Api")
+                logger.info("Coming from Api")
                 await create_api_logger(msg_id = input_data.logger_obj.msg_id,
                                         user_id = input_data.logger_obj.user_id,
                                         turn_id = input_data.logger_obj.turn_id,
                                         session_id = input_data.logger_obj.session_id,
                                         status = input_data.logger_obj.status)
             elif(service_name == "channel"):
-                logger.info("Coming fron Channel")
+                logger.info("Coming from Channel")
                 await create_channel_logger(
                     id = input_data.logger_obj.id,
                     turn_id=input_data.logger_obj.turn_id, 
@@ -98,6 +101,19 @@ async def start_logger():
                     models_response_time = input_data.logger_obj.models_response_time,
                     tokens = input_data.logger_obj.tokens,
                     sent_to_service = input_data.logger_obj.sent_to_service,
+                    status = input_data.logger_obj.status
+                )
+            elif(service_name == "retriever"):
+                logger.info("Coming from Retriever")
+                await create_retriever_logger(
+                    id = input_data.logger_obj.id,
+                    turn_id = input_data.logger_obj.turn_id,
+                    msg_id = input_data.logger_obj.msg_id,
+                    retriever_type = input_data.logger_obj.retriever_type,
+                    collection_name = input_data.logger_obj.collection_name,
+                    number_of_chunks = input_data.logger_obj.number_of_chunks,
+                    chunks = input_data.logger_obj.chunks,
+                    query = input_data.logger_obj.query,
                     status = input_data.logger_obj.status
                 )
             else:

@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Union
+from typing import Union, List
 
 class APILogger(BaseModel):
     msg_id: str
@@ -44,6 +44,17 @@ class FlowLogger(BaseModel):
     sent_to_service :str
     status :str
 
+class RetrieverLogger(BaseModel):
+    id :str
+    turn_id :str
+    msg_id :str
+    retriever_type :str
+    collection_name :str
+    number_of_chunks :str
+    chunks :List[str]
+    query :str
+    status :str
+
 class Logger(BaseModel):
     source: str
-    logger_obj: Union[APILogger, ChannelLogger, LanguageLogger, FlowLogger]
+    logger_obj: Union[APILogger, ChannelLogger, LanguageLogger, FlowLogger, RetrieverLogger]

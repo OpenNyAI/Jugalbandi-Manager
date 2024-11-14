@@ -73,4 +73,4 @@ async def handle_callback(
                     status = api_logger_data.status,
             )
         ) 
-        yield None, channel_input #, api_logger_input
+        yield None, channel_input , api_logger_input

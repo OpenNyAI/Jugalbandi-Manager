@@ -4,13 +4,23 @@ import logging
 import os
 import sys
 import traceback
+import uuid
+from sqlalchemy import text
+# from sqlalchemy import select
+# from lib.db_session_handler import DBSessionHandler
+# from lib.models import (
+#     JBFlowLogger
+# )
 
 from dotenv import load_dotenv
 from langchain_community.vectorstores import PGVector
 from langchain_openai import AzureOpenAIEmbeddings, OpenAIEmbeddings
-from lib.data_models import RAG, Flow
+from lib.data_models import RAG, Flow, Logger, RetrieverLogger
 from lib.kafka_utils import KafkaConsumer, KafkaProducer
 from r2r import R2R, VectorSearchSettings
+from typing import List
+
+from crud import get_msg_id_by_turn_id
 
 load_dotenv()
 
@@ -19,6 +29,7 @@ print("Inside Retriever", file=sys.stderr)
 kafka_broker = os.getenv("KAFKA_BROKER")
 retriever_topic = os.getenv("KAFKA_RETRIEVER_TOPIC")
 flow_topic = os.getenv("KAFKA_FLOW_TOPIC")
+logger_topic = os.getenv("KAFKA_LOGGER_TOPIC")
 
 print("Connecting", file=sys.stderr)
 
@@ -64,6 +75,35 @@ def get_embeddings():
 def send_message(data):
     producer.send_message(flow_topic, data)
 
+async def create_retriever_logger_input(
+        turn_id :str,
+        retriever_type :str,
+        collection_name :str,
+        number_of_chunks :str,
+        chunks :List[str],
+        query :str,
+        status :str):
+
+    id = str(uuid.uuid4())
+    msg_id = await get_msg_id_by_turn_id(turn_id = turn_id)
+    if msg_id is None :
+        msg_id = ""
+    retriever_logger_input = Logger(
+        source = "retriever",
+        logger_obj = RetrieverLogger(
+            id = id,
+            turn_id = turn_id,
+            msg_id = msg_id,
+            retriever_type = retriever_type,
+            collection_name = collection_name,
+            number_of_chunks = number_of_chunks,
+            chunks = chunks,
+            query = query,
+            status = status,
+        )
+    )
+    return retriever_logger_input
+
 
 async def querying(
     type: str,
@@ -75,6 +115,8 @@ async def querying(
     metadata: dict = None,
     callback: callable = None,
 ):
+    top_k_chunks = []
+    number_of_chunks: int
     if type == "r2r":
         os.environ["POSTGRES_VECS_COLLECTION"] = collection_name
         r2r_app = get_r2r()
@@ -93,10 +135,13 @@ async def querying(
             query=query,
             vector_search_settings=vector_search_settings,
         )
+        number_of_chunks = len(search_results["vector_search_results"])
         data = []
         for chunk in search_results["vector_search_results"][:5]:
             chunk_text = chunk["metadata"].pop("text", None)
             data.append({"chunk": chunk_text, "metadata": chunk["metadata"]})
+            top_k_chunks.append(str(chunk_text))
+            logger.error(f"chunks are: {top_k_chunks}")
     else:
         embeddings = get_embeddings()
         search_index = PGVector(
@@ -104,6 +149,8 @@ async def querying(
             connection_string=db_url,
             embedding_function=embeddings,
         )
+        collection_store = search_index.CollectionStore
+        logger.error("CollectionStore attributes and methods: %s", dir(collection_store))
         documents = (
             search_index.similarity_search(
                 query=query, k=top_chunk_k_value, filter=metadata
@@ -115,15 +162,29 @@ async def querying(
             {"chunk": document.page_content, "metadata": document.metadata}
             for document in documents
         ]
+        number_of_chunks = "0"
+        for document in documents:
+            top_k_chunks.append(str(document.page_content))
     flow_input = {
         "source": "retriever",
         "intent": "callback",
         "callback": {"turn_id": turn_id, "callback_type": "rag", "rag_response": data},
     }
     flow_input = Flow(**flow_input)
+    retriever_logger_object = await create_retriever_logger_input(
+        turn_id = turn_id,
+        retriever_type = type,
+        collection_name = collection_name,
+        number_of_chunks = str(number_of_chunks),
+        chunks = top_k_chunks,
+        query = query,
+        status = "Success/Failure"
+    )
+    
 
     if callback:
         callback(flow_input.model_dump_json())
+    producer.send_message(logger_topic, retriever_logger_object.model_dump_json(exclude_none=True))
 
 
 async def start_retriever():

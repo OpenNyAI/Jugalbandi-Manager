@@ -354,6 +354,22 @@ class JBFlowLogger(Base):
     created_at = Column(
         TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
     )
+
+class JBRetrieverLogger(Base):
+    __tablename__ = "jb_retriever_logger"
+
+    id = Column(String, primary_key=True)
+    turn_id = Column(String, ForeignKey("jb_api_logger.turn_id"))
+    msg_id = Column(String)
+    retriever_type = Column(String)
+    collection_name = Column(String)
+    number_of_chunks = Column(String)
+    chunks = Column(ARRAY(String))
+    query = Column(String)
+    status = Column(String)
+    created_at = Column(
+        TIMESTAMP(timezone=True), server_default=func.now(), nullable=False
+    )
     
 # class LangchainPgCollection(Base):
 #     __tablename__ = 'langchain_pg_collection'
