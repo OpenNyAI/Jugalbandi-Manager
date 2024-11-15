@@ -47,6 +47,7 @@ class RetrieverLogger(BaseModel):
     msg_id :str
     retriever_type :str
     collection_name :str
+    top_chunk_k_value :str
     number_of_chunks :str
     chunks :List[str]
     query :str

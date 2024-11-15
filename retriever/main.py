@@ -5,12 +5,6 @@ import os
 import sys
 import traceback
 import uuid
-from sqlalchemy import text
-# from sqlalchemy import select
-# from lib.db_session_handler import DBSessionHandler
-# from lib.models import (
-#     JBFlowLogger
-# )
 
 from dotenv import load_dotenv
 from langchain_community.vectorstores import PGVector
@@ -79,6 +73,7 @@ async def create_retriever_logger_input(
         turn_id :str,
         retriever_type :str,
         collection_name :str,
+        top_chunk_k_value :str,
         number_of_chunks :str,
         chunks :List[str],
         query :str,
@@ -96,6 +91,7 @@ async def create_retriever_logger_input(
             msg_id = msg_id,
             retriever_type = retriever_type,
             collection_name = collection_name,
+            top_chunk_k_value= top_chunk_k_value,
             number_of_chunks = number_of_chunks,
             chunks = chunks,
             query = query,
@@ -135,13 +131,12 @@ async def querying(
             query=query,
             vector_search_settings=vector_search_settings,
         )
-        number_of_chunks = len(search_results["vector_search_results"])
         data = []
         for chunk in search_results["vector_search_results"][:5]:
             chunk_text = chunk["metadata"].pop("text", None)
             data.append({"chunk": chunk_text, "metadata": chunk["metadata"]})
             top_k_chunks.append(str(chunk_text))
-            logger.error(f"chunks are: {top_k_chunks}")
+        number_of_chunks = len(data)
     else:
         embeddings = get_embeddings()
         search_index = PGVector(
@@ -149,8 +144,6 @@ async def querying(
             connection_string=db_url,
             embedding_function=embeddings,
         )
-        collection_store = search_index.CollectionStore
-        logger.error("CollectionStore attributes and methods: %s", dir(collection_store))
         documents = (
             search_index.similarity_search(
                 query=query, k=top_chunk_k_value, filter=metadata
@@ -162,7 +155,7 @@ async def querying(
             {"chunk": document.page_content, "metadata": document.metadata}
             for document in documents
         ]
-        number_of_chunks = "0"
+        number_of_chunks = len(data)
         for document in documents:
             top_k_chunks.append(str(document.page_content))
     flow_input = {
@@ -171,20 +164,24 @@ async def querying(
         "callback": {"turn_id": turn_id, "callback_type": "rag", "rag_response": data},
     }
     flow_input = Flow(**flow_input)
+    flow_output_data = flow_input.model_dump_json()
+    if flow_output_data:
+        status = "Success"
+    else:
+        status = "Flow output object not created"
     retriever_logger_object = await create_retriever_logger_input(
         turn_id = turn_id,
         retriever_type = type,
         collection_name = collection_name,
+        top_chunk_k_value = str(top_chunk_k_value),
         number_of_chunks = str(number_of_chunks),
         chunks = top_k_chunks,
         query = query,
-        status = "Success/Failure"
+        status = status
     )
-    
-
-    if callback:
-        callback(flow_input.model_dump_json())
     producer.send_message(logger_topic, retriever_logger_object.model_dump_json(exclude_none=True))
+    if callback:
+        callback(flow_output_data)
 
 
 async def start_retriever():

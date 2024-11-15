@@ -108,6 +108,7 @@ async def start_logger():
                     msg_id = input_data.logger_obj.msg_id,
                     retriever_type = input_data.logger_obj.retriever_type,
                     collection_name = input_data.logger_obj.collection_name,
+                    top_chunk_k_value = input_data.logger_obj.top_chunk_k_value,
                     number_of_chunks = input_data.logger_obj.number_of_chunks,
                     chunks = input_data.logger_obj.chunks,
                     query = input_data.logger_obj.query,

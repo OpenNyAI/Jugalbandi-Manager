@@ -72,8 +72,6 @@ async def handle_input(
     msg_id = await get_msg_id_by_turn_id(turn_id, "incoming")
     if msg_id is None :
         msg_id = ""
-    else:
-        msg_id = msg_id
 
     if message.message_type == MessageType.TEXT:
         if not message.text:

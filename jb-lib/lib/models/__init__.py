@@ -360,6 +360,7 @@ class JBRetrieverLogger(Base):
     msg_id = Column(String)
     retriever_type = Column(String)
     collection_name = Column(String)
+    top_chunk_k_value = Column(String)
     number_of_chunks = Column(String)
     chunks = Column(ARRAY(String))
     query = Column(String)
