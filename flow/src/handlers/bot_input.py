@@ -38,6 +38,7 @@ from ..crud import (
     update_turn,
     update_user_language,
     insert_jb_webhook_reference,
+    update_api_logger,
 )
 from ..extensions import produce_message
 from ..crud import get_msg_id_by_turn_id
@@ -184,6 +185,7 @@ async def manage_session(turn_id: str, new_session: bool = False):
             logger.info("Updating session for turn_id: %s", turn_id)
             await update_session(session.id)
             await update_turn(session_id=session.id, turn_id=turn_id)
+    await update_api_logger(turn_id=turn_id, session_id= session.id)
     return session
 
 

@@ -296,7 +296,6 @@ class JBApiLogger(Base):
     __tablename__ = "jb_api_logger"
 
     turn_id = Column(String, primary_key=True)
-    msg_id = Column(String)
     user_id = Column(String)
     session_id = Column(String)  
     status = Column(String)

@@ -33,6 +33,7 @@ async def callback(provider: str, bot_identifier: str, request: Request):
         chosen_channel=chosen_channel,
     ):
         if err:
+            produce_message(api_logger_input)
             raise HTTPException(status_code=400, detail=str(err))
         elif channel_input:
             produce_message(channel_input)

@@ -56,8 +56,7 @@ async def start_logger():
 
             if(service_name == "api"):
                 logger.info("Coming from Api")
-                await create_api_logger(msg_id = input_data.logger_obj.msg_id,
-                                        user_id = input_data.logger_obj.user_id,
+                await create_api_logger(user_id = input_data.logger_obj.user_id,
                                         turn_id = input_data.logger_obj.turn_id,
                                         session_id = input_data.logger_obj.session_id,
                                         status = input_data.logger_obj.status)

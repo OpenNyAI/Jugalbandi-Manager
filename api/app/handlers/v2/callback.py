@@ -7,7 +7,6 @@ from ...crud import (
     get_user_by_number,
     create_user,
     create_turn,
-    get_data_for_api_logger
 )
 
 logger = logging.getLogger("jb-manager-api")
@@ -30,7 +29,16 @@ async def handle_callback(
         )
         if jb_channel is None:
             logger.error("Active channel not found for identifier %s", bot_identifier)
-            yield ValueError("Active channel not found"), None
+            api_logger_input = Logger(
+                source = "api",
+                logger_obj = APILogger(
+                    user_id = "User identifier:" + user.user_identifier,
+                    turn_id = " ",
+                    session_id = " ",
+                    status = "Active channel not found for given bot identifier",
+                )
+            ) 
+            yield ValueError("Active channel not found"), None, api_logger_input
 
         bot_id: str = jb_channel.bot_id
         channel_id: str = jb_channel.id
@@ -58,19 +66,18 @@ async def handle_callback(
                 query_params=query_params,
             ),
         )
-        api_logger_data = await get_data_for_api_logger(turn_id = turn_id)
-        if(api_logger_data.session_id == None):
-            session_id: str = ""
+
+        if channel_input:
+            status = "Success"
         else:
-            session_id: str = api_logger_data.session_id
+            status = "Channel input object not created"
         api_logger_input = Logger(
             source = "api",
             logger_obj = APILogger(
-                    msg_id = api_logger_data.msg_id,
-                    user_id = api_logger_data.user_id,
-                    turn_id = api_logger_data.turn_id,
-                    session_id = session_id,
-                    status = api_logger_data.status,
+                    user_id = user_id,
+                    turn_id = turn_id,
+                    session_id = " ",
+                    status = status,
             )
         ) 
         yield None, channel_input , api_logger_input

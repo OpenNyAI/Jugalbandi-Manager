@@ -2,7 +2,6 @@ from pydantic import BaseModel
 from typing import Union, List
 
 class APILogger(BaseModel):
-    msg_id: str
     user_id: str
     turn_id: str
     session_id: str
