@@ -40,7 +40,7 @@ async def create_channel_logger_input(turn_id: str,
                     turn_id = turn_id,
                     channel_id = channel_id,
                     channel_name = channel_name,
-                    msg_intent = "incoming",
+                    msg_intent = "Incoming",
                     msg_type = message_type,
                     sent_to_service = sent_to_service,
                     status = status
@@ -119,7 +119,7 @@ async def process_incoming_messages(turn_id: str, bot_input: RestBotInput):
                 channel_id=jb_channel.id, 
                 channel_name=jb_channel.name, 
                 message_type=message.message_type.value, 
-                sent_to_service = "language"
+                sent_to_service = "Language"
             )
             return language_input, channel_logger_object
         else:
@@ -140,6 +140,6 @@ async def process_incoming_messages(turn_id: str, bot_input: RestBotInput):
                 channel_id=jb_channel.id, 
                 channel_name=jb_channel.name, 
                 message_type=message.message_type.value, 
-                sent_to_service = "flow"
+                sent_to_service = "Flow"
             )
             return flow_input, channel_logger_object

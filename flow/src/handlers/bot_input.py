@@ -50,15 +50,17 @@ async def create_flow_logger_input(
         session_id: str, 
         msg_intent: str, 
         flow_intent: str, 
-        sent_to_service: str):
+        sent_to_service: str,
+        status: str):
 
     id = str(uuid.uuid4())
-    if msg_intent == "incoming":
+    if msg_intent == "Incoming":
         msg_id = await get_msg_id_by_turn_id(turn_id = turn_id, msg_intent = msg_intent)
         if msg_id is None :
             msg_id = ""
     else:
         msg_id = str(uuid.uuid4())
+    
     flow_logger_input = Logger(
         source = "flow",
         logger_obj = FlowLogger(
@@ -69,7 +71,7 @@ async def create_flow_logger_input(
             msg_intent = msg_intent,
             flow_intent = flow_intent,
             sent_to_service = sent_to_service,
-            status = "Success/Failure",
+            status = status,
         )
     )
     return flow_logger_input
@@ -146,15 +148,16 @@ async def handle_bot_output(fsm_output: FSMOutput, turn_id: str, session_id: str
             msg_intent = "Not Implemented", 
             flow_intent = "Not Implemented", 
             sent_to_service="",
+            status="Invalid intent in fsm output"
         )
         return NotImplemented, flow_logger_object
     
     logger.info("Output to %s: %s", destination, flow_output)
     if isinstance(flow_output, Flow) or isinstance(flow_output, RAG):
-        msg_intent = "incoming"
+        msg_intent = "Incoming"
         sent_to_service = "Flow" if isinstance(flow_output, Flow) else "Retriever"
     elif isinstance(flow_output, Channel) or isinstance(flow_output, Language):
-        msg_intent = "outgoing"
+        msg_intent = "Outgoing"
         sent_to_service = "Channel" if isinstance(flow_output, Channel) else "Language"
 
     flow_logger_object = await create_flow_logger_input(
@@ -163,6 +166,7 @@ async def handle_bot_output(fsm_output: FSMOutput, turn_id: str, session_id: str
             msg_intent = msg_intent, 
             flow_intent = flow_intent, 
             sent_to_service=sent_to_service,
+            status="Success"
         )
     return flow_output, flow_logger_object
 
@@ -308,7 +312,7 @@ async def handle_user_input(user_input: UserInput):
         #     reference_id = fsm_output.webhook.reference_id
         #     insert_jb_webhook_reference(reference_id=reference_id, turn_id=turn_id)
         # else:
-        flow_output, flow_logger_object = await handle_bot_output(fsm_output, turn_id=turn_id, session_id=session_id, flow_intent = "user_input")
+        flow_output, flow_logger_object = await handle_bot_output(fsm_output, turn_id=turn_id, session_id=session_id, flow_intent = "User_input")
         produce_message(flow_output)
         produce_message(flow_logger_object)
 
@@ -336,7 +340,7 @@ async def handle_callback_input(callback: Callback):
         #     reference_id = fsm_output.webhook.reference_id
         #     insert_jb_webhook_reference(reference_id=reference_id, turn_id=turn_id)
         # else:
-        flow_output, flow_logger_object = await handle_bot_output(fsm_output, turn_id=turn_id, session_id=session_id, flow_intent = "callback")
+        flow_output, flow_logger_object = await handle_bot_output(fsm_output, turn_id=turn_id, session_id=session_id, flow_intent = "Callback")
         produce_message(flow_output)
         produce_message(flow_logger_object)
 
@@ -365,6 +369,6 @@ async def handle_dialog_input(dialog: Dialog):
         #     reference_id = fsm_output.webhook.reference_id
         #     insert_jb_webhook_reference(reference_id=reference_id, turn_id=turn_id)
         # else:
-        flow_output, flow_logger_object = await handle_bot_output(fsm_output, turn_id=turn_id, session_id=session_id, flow_intent = "dialog")
+        flow_output, flow_logger_object = await handle_bot_output(fsm_output, turn_id=turn_id, session_id=session_id, flow_intent = "Dialog")
         produce_message(flow_output)
         produce_message(flow_logger_object)

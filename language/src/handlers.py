@@ -90,6 +90,11 @@ async def handle_input(
             text=text_message,
         )
 
+        if text_message is None or message is None:
+            status="Message object not created"
+        else:
+            status="Success"
+            
         language_logger_object = await create_language_logger_input(
             turn_id = turn_id,
             msg_id = msg_id,
@@ -100,7 +105,7 @@ async def handle_input(
             t_type="Language translation",
             t_model="Dhruva/Azure",
             response_time=str(response_time),
-            status=" Success/Failure")
+            status=status)
         
         language_logger_inputs.append(language_logger_object)
 
@@ -109,6 +114,11 @@ async def handle_input(
             raise ValueError("Message audio is empty")
         audio_url = message.audio.media_url
         wav_data = await convert_to_wav_with_ffmpeg(audio_url)
+
+        if not wav_data:
+            status = "Conversion to audio failed"
+        else:
+            status = "Success"
 
         vernacular_text, response_time = await measure_time_async(speech_processor.speech_to_text, wav_data, preferred_language)
 
@@ -122,13 +132,26 @@ async def handle_input(
             t_type="Speech to text",
             t_model="Dhruva/Azure",
             response_time=str(response_time),
-            status=" Success/Failure")
+            status=status
+        )
         
         language_logger_inputs.append(language_logger_object)
 
         logger.info("Vernacular Text %s", vernacular_text)
 
         english_text, response_time = await measure_time_async(translator.translate_text, vernacular_text, preferred_language, LanguageCodes.EN)
+
+        logger.info("English Text %s", english_text)
+        text_message = TextMessage(body=english_text)
+        message = Message(
+            message_type=MessageType.TEXT,
+            text=text_message,
+        )
+
+        if text_message is None or message is None:
+            status="Message object not created"
+        else:
+            status="Success"
 
         language_logger_object = await create_language_logger_input(
             turn_id = turn_id,
@@ -140,16 +163,10 @@ async def handle_input(
             t_type="Language Translation",
             t_model="Dhruva/Azure",
             response_time=str(response_time),
-            status=" Success/Failure")
+            status=status
+        )
         
         language_logger_inputs.append(language_logger_object)
-
-        logger.info("English Text %s", english_text)
-        text_message = TextMessage(body=english_text)
-        message = Message(
-            message_type=MessageType.TEXT,
-            text=text_message,
-        )
 
     flow_input = Flow(
         source="language",
@@ -180,6 +197,12 @@ async def handle_output(
         total_response_time += response_time
 
         translated_text_message = TextMessage(body=vernacular_body)
+
+        if translated_text_message is None:
+            status="Translated text message not created"
+        else:
+            status="Success"
+
         if message.text.header:
             translated_text_message.header, response_time = await measure_time_async(
                 translator.translate_text, 
@@ -198,20 +221,6 @@ async def handle_output(
             
             total_response_time += response_time
 
-        language_logger_object = await create_language_logger_input(
-            turn_id = turn_id,
-            msg_id = msg_id,
-            msg_state = "outgoing_1 Text", 
-            msg_language = LanguageCodes.EN.value,
-            msg_type=message.message_type.value, 
-            t_language = preferred_language,
-            t_type="Language translation",
-            t_model="Dhruva/Azure",
-            response_time=str(total_response_time),
-            status=" Success/Failure")
-        
-        language_logger_inputs.append(language_logger_object)
-
         logger.info("Vernacular Text %s", vernacular_body)
         channel_inputs.append(
             Channel(
@@ -223,26 +232,43 @@ async def handle_output(
                 ),
             )
         )
+
+        if not channel_inputs:
+            status="No response created for channel"
+        
+        language_logger_object = await create_language_logger_input(
+            turn_id = turn_id,
+            msg_id = msg_id,
+            msg_state = "Outgoing Text", 
+            msg_language = LanguageCodes.EN.value,
+            msg_type=message.message_type.value, 
+            t_language = preferred_language,
+            t_type="Language translation",
+            t_model="Dhruva/Azure",
+            response_time=str(total_response_time),
+            status=status)
+        
+        language_logger_inputs.append(language_logger_object)
+
         try:
             audio_content, response_time = await measure_time_async(speech_processor.text_to_speech, vernacular_body, preferred_language)
-            language_logger_object = await create_language_logger_input(
-                turn_id = turn_id,
-                msg_id = msg_id,
-                msg_state = "outgoing_2 Audio", 
-                msg_language = preferred_language,
-                msg_type=message.message_type.value, 
-                t_language = preferred_language,
-                t_type="Speech",
-                t_model="Dhruva/Azure",
-                response_time=str(response_time),
-                status=" Success/Failure")
-            language_logger_inputs.append(language_logger_object)
+
+            if not audio_content:
+                status = "Conversion to audio failed"
+            else:
+                status = "Success"
 
             fid = str(uuid.uuid4())
             filename = f"{fid}.mp3"
             await storage.write_file(filename, audio_content, "audio/mpeg")
             media_output_url = await storage.public_url(filename)
             translated_audio_message = AudioMessage(media_url=media_output_url)
+
+            if translated_audio_message is None:
+                status="Translated audio message not created"
+            else:
+                status="Success"
+        
             channel_inputs.append(
                 Channel(
                     source="language",
@@ -253,7 +279,34 @@ async def handle_output(
                     ),
                 )
             )
+
+            language_logger_object = await create_language_logger_input(
+                turn_id = turn_id,
+                msg_id = msg_id,
+                msg_state = "Outgoing Audio", 
+                msg_language = preferred_language,
+                msg_type=message.message_type.value, 
+                t_language = preferred_language,
+                t_type="Speech",
+                t_model="Dhruva/Azure",
+                response_time=str(response_time),
+                status=status)
+            language_logger_inputs.append(language_logger_object)
+
         except Exception as e:
+            language_logger_object = await create_language_logger_input(
+                turn_id = turn_id,
+                msg_id = msg_id,
+                msg_state = "Outgoing Audio Error", 
+                msg_language = preferred_language,
+                msg_type=message.message_type.value, 
+                t_language = " ",
+                t_type=" ",
+                t_model="Dhruva/Azure",
+                response_time=" ",
+                status="Error in text to speech conversion")
+            language_logger_inputs.append(language_logger_object)
+
             logger.error("Error in text to speech: %s", e)
 
     elif message_type == MessageType.DOCUMENT:
@@ -261,26 +314,18 @@ async def handle_output(
             raise ValueError("Message document is empty")
         
         vernacular_text, response_time = await measure_time_async(translator.translate_text, message.document.caption, LanguageCodes.EN, preferred_language)
-
-        language_logger_object = await create_language_logger_input(
-            turn_id = turn_id,
-            msg_id = msg_id,
-            msg_state = "outgoing_3/Coming from flow", 
-            msg_language = LanguageCodes.EN.value,
-            msg_type=message.message_type.value, 
-            t_language = preferred_language,
-            t_type="Text",
-            t_model="Dhruva/Azure",
-            response_time=str(response_time),
-            status=" Success/Failure")
-        
-        language_logger_inputs.append(language_logger_object)
         
         translated_document_message = DocumentMessage(
             url=message.document.url,
             caption=vernacular_text,
             name=message.document.name,
         )
+
+        if translated_document_message is None:
+            status="Translated document message not created"
+        else:
+            status="Success"
+        
         channel_inputs.append(
             Channel(
                 source="language",
@@ -292,30 +337,40 @@ async def handle_output(
                 ),
             )
         )
+
+        if not channel_inputs:
+            status="No response created for channel"
+
+        language_logger_object = await create_language_logger_input(
+            turn_id = turn_id,
+            msg_id = msg_id,
+            msg_state = "Outgoing/Coming from flow", 
+            msg_language = LanguageCodes.EN.value,
+            msg_type=message.message_type.value, 
+            t_language = preferred_language,
+            t_type="Text",
+            t_model="Dhruva/Azure",
+            response_time=str(response_time),
+            status=status)
+        
+        language_logger_inputs.append(language_logger_object)
+        
     elif message_type == MessageType.IMAGE:
         if not message.image:
             raise ValueError("Message image is empty")
 
         vernacular_text, response_time = await measure_time_async(translator.translate_text, message.image.caption, LanguageCodes.EN, preferred_language)
 
-        language_logger_object = await create_language_logger_input(
-            turn_id = turn_id,
-            msg_id = msg_id,
-            msg_state = "outgoing_4/ Text", 
-            msg_language = LanguageCodes.EN.value,
-            msg_type="Image caption/Text", 
-            t_language = preferred_language,
-            t_type="Text",
-            t_model="Dhruva/Azure",
-            response_time=str(response_time),
-            status=" Success/Failure")
-        
-        language_logger_inputs.append(language_logger_object)
-
         translated_image_message = ImageMessage(
             url=message.image.url,
             caption=vernacular_text,
         )
+
+        if translated_image_message is None:
+            status="Translated image message not created"
+        else:
+            status="Success"
+
         channel_inputs.append(
             Channel(
                 source="language",
@@ -326,6 +381,21 @@ async def handle_output(
                 ),
             )
         )
+
+        language_logger_object = await create_language_logger_input(
+            turn_id = turn_id,
+            msg_id = msg_id,
+            msg_state = "Outgoing/ Text", 
+            msg_language = LanguageCodes.EN.value,
+            msg_type="Image caption/Text", 
+            t_language = preferred_language,
+            t_type="Text",
+            t_model="Dhruva/Azure",
+            response_time=str(response_time),
+            status=status)
+        
+        language_logger_inputs.append(language_logger_object)
+
     elif message_type == MessageType.BUTTON or message_type == MessageType.OPTION_LIST:
         if message_type == MessageType.BUTTON:
             interactive_message = message.button
@@ -360,14 +430,14 @@ async def handle_output(
         language_logger_object = await create_language_logger_input(
             turn_id = turn_id,
             msg_id = msg_id,
-            msg_state = "outgoing_5 Text", 
+            msg_state = "Outgoing Text", 
             msg_language = LanguageCodes.EN.value,
             msg_type=message.message_type.value, 
             t_language = preferred_language,
             t_type=message.message_type.value,
             t_model="Dhruva/Azure",
             response_time=str(total_response_time),
-            status=" Success/Failure")
+            status="Success")
         
         language_logger_inputs.append(language_logger_object)
 
@@ -387,6 +457,7 @@ async def handle_output(
                     button=translated_interactive_message,
                 ),
             )
+
         else:
             conversion_start_time = time.time()
 
@@ -408,17 +479,22 @@ async def handle_output(
             conversion_end_time = time.time()
             response_time = conversion_end_time - conversion_start_time
 
+            if translated_interactive_message is None:
+                status="Translated list message not created"
+            else:
+                status="Success"
+
             language_logger_object = await create_language_logger_input(
                 turn_id = turn_id,
                 msg_id = msg_id,
-                msg_state = "outgoing_6", 
+                msg_state = "Outgoing", 
                 msg_language = LanguageCodes.EN.value,
                 msg_type="Button text/ list title", 
                 t_language = preferred_language,
                 t_type="Button text/ list title",
                 t_model="Dhruva/Azure",
                 response_time=str(response_time),
-                status=" Success/Failure")
+                status=status)
             
             language_logger_inputs.append(language_logger_object)
 
@@ -434,25 +510,23 @@ async def handle_output(
         channel_inputs.append(channel_input)
         try:
             audio_content, response_time = await measure_time_async(speech_processor.text_to_speech, vernacular_body, preferred_language)
-            language_logger_object = await create_language_logger_input(
-                turn_id = turn_id,
-                msg_id = msg_id,
-                msg_state = "outgoing_7 Audio", 
-                msg_language = preferred_language,
-                msg_type="Text", 
-                t_language = preferred_language,
-                t_type="Speech",
-                t_model="Dhruva/Azure",
-                response_time=str(response_time),
-                status=" Success/Failure")
-            
-            language_logger_inputs.append(language_logger_object)
+
+            if not audio_content:
+                status = "Conversion to audio failed"
+            else:
+                status = "Success"
 
             fid = str(uuid.uuid4())
             filename = f"{fid}.mp3"
             await storage.write_file(filename, audio_content, "audio/mpeg")
             audio_url = await storage.public_url(filename)
             translated_audio_message = AudioMessage(media_url=audio_url)
+
+            if translated_audio_message is None:
+                status="Translated audio message not created"
+            else:
+                status="Success"
+
             channel_inputs.append(
                 Channel(
                     source="language",
@@ -464,7 +538,35 @@ async def handle_output(
                     ),
                 )
             )
+
+            language_logger_object = await create_language_logger_input(
+                turn_id = turn_id,
+                msg_id = msg_id,
+                msg_state = "Outgoing Audio", 
+                msg_language = preferred_language,
+                msg_type="Text", 
+                t_language = preferred_language,
+                t_type="Speech",
+                t_model="Dhruva/Azure",
+                response_time=str(response_time),
+                status=status)
+            
+            language_logger_inputs.append(language_logger_object)
+
         except Exception as e:
+            language_logger_object = await create_language_logger_input(
+                turn_id = turn_id,
+                msg_id = msg_id,
+                msg_state = "Outgoing Audio Error", 
+                msg_language = preferred_language,
+                msg_type=message.message_type.value, 
+                t_language = " ",
+                t_type=" ",
+                t_model="Dhruva/Azure",
+                response_time=" ",
+                status="Error in text to speech conversion")
+            language_logger_inputs.append(language_logger_object)
+
             logger.error("Error in text to speech: %s %s", e, traceback.format_exc())
 
     return channel_inputs, language_logger_inputs

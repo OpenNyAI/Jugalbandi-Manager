@@ -246,26 +246,3 @@ async def update_channel_by_bot_id(bot_id: str, data):
             await session.execute(stmt)
             await session.commit()
             return bot_id
-
-# async def get_data_for_api_logger(turn_id: str) -> JBApiLogger:
-#     query = (
-#         select(JBTurn).where(JBTurn.id == turn_id)
-#     )
-#     async with DBSessionHandler.get_async_session() as session:
-#         async with session.begin():
-#             result = await session.execute(query)
-#             data = result.scalars().unique().all()
-#             for row in data:
-#                 user_id = row.user_id
-#                 session_id = row.session_id
-#             if turn_id is not None:
-#                 status = "Success"
-#             else:
-#                 status = "Error"
-#             api_logger_data = JBApiLogger(
-#                 user_id = user_id,
-#                 turn_id = turn_id,
-#                 session_id = session_id, 
-#                 status = status,
-#             )
-#             return api_logger_data

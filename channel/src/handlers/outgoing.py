@@ -37,7 +37,7 @@ async def send_message_to_user(turn_id: str, message: Message):
     )
     if msg_id == None:
         msg_id = str(uuid.uuid4())
-        status = "Error: No Response Created"
+        status = "No Response Created"
     else:
         status = "Success"
     channel_logger_input = Logger(
@@ -47,7 +47,7 @@ async def send_message_to_user(turn_id: str, message: Message):
                     turn_id = turn_id,
                     channel_id = jb_channel.id,
                     channel_name = jb_channel.name,
-                    msg_intent = "outgoing",
+                    msg_intent = "Outgoing",
                     msg_type = message.message_type.value,
                     sent_to_service = "Bot Output",
                     status = status
