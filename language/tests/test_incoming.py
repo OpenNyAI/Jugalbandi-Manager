@@ -7,6 +7,8 @@ from lib.data_models import (
     Message,
     TextMessage,
     AudioMessage,
+    Logger,
+    LanguageLogger
 )
 from lib.model import LanguageCodes
 
@@ -57,15 +59,33 @@ async def test_handle_input_text_message():
         text=TextMessage(body=text_message),
     )
 
+    language_logger_object = Logger(
+        source = "language",
+        logger_obj = LanguageLogger(
+            id = "1234",
+            turn_id = "turn1",
+            msg_id = "abcd",
+            msg_state = "Incoming",
+            msg_language = preferred_language,
+            msg_type = message.message_type.value,
+            translated_to_language = LanguageCodes.EN.value,
+            translation_type = "Language translation",
+            translation_model = "Dhruva/Azure",
+            response_time = "1.10235457",
+            status = "Success"
+        )
+    )
     mock_translate_text.return_value = "Translated text message"
 
-    result = await handle_input(turn_id, preferred_language, message)
-    print(result)
+    with patch("src.handlers.create_language_logger_input",return_value=language_logger_object):
+        result,language_logger_object  = await handle_input(turn_id, preferred_language, message)
+        print(result)
 
-    # Verifying the results
-    mock_translate_text.assert_called_once_with(
-        text_message, preferred_language, LanguageCodes.EN
-    )
+        # Verifying the results
+        mock_translate_text.assert_called_once_with(
+            text_message, preferred_language, LanguageCodes.EN
+        )
+
 
     assert result is not None
     assert isinstance(result, Flow)
@@ -76,7 +96,6 @@ async def test_handle_input_text_message():
     assert result.user_input.message.message_type == MessageType.TEXT
     assert result.user_input.message.text is not None
     assert result.user_input.message.text.body == "Translated text message"
-
 
 @pytest.mark.asyncio
 async def test_handle_input_audio_message():
@@ -89,17 +108,34 @@ async def test_handle_input_audio_message():
         audio=AudioMessage(media_url=audio_url),
     )
 
+    language_logger_object = Logger(
+        source = "language",
+        logger_obj = LanguageLogger(
+            id = "1234",
+            turn_id = "turn1",
+            msg_id = "abcd",
+            msg_state = "Incoming/ Intermediate",
+            msg_language = preferred_language,
+            msg_type = "Audio/Text",
+            translated_to_language = "Preferred language/" + LanguageCodes.EN.value,
+            translation_type = "Speech to text/ Language translation",
+            translation_model = "Dhruva/Azure",
+            response_time = "1.10235457",
+            status = "Success"
+        )
+    )
+    
     mock_speech_to_text.return_value = "Vernacular text"
     mock_translate_text.return_value = "Translated audio message"
 
-    result = await handle_input(turn_id, preferred_language, message)
-
-    # Verifying the results
-    mock_convert_to_wav.assert_called_once_with(audio_url)
-    mock_speech_to_text.assert_called_once_with(b"wav_data", preferred_language)
-    mock_translate_text.assert_called_once_with(
-        "Vernacular text", preferred_language, LanguageCodes.EN
-    )
+    with patch("src.handlers.create_language_logger_input", return_value = language_logger_object):
+        result, language_logger_object_list = await handle_input(turn_id, preferred_language, message)
+        # Verifying the results
+        mock_convert_to_wav.assert_called_once_with(audio_url)
+        mock_speech_to_text.assert_called_once_with(b"wav_data", preferred_language)
+        mock_translate_text.assert_called_once_with(
+            "Vernacular text", preferred_language, LanguageCodes.EN
+        )
     assert result is not None
     assert isinstance(result, Flow)
     assert result.intent == FlowIntent.USER_INPUT
@@ -109,3 +145,4 @@ async def test_handle_input_audio_message():
     assert result.user_input.message.message_type == MessageType.TEXT
     assert result.user_input.message.text is not None
     assert result.user_input.message.text.body == "Translated audio message"
+    assert len(language_logger_object_list) == 2

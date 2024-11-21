@@ -43,10 +43,10 @@ async def send_message_to_user(turn_id: str, message: Message):
     channel_logger_input = Logger(
             source = "channel",
             logger_obj = ChannelLogger(
-                    id = msg_id,
+                    id = str(msg_id),
                     turn_id = turn_id,
-                    channel_id = jb_channel.id,
-                    channel_name = jb_channel.name,
+                    channel_id = str(jb_channel.id),
+                    channel_name = str(jb_channel.name),
                     msg_intent = "Outgoing",
                     msg_type = message.message_type.value,
                     sent_to_service = "Bot Output",
