@@ -1,8 +1,5 @@
-import base64
-from unittest import mock
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch
 import pytest
-import os
 from src.handlers import logging_data_into_db
 from lib.data_models import (
     Logger,

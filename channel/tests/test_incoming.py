@@ -1,9 +1,6 @@
 import base64
-from unittest import mock
 from unittest.mock import patch, AsyncMock, MagicMock
 import pytest
-
-from pytest_mock import mocker
 
 from lib.data_models import (
     Channel,
@@ -19,7 +16,7 @@ from lib.data_models import (
     ChannelLogger,
 )
 from lib.channel_handler import ChannelHandler
-from src.handlers.incoming import process_incoming_messages,create_channel_logger_input
+from src.handlers.incoming import process_incoming_messages
 
 
 @pytest.fixture
