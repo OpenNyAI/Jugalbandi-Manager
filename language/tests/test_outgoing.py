@@ -75,8 +75,9 @@ async def test_handle_output_text_message():
         )
     )
     
-    with patch("src.handlers.create_language_logger_input", return_value = language_logger_object):
-        result, language_logger_object_list = await handle_output(turn_id, preferred_language, message)
+    with patch.dict("sys.modules", {"src.extension": mock_extension}):
+        with patch("src.handlers.create_language_logger_input", return_value = language_logger_object):
+            result, language_logger_object_list = await handle_output(turn_id, preferred_language, message)
 
     assert isinstance(language_logger_object_list, list)
     assert len(language_logger_object_list) == 2
@@ -127,8 +128,9 @@ async def test_handle_output_document_message():
         )
     )
     
-    with patch("src.handlers.create_language_logger_input", return_value = language_logger_object):
-        result, language_logger_object_list = await handle_output(turn_id, preferred_language, message)
+    with patch.dict("sys.modules", {"src.extension": mock_extension}):
+        with patch("src.handlers.create_language_logger_input", return_value = language_logger_object):
+            result, language_logger_object_list = await handle_output(turn_id, preferred_language, message)
 
     assert isinstance(language_logger_object_list, list)
     assert len(language_logger_object_list) == 1
@@ -174,8 +176,9 @@ async def test_handle_output_image_message():
         )
     )
     
-    with patch("src.handlers.create_language_logger_input", return_value = language_logger_object):
-        result, language_logger_object_list = await handle_output(turn_id, preferred_language, message)
+    with patch.dict("sys.modules", {"src.extension": mock_extension}):
+        with patch("src.handlers.create_language_logger_input", return_value = language_logger_object):
+            result, language_logger_object_list = await handle_output(turn_id, preferred_language, message)
 
     assert isinstance(language_logger_object_list, list)
     assert len(language_logger_object_list) == 1
@@ -225,8 +228,9 @@ async def test_handle_output_button_message():
         )
     )
     
-    with patch("src.handlers.create_language_logger_input", return_value = language_logger_object):
-        result,language_logger_object_list = await handle_output(turn_id, preferred_language, message)
+    with patch.dict("sys.modules", {"src.extension": mock_extension}):
+        with patch("src.handlers.create_language_logger_input", return_value = language_logger_object):
+            result,language_logger_object_list = await handle_output(turn_id, preferred_language, message)
 
     assert isinstance(language_logger_object_list, list)
     assert len(language_logger_object_list) == 2

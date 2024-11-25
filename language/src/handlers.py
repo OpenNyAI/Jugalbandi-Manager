@@ -28,7 +28,6 @@ from lib.data_models import (
 from lib.model import LanguageCodes
 from .extension import speech_processor, storage, translator
 from .audio_converter import convert_to_wav_with_ffmpeg
-from .crud import get_msg_id_by_turn_id
 
 logger = logging.getLogger("language")
 logger.setLevel(logging.INFO)
@@ -69,7 +68,7 @@ async def handle_input(
     english_text = None
     language_logger_inputs = []
     
-    msg_id = await get_msg_id_by_turn_id(turn_id, "incoming")
+    msg_id = str(uuid.uuid4())
     if msg_id is None :
         msg_id = ""
 

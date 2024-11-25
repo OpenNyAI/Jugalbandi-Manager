@@ -18,7 +18,7 @@ from lib.data_models import (
     Flow,
     Language,
     LanguageIntent,
-    Logger
+    Logger,
 )
 from lib.kafka_utils import KafkaConsumer, KafkaProducer
 from lib.model import LanguageCodes
