@@ -7,7 +7,7 @@ The pre-processing step in indexing involves parsing the file before chunking it
 -**DOCX Parser**: 
         ```python
         def docx_parser(docx_file_path: str):
-            return docx2txt.process(docx_file_path)
+            return docx2txt.process(docx_file_path)```
 
     The parser function docx_parser() is called when the file to be parsed is of the format .docx (Microsoft word document). This function utilizes the doc2txt library to process the file. The process() function of doc2txt library is designed to extract and process text from the DOCX file and optionally save embedded images to a specified directory.
 
@@ -15,7 +15,7 @@ The pre-processing step in indexing involves parsing the file before chunking it
         ```python
         def pdf_parser(pdf_file_path: str):
             doc = fitz.open(pdf_file_path)
-            return "\n".join(page.get_text("text") for page in doc)
+            return "\n".join(page.get_text("text") for page in doc)```
     
     The parser function pdf_parser() is called when the file to be parsed is a PDF file. This function uses the Fitz python library, which is a part of PyMuPDF package, to open the PDF file specified by the pdf_file_path argument. The `fitz.open()` statement returns a Document object that provides access to the pages and content within the PDF.
     For every page in the document, the text content of that page is extracted in plain format using get_text("text"). The function, then, joins the text from all pages into one long string with each page's text separated by a newline character (\n)and returns the concatenated text as a string for further processing.
@@ -24,7 +24,7 @@ The pre-processing step in indexing involves parsing the file before chunking it
         ```python
         def xlsx_parser(excel_file_path: str):
             df = pd.read_excel(excel_file_path)
-            return df.to_string(index=False)
+            return df.to_string(index=False)```
 
     The parser function xlsx_parser() is called when the file to be parsed is a Excel file. This function uses Pandas python package and DataFrame (a tabular data structure in pandas) for parsing. 
     `pandas.read_excel()` reads the Excel file provided (excel_file_path) into a DataFrame. By default, `pd.read_excel()` reads the first sheet of the Excel file. After reading, `df.to_string(index=False)` converts the DataFrame into a plain-text string.The result is a formatted string that represents the contents of the Excel sheet in a tabular layout, with columns and rows formatted as text.
@@ -34,7 +34,7 @@ The pre-processing step in indexing involves parsing the file before chunking it
         def json_parser(json_file_path: str):
             with open(json_file_path, "r") as file:
                 data = json.load(file)
-            return json.dumps(data, indent=4)
+            return json.dumps(data, indent=4)```
 
     The parser function json_parser() is called when the file to be parsed is of json format. This function uses the built-in package JSON, which can be used to work with JSON data. This function first opens the file provided (json_file_path) in read only mode using `open(json_file_path, "r")`. The file is parsed using `json.load()` method which takes a file object and returns a json object. Here, `data = json.load(file)` parses the file and gives us a dictionary named data, that contains the contents of the file. `json.dumps(data, indent=4)` takes the "data" object, converts it back into a JSON-formatted string, and applies pretty-printing with an indentation level of 4 spaces.
 
@@ -42,7 +42,7 @@ The pre-processing step in indexing involves parsing the file before chunking it
         ```python
         def default_parser(file_path: str):
             with open(file_path, "r") as file:
-                return file.read()
+                return file.read()```
     
     When the file to be parsed is not of pdf, xslx, json or docx format, then the default_parser() function is called to parse the file. This function opens the file provided (file_path) in "r" mode i.e. read only mode and returns the contents of the file as a string.
 
