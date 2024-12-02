@@ -1,8 +1,6 @@
-## Readme for poetry
-
 ## Pre processing:
 
-The pre-processing step in indexing involves parsing the file before chunking it. The function parse_file() accepts the entire pathname of the file as a parameter and uses it to extract the extension of the file. Depending on what the file extension is, the corresponding functions for parsing the file are called. Currently, the implementation for file parsing has been provided for files of the format pdf, docs, xslx and json only.
+The pre-processing step in indexing involves parsing the file before chunking it. The function parse_file() accepts the entire pathname of the file as a parameter and uses it to extract the extension of the file. Depending on what the file extension is, the corresponding functions for parsing the file are called. Currently, the implementation for file parsing has been provided for files of the format **pdf**, **docs**, **xslx** and **json** only.
 
 -**DOCX Parser**:
 
@@ -11,12 +9,12 @@ The pre-processing step in indexing involves parsing the file before chunking it
 -**PDF Parser**:
     
     The parser function pdf_parser() is called when the file to be parsed is a PDF file. This function uses the Fitz python library, which is a part of PyMuPDF package, to open the PDF file specified by the pdf_file_path argument. The `fitz.open()` statement returns a Document object that provides access to the pages and content within the PDF.
-    For every page in the document, the text content of that page is extracted in plain format using get_text("text"). The function, then, joins the text from all pages into one long string with each page's text separated by a newline character (\n)and returns the concatenated text as a string for further processing.
+    For every page in the document, the text content of that page is extracted in plain format using get_text("text"). The function, then, joins the text from all pages into one long string with each page's text separated by a newline character (\n) and returns the concatenated text as a string for further processing.
 
 -**XLSX Parser**:
 
     The parser function xlsx_parser() is called when the file to be parsed is a Excel file. This function uses Pandas python package and DataFrame (a tabular data structure in pandas) for parsing. 
-    `pandas.read_excel()` reads the Excel file provided (excel_file_path) into a DataFrame. By default, `pd.read_excel()` reads the first sheet of the Excel file. After reading, `df.to_string(index=False)` converts the DataFrame into a plain-text string.The result is a formatted string that represents the contents of the Excel sheet in a tabular layout, with columns and rows formatted as text.
+    `pandas.read_excel()` reads the Excel file provided (excel_file_path) into a DataFrame. By default, `pd.read_excel()` reads the first sheet of the Excel file. After reading, `df.to_string(index=False)` converts the DataFrame into a plain-text string. The result is a formatted string that represents the contents of the Excel sheet in a tabular layout, with columns and rows formatted as text.
 
 -**JSON parser**:
 
@@ -56,5 +54,3 @@ This results in continuous and logically structured chunks for efficient searchi
 
 
 ## API and Indexer Service Workflow
-
-Start the API and Indexer services, then call the index-data endpoint via Swagger UI with the appropriate data. This triggers the request to be added to the indexer queue, where it gets processed as described above.
