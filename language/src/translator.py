@@ -3,9 +3,12 @@ import json
 import os
 import uuid
 from abc import ABC, abstractmethod
+from builtins import ExceptionGroup
 
 import aiohttp
 import httpx
+import boto3
+from google.cloud import translate_v2 as translate
 
 from lib.model import InternalServerException, LanguageCodes
 
@@ -290,6 +293,62 @@ class AzureTranslator(Translator):
                 response = await response.json()
                 print(response)
                 return response[0]["text"]
+
+
+class AWSTranslator(Translator):
+    def __init__(self):
+        self.translate = boto3.client(
+            'translate',
+            aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+            region_name=os.getenv("AWS_DEFAULT_REGION")
+        )
+
+    async def translate_text(
+        self,
+        text: str,
+        source_language: LanguageCodes,
+        destination_language: LanguageCodes,
+    ) -> str:
+        source_language_code = source_language.name.lower()
+        destination_language_code = destination_language.name.lower()
+
+        logger.info("Performing translation using AWS")
+        logger.info(f"Input Language: {source_language_code}")
+        logger.info(f"Output Language: {destination_language_code}")
+
+        response = self.translate.translate_text(
+            Text=text,
+            SourceLanguageCode=source_language_code,
+            TargetLanguageCode=destination_language_code,
+        )
+        return response['TranslatedText']
+
+
+class GCPTranslator(Translator):
+    def __init__(self):
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+        self.client = translate.Client()
+
+    async def translate_text(
+        self,
+        text: str,
+        source_language: LanguageCodes,
+        destination_language: LanguageCodes,
+    ) -> str:
+        source_language_code = source_language.name.lower()
+        destination_language_code = destination_language.name.lower()
+
+        logger.info("Performing translation using GCP")
+        logger.info(f"Input Language: {source_language_code}")
+        logger.info(f"Output Language: {destination_language_code}")
+
+        response = self.client.translate(
+            text,
+            source_language=source_language_code,
+            target_language=destination_language_code,
+        )
+        return response['translatedText']
 
 
 class CompositeTranslator(Translator):
