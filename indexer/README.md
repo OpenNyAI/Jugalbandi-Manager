@@ -52,10 +52,6 @@ The content collected from each file is chunked in such a way that:
 
 This results in continuous and logically structured chunks for efficient searching and retrieval.
 
-
-## API and Indexer Service Workflow:
-
-
 ## Reference links:
 
 ### Reference links related to pre-processing and parsing of documents:
