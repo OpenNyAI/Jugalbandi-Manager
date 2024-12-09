@@ -64,7 +64,8 @@ async def test_add_credentials_success():
     mock_bot = JBBot(id="test_bot_id", name="mock_bot", status="active")
 
     with patch("app.handlers.v2.bot.get_bot_by_id", return_value = mock_bot) as mock_get_bot_by_id, \
-        patch("app.handlers.v2.bot.update_bot", return_value = bot_id) as mock_update_bot:
+        patch("app.handlers.v2.bot.update_bot", return_value = bot_id) as mock_update_bot, \
+            patch("app.handlers.v2.bot.EncryptionHandler.encrypt_dict", return_value = "encrypted_test_key"):
 
         result = await add_credentials(bot_id,credentials)
 
