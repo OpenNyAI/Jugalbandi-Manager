@@ -2,7 +2,7 @@ import pytest
 from unittest import mock
 from uuid import uuid4
 from lib.db_session_handler import DBSessionHandler
-from lib.models import JBUser, JBTurn, JBChannel, JBBot
+from lib.models import JBUser, JBChannel, JBBot, JBWebhookReference, JBSession
 from app.crud import (
     create_user, 
     create_turn, 
@@ -13,6 +13,12 @@ from app.crud import (
     update_bot,
     update_channel,
     update_channel_by_bot_id,
+    get_bot_by_id,
+    get_plugin_reference,
+    get_bot_chat_sessions,
+    create_bot,
+    create_channel,
+    get_active_channel_by_identifier
 )
 
 class AsyncContextManagerMock:
@@ -448,3 +454,258 @@ async def test_update_channel_by_bot_id_error():
         
         mock_session.execute.assert_awaited_once()
         mock_session.commit.assert_not_awaited()
+
+@pytest.mark.asyncio
+async def test_get_bot_by_id_success():
+    bot_id = "test_bot_id"
+    
+    mock_bot = JBBot(
+        id = "test_bot_id",
+        name = "My_Bot",
+        status = "active",
+        dsl = "test_dsl",
+        code = "test_code",
+        requirements = "codaio",
+        index_urls = ["index-url1","index_url2"],
+        required_credentials = ["OPEN_API_KEY", "CODAIO"],
+        version = "1.0.0"
+    )
+    
+    mock_session = mock.Mock()
+    mock_session.begin = mock.Mock(return_value=AsyncBeginMock())
+
+    mock_execute_result = mock.Mock()
+    mock_execute_result.scalars.return_value.unique.return_value.first.return_value = mock_bot 
+    
+    mock_session.execute = mock.AsyncMock(return_value=mock_execute_result)  
+
+    with mock.patch.object(DBSessionHandler, 'get_async_session', return_value=AsyncContextManagerMock(mock_session)):
+
+        result = await get_bot_by_id(bot_id)
+
+        assert isinstance(result, JBBot)
+        assert result.id == mock_bot.id
+        assert result.name == mock_bot.name
+        assert result.status == mock_bot.status
+        assert result.dsl == mock_bot.dsl
+        assert result.code == mock_bot.code
+        assert result.requirements == mock_bot.requirements
+        assert result.index_urls == mock_bot.index_urls
+        assert result.required_credentials == mock_bot.required_credentials
+        assert result.version == mock_bot.version
+
+        mock_session.execute.assert_awaited_once() 
+
+@pytest.mark.asyncio
+async def test_get_bot_by_id_failure():
+    bot_id = "test_bot_id"
+    
+    with mock.patch.object(DBSessionHandler, 'get_async_session', side_effect=Exception("Database error")):
+        with pytest.raises(Exception):
+            await get_bot_by_id(bot_id)
+
+@pytest.mark.asyncio
+async def test_get_plugin_reference_success():
+    plugin_uuid = "test_id"
+    
+    mock_webhook_reference = JBWebhookReference(
+        id = "test_id",
+        turn_id = "test_turn_id"
+    )
+    
+    mock_session = mock.Mock()
+    mock_session.begin = mock.Mock(return_value=AsyncBeginMock())
+
+    mock_execute_result = mock.Mock()
+    mock_execute_result.scalars.return_value.first.return_value = mock_webhook_reference 
+    
+    mock_session.execute = mock.AsyncMock(return_value=mock_execute_result)  
+
+    with mock.patch.object(DBSessionHandler, 'get_async_session', return_value=AsyncContextManagerMock(mock_session)):
+
+        result = await get_plugin_reference(plugin_uuid)
+
+        assert isinstance(result, JBWebhookReference)
+        assert result.id == mock_webhook_reference.id
+        assert result.turn_id == mock_webhook_reference.turn_id
+
+        mock_session.execute.assert_awaited_once() 
+
+@pytest.mark.asyncio
+async def test_get_plugin_reference_failure():
+    plugin_uuid = "test_id"
+    
+    with mock.patch.object(DBSessionHandler, 'get_async_session', side_effect=Exception("Database error")):
+        with pytest.raises(Exception):
+            await get_plugin_reference(plugin_uuid)
+
+@pytest.mark.asyncio
+async def test_get_bot_chat_sessions_success():
+
+    bot_id = "test_bot_id"
+    session_id = "test_session_id"
+    
+    mock_chat_session1 = JBSession(id="test_session_id", user_id="test_user_id1", channel_id="test_channel_id1")
+
+    mock_session = mock.Mock()
+    mock_session.begin = mock.Mock(return_value=AsyncBeginMock())
+    mock_execute_result = mock.Mock()
+    
+    mock_execute_result.unique.return_value.scalars.return_value.all.return_value = [mock_chat_session1] 
+
+    mock_session.execute = mock.AsyncMock(return_value=mock_execute_result)  
+
+    with mock.patch.object(DBSessionHandler, 'get_async_session', return_value=AsyncContextManagerMock(mock_session)):
+        result_chat_sessions = await get_bot_chat_sessions (bot_id, session_id)
+
+        assert len(result_chat_sessions) == 1
+        assert result_chat_sessions[0].id == mock_chat_session1.id
+        assert result_chat_sessions[0].user_id == mock_chat_session1.user_id
+        assert result_chat_sessions[0].channel_id == mock_chat_session1.channel_id
+
+        mock_session.execute.assert_awaited_once() 
+
+@pytest.mark.asyncio
+async def test_get_bot_chat_sessions_failure_no_chat_sessions_found():
+
+    bot_id = "test_bot_id"
+    session_id = "test_session_id"
+
+    mock_session = mock.Mock()
+    mock_session.begin = mock.Mock(return_value=AsyncBeginMock())
+    mock_execute_result = mock.Mock()
+    
+    mock_execute_result.unique.return_value.scalars.return_value.all.return_value = [] 
+
+    mock_session.execute = mock.AsyncMock(return_value=mock_execute_result)  
+
+    with mock.patch.object(DBSessionHandler, 'get_async_session', return_value=AsyncContextManagerMock(mock_session)):
+        result_chat_sessions = await get_bot_chat_sessions (bot_id, session_id)
+        assert result_chat_sessions == []
+        mock_session.execute.assert_awaited_once()  
+
+@pytest.mark.asyncio
+async def test_create_bot_success():
+    
+    data = {'name': 'Bot1', 'status': 'active', 'dsl': 'test_dsl', 'code': 'test_code', 'requirements': 'codaio',
+            'index_urls': ['index_url_1', 'index_url_2'], 'required_credentials':['OPEN_API_KEY'], 'version': '1.0.0'}
+
+    mock_session = mock.Mock()
+    mock_session.commit = mock.AsyncMock()
+    mock_session.begin = mock.Mock(return_value=AsyncBeginMock())
+
+    with mock.patch.object(DBSessionHandler, 'get_async_session', return_value=AsyncContextManagerMock(mock_session)):
+        bot = await create_bot(data)
+        
+        assert bot is not None
+        assert isinstance(bot, JBBot)  
+        assert isinstance(bot.id,str)
+        assert len(bot.id) == 36  
+        assert bot.name == data.get('name')
+        assert bot.dsl == data.get('dsl')
+        assert bot.code == data.get('code')
+        assert bot.requirements == data.get('requirements')
+        assert bot.index_urls == data.get('index_urls')
+        assert bot.required_credentials == data.get('required_credentials')
+        assert bot.version == data.get('version')
+
+        mock_session.commit.assert_awaited_once()
+            
+@pytest.mark.asyncio
+async def test_create_bot_failure():
+
+    data = {'name': 'Bot1', 'status': 'active', 'dsl': 'test_dsl', 'code': 'test_code', 'requirements': 'codaio',
+            'index_urls': ['index_url_1', 'index_url_2'], 'required_credentials':['OPEN_API_KEY'], 'version': '1.0.0'}
+
+    with mock.patch.object(DBSessionHandler, 'get_async_session', side_effect=Exception("Database error")):
+        with pytest.raises(Exception):
+            await create_bot(data)
+
+@pytest.mark.asyncio
+async def test_create_channel_success():
+    
+    bot_id = "test_bot_id"
+    data = {'name': 'telegram', 'type': 'telegram', 'key': 'test_key', 'app_id': 'test_app_id', 'url': 'test_url','status': 'active'}
+
+    mock_session = mock.Mock()
+    mock_session.commit = mock.AsyncMock()
+    mock_session.begin = mock.Mock(return_value=AsyncBeginMock())
+
+    with mock.patch.object(DBSessionHandler, 'get_async_session', return_value=AsyncContextManagerMock(mock_session)):
+        channel = await create_channel(bot_id, data)
+        
+        assert channel is not None
+        assert isinstance(channel, JBChannel)  
+        assert isinstance(channel.id,str)
+        assert len(channel.id) == 36  
+        assert channel.bot_id == bot_id
+        assert channel.name == data.get('name')
+        assert channel.type == data.get('type')
+        assert channel.key == data.get('key')
+        assert channel.app_id == data.get('app_id')
+        assert channel.url == data.get('url')
+        assert channel.status == data.get('status')
+
+        mock_session.commit.assert_awaited_once()
+            
+@pytest.mark.asyncio
+async def test_create_channel_failure():
+
+    bot_id = "test_bot_id"
+    data = {'name': 'telegram', 'type': 'telegram', 'key': 'test_key', 'app_id': 'test_app_id', 'url': 'test_url','status': 'active'}
+
+    with mock.patch.object(DBSessionHandler, 'get_async_session', side_effect=Exception("Database error")):
+        with pytest.raises(Exception):
+            await create_channel(bot_id, data)
+
+@pytest.mark.asyncio
+async def test_get_active_channel_by_identifier_success():
+
+    identifier = "test_app_id"
+    channel_type = "telegram"
+    
+    mock_channel = JBChannel(
+        id = "test_channel_id",
+        bot_id = "test_bot_id" ,
+        status = "active",
+        name = "telegram",
+        type = "telegram",
+        key = "test_key",
+        app_id = "test_app_id",
+        url = "test_url"
+    )
+    
+    mock_session = mock.Mock()
+    mock_session.begin = mock.Mock(return_value=AsyncBeginMock())
+
+    mock_execute_result = mock.Mock()
+    mock_execute_result.scalars.return_value.unique.return_value.first.return_value = mock_channel 
+    
+    mock_session.execute = mock.AsyncMock(return_value=mock_execute_result)  
+
+    with mock.patch.object(DBSessionHandler, 'get_async_session', return_value=AsyncContextManagerMock(mock_session)):
+
+        result = await get_active_channel_by_identifier(identifier, channel_type)
+
+        assert result is not None
+        assert isinstance(result, JBChannel)
+        assert result.id == mock_channel.id
+        assert result.bot_id == mock_channel.bot_id
+        assert result.status == mock_channel.status
+        assert result.name == mock_channel.name
+        assert result.type == mock_channel.type
+        assert result.key == mock_channel.key
+        assert result.app_id == mock_channel.app_id
+        assert result.url == mock_channel.url
+
+        mock_session.execute.assert_awaited_once() 
+
+@pytest.mark.asyncio
+async def test_get_active_channel_by_identifier_failure():
+
+    identifier = "test_app_id"
+    channel_type = "telegram"
+    
+    with mock.patch.object(DBSessionHandler, 'get_async_session', side_effect=Exception("Database error")):
+        with pytest.raises(Exception):
+            await get_active_channel_by_identifier(identifier, channel_type)
