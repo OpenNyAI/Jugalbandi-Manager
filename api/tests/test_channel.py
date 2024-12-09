@@ -75,7 +75,8 @@ async def test_update_success():
     )
 
     with patch("app.handlers.v2.channel.get_channel_by_id", return_value = mock_channel_object) as mock_get_channel_by_id, \
-        patch("app.handlers.v2.channel.update_channel", return_value = channel_id) as mock_update_channel:
+        patch("app.handlers.v2.channel.update_channel", return_value = channel_id) as mock_update_channel, \
+        patch("app.handlers.v2.bot.EncryptionHandler.encrypt_text", return_value = "encrypted_test_key") as mock_encrypt_text:
 
         result = await update(channel_id, channel_data)
 
@@ -85,6 +86,7 @@ async def test_update_success():
         
         mock_get_channel_by_id.assert_awaited_once_with(channel_id)
         mock_update_channel.assert_awaited_once()
+        mock_encrypt_text.assert_called_once()
 
 @pytest.mark.asyncio
 async def test_activate_failure_when_channel_not_found():

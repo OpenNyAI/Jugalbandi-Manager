@@ -65,7 +65,7 @@ async def test_add_credentials_success():
 
     with patch("app.handlers.v2.bot.get_bot_by_id", return_value = mock_bot) as mock_get_bot_by_id, \
         patch("app.handlers.v2.bot.update_bot", return_value = bot_id) as mock_update_bot, \
-            patch("app.handlers.v2.bot.EncryptionHandler.encrypt_dict", return_value = "encrypted_test_key"):
+            patch("app.handlers.v2.bot.EncryptionHandler.encrypt_dict", return_value = "encrypted_test_key") as mock_encrypt_dict:
 
         result = await add_credentials(bot_id,credentials)
 
@@ -75,6 +75,7 @@ async def test_add_credentials_success():
         
         mock_get_bot_by_id.assert_awaited_once_with(bot_id)
         mock_update_bot.assert_awaited_once()
+        mock_encrypt_dict.assert_called_once_with(credentials)
 
 @pytest.mark.asyncio
 async def test_add_credentials_failure():
@@ -185,14 +186,15 @@ async def test_add_channel_when_channel_creation_is_success():
         status = "active",
         name = "test_channel",
         type = "test_type",
-        key = "test_key",
+        key = "encrypted_test_key",
         app_id = "12345678",
         url = "test_url"
     )
 
     with patch("app.handlers.v2.bot.get_bot_by_id", return_value = mock_bot) as mock_get_bot_by_id, \
         patch("app.handlers.v2.bot.get_active_channel_by_identifier", return_value = None) as mock_get_active_channel_by_identifier, \
-            patch("app.handlers.v2.bot.create_channel",return_value = mock_channel) as mock_create_channel:
+            patch("app.handlers.v2.bot.create_channel",return_value = mock_channel) as mock_create_channel, \
+                patch("app.handlers.v2.bot.EncryptionHandler.encrypt_text", return_value = "encrypted_test_key") as mock_encrypt_text:
 
         result = await add_channel(bot_id,channel_content)
 
@@ -204,6 +206,7 @@ async def test_add_channel_when_channel_creation_is_success():
         mock_get_active_channel_by_identifier.assert_awaited_once_with(identifier = channel_content.app_id, 
                                                                        channel_type = channel_content.type)
         mock_create_channel.assert_awaited_once_with(bot_id, channel_content.model_dump())
+        mock_encrypt_text.assert_called_once()
 
 @pytest.mark.asyncio
 async def test_delete_success():
