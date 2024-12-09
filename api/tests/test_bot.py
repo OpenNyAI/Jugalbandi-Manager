@@ -143,7 +143,8 @@ async def test_add_channel_when_channel_already_in_use_by_bot():
         type = "test_type",
         key = "test_key",
         app_id = "12345678",
-        url = "test_url"
+        url = "test_url",
+        bot = mock_bot
     )
 
     with patch("app.handlers.v2.bot.get_bot_by_id", return_value = mock_bot) as mock_get_bot_by_id, \
@@ -155,6 +156,7 @@ async def test_add_channel_when_channel_already_in_use_by_bot():
         assert 'status' in result
         assert result.get('status') == 'error'
         assert 'message' in result
+        assert result.get('message') == f"App ID {channel_content.app_id} already in use by bot {mock_existing_channel.bot.name}"
 
         mock_get_bot_by_id.assert_awaited_once_with(bot_id)
         mock_get_active_channel_by_identifier.assert_awaited_once_with(identifier = channel_content.app_id, 
