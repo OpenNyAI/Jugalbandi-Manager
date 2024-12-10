@@ -7,7 +7,7 @@ Thank you for your interest in contributing to this project! We value your ideas
 ## Table of Contents
 
 1. [Contributing Guidelines](#contributing-guidelines)
-2. [Getting Started](#getting-started)
+2. [Getting Started for contribution](#getting-started-for-contribution)
 3. [License](#license)
 
 ---
@@ -46,7 +46,7 @@ Follow these guidelines for commit messages:
   - Ensure your PR includes updates to both **code** and **documentation**.
   - Tag the issue which this PR (under Development tab) is associated with.
 
-## Getting Started
+## Getting Started for contribution
 
 Follow these steps to start contributing:
 
