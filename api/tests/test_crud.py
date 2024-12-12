@@ -18,7 +18,8 @@ from app.crud import (
     get_bot_chat_sessions,
     create_bot,
     create_channel,
-    get_active_channel_by_identifier
+    get_active_channel_by_identifier,
+    get_chat_history
 )
 
 class AsyncContextManagerMock:
@@ -709,3 +710,55 @@ async def test_get_active_channel_by_identifier_failure():
     with mock.patch.object(DBSessionHandler, 'get_async_session', side_effect=Exception("Database error")):
         with pytest.raises(Exception):
             await get_active_channel_by_identifier(identifier, channel_type)
+
+@pytest.mark.asyncio
+async def test_get_chat_history_success():
+    bot_id = "test_bot_id"
+    skip = 0
+    limit = 1000
+
+    mock_session_object = JBSession(
+        id = "test_session_id",
+        user_id = "test_user_id",
+        channel_id = "test_channel_id"
+    )
+
+    mock_user_object = JBUser(
+        id = "test_user_id",
+        channel_id = "test_channel_id",
+        first_name = "test_first_name",
+        last_name = "test_last_name",
+        identifier = "test_identifier"
+    )
+
+    mock_session = mock.Mock()
+    mock_session.begin = mock.Mock(return_value=AsyncBeginMock())
+
+    mock_execute_result = mock.MagicMock()
+    mock_execute_result.__iter__.return_value = iter([iter([mock_session_object]), iter([mock_user_object])])
+    mock_session.execute = mock.AsyncMock(return_value=mock_execute_result)
+    
+    with mock.patch.object(DBSessionHandler, 'get_async_session', return_value=AsyncContextManagerMock(mock_session)):
+        
+        result = await get_chat_history(bot_id, skip, limit)
+
+        assert result is not None
+        assert isinstance(result, list)
+        assert len(result) == 2 
+
+        assert result[0] == [mock_session_object]
+        assert result[1] == [mock_user_object]
+
+        mock_session.execute.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_get_chat_history_failure():
+
+    bot_id = "test_bot_id"
+    skip = 0
+    limit = 1000
+    
+    with mock.patch.object(DBSessionHandler, 'get_async_session', side_effect=Exception("Database error")):
+        with pytest.raises(Exception):
+            await get_chat_history(bot_id, skip, limit)

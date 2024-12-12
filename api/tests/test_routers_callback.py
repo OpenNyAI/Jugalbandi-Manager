@@ -109,3 +109,51 @@ async def test_callback_failure_when_no_valid_channel():
         result_status_code = await callback(provider, bot_identifier, mock_request)
 
         assert result_status_code == 404
+
+@pytest.mark.asyncio
+async def test_callback_failure_when_active_channel_not_found():
+    mock_extension.reset_mock()
+
+    provider = "telegram"
+    bot_identifier = "test_bot_identifier"
+
+    request = {
+        "query_params": {},
+        "headers": {},
+        "user": "test_bot_user",
+        "message_data":"test_data",
+        "credentials" : {"key" : "test_key"}
+    }
+
+    mock_request = AsyncMock(Request)
+    mock_request.json.return_value = request
+    mock_request.query_params = request["query_params"]
+    mock_request.headers = request["headers"]
+    
+    mock_handler = mock.Mock(spec= TelegramHandler)
+    mock_handler.get_channel_name.return_value = "telegram"
+    mock_handler.is_valid_data.return_value = True 
+
+    channel_map = {"telegram": mock_handler}
+
+    async def mock_handle_callback(bot_identifier = bot_identifier,
+                                   callback_data = request,
+                                   headers= request["headers"],
+                                   query_params= request["query_params"],
+                                   chosen_channel= mock_handler,
+                                   ):
+        yield ValueError("Active channel not found"), None
+
+    with patch.dict("sys.modules", {"app.extensions": mock_extension}), \
+        patch.dict("app.routers.v2.callback.channel_map", channel_map):
+
+        with patch("app.routers.v2.callback.handle_callback", mock_handle_callback):
+
+            from app.routers.v2.callback import callback
+
+            with pytest.raises(HTTPException) as exception_info:
+                
+                await callback(provider, bot_identifier, mock_request)
+
+            assert exception_info.value.status_code == 400
+            assert exception_info.value.detail == str(ValueError("Active channel not found"))

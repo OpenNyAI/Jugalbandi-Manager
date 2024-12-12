@@ -194,18 +194,6 @@ async def test_delete_failure_when_channel_not_found():
         
         mock_get_channel_by_id.assert_awaited_once_with(channel_id)
 
-
-
-
-
-
-
-
-
-
-
-
-
 @pytest.mark.asyncio
 async def test_delete_success():
 

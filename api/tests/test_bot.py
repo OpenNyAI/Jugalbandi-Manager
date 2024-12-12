@@ -165,6 +165,51 @@ async def test_add_channel_when_channel_already_in_use_by_bot():
                                                                        channel_type = channel_content.type)
 
 @pytest.mark.asyncio
+async def test_add_channel_when_bot_already_has_channel_of_given_type_for_given_app_id():
+
+    bot_id = "test_bot_id"
+
+    channel_content = JBChannelContent(
+        name = "test_channel_content",
+        type = "test_type",
+        url = "test_url",
+        app_id = "12345678",
+        key = "test_key",
+        status = "active"
+    )
+
+    mock_bot = JBBot(
+        id="test_bot_id", 
+        name="Bot1", 
+        status="active",
+        channels = [JBChannel(
+            id = "test_channel_id",
+            bot_id = "test_bot_id",
+            status = "active",
+            name = "test_channel",
+            type = "test_type",
+            key = "test_key",
+            app_id = "12345678",
+            url = "test_url",
+        )]
+    )
+            
+    with patch("app.handlers.v2.bot.get_bot_by_id", return_value = mock_bot) as mock_get_bot_by_id, \
+        patch("app.handlers.v2.bot.get_active_channel_by_identifier", return_value = None) as mock_get_active_channel_by_identifier:
+
+        result = await add_channel(bot_id,channel_content)
+
+        assert len(result) == 2
+        assert 'status' in result
+        assert result.get('status') == 'error'
+        assert 'message' in result
+        assert result.get('message') == f"Bot already has an channel of type {channel_content.type} for app ID {channel_content.app_id}"
+
+        mock_get_bot_by_id.assert_awaited_once_with(bot_id)
+        mock_get_active_channel_by_identifier.assert_awaited_once_with(identifier = channel_content.app_id, 
+                                                                       channel_type = channel_content.type)
+
+@pytest.mark.asyncio
 async def test_add_channel_when_channel_creation_is_success():
 
     bot_id = "test_bot_id"

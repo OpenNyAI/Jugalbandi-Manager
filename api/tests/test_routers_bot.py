@@ -165,8 +165,8 @@ async def test_add_bot_credentials_failure_when_no_credentials_have_been_provide
             
             await add_bot_credentials(bot_id, mock_request)
 
-            assert exception_info.value.status_code == 400
-            assert exception_info.value.detail == "No credentials provided"
+        assert exception_info.value.status_code == 400
+        assert exception_info.value.detail == "No credentials provided"
 
 @pytest.mark.asyncio
 async def test_add_bot_credentials_failure_when_no_bot_found_with_given_bot_id():
@@ -191,10 +191,10 @@ async def test_add_bot_credentials_failure_when_no_bot_found_with_given_bot_id()
                 
                 await add_bot_credentials(bot_id, mock_request)
 
-                assert exception_info.value.status_code == 404
-                assert exception_info.value.detail == mock_add_credentials_response["message"]
+            assert exception_info.value.status_code == 404
+            assert exception_info.value.detail == mock_add_credentials_response["message"]
 
-                mock_add_credentials.assert_awaited_once()
+            mock_add_credentials.assert_awaited_once()
 
 @pytest.mark.asyncio
 async def test_add_bot_channel_success():
@@ -248,8 +248,8 @@ async def test_add_bot_channel_failure_when_channel_not_supported_by_this_manage
             
             await add_bot_channel(bot_id, channel_content)
 
-            assert exception_info.value.status_code == 400
-            assert exception_info.value.detail == "Channel not supported by this manager"
+        assert exception_info.value.status_code == 400
+        assert exception_info.value.detail == "Channel not supported by this manager"
 
 @pytest.mark.asyncio
 async def test_add_bot_channel_failure_when_bot_not_found():
