@@ -1,6 +1,6 @@
-## Logger service:
+## Logger Service:
 
-The Logger Service operates as a standalone component/service within the Jugalbandi (JB) Manager system. Its primary purpose is to record and manage metrics from other key services: api, language, channel, flow and retriever. These metrics provide valuable insights into the performance of each service, facilitate debugging, and help track user requests and responses as well as the time taken by each service to process them.
+The logger service operates as a standalone component/service within the Jugalbandi (JB) Manager system. Its primary purpose is to record and manage metrics from other key services: api, language, channel, flow and retriever. These metrics provide valuable insights into the performance of each service, facilitate debugging, and help track user requests and responses as well as the time taken by each service to process them.
 
 ### Core Functionality
 
@@ -10,14 +10,14 @@ The Logger Service operates as a standalone component/service within the Jugalba
 
 ### Workflow
 
-When a request or a response passes through a service (api, channel, language, flow, or retriever), a logger object,containing service-specific details, is created. These details include relevant identifiers (e.g., User ID, Turn ID, Channel ID) and metadata specific to the service (e.g., Message Type, Intent, Translation Type).
-This logger object is sent asynchronously to the Logger Service via a Kafka queue. The Logger service receives the logger object from its kafka queue and processes the message by:
+When a request or a response passes through a service (api, channel, language, flow, or retriever), a logger object containing service-specific details, is created. These details include relevant identifiers (e.g., User ID, Turn ID, Channel ID) and metadata specific to the service (e.g., Message Type, Intent, Translation Type).
+This logger object is sent asynchronously to the logger service via a kafka queue. The logger service receives the logger object from its kafka queue and processes the message by:
 
-1. **Unpacking and Identifying the Source Service:**
+1. **Unpacking and identifying the source service:**
     - The message is unpacked upon receipt.
     - The source service from which the message originated is identified.
 
-2. **Logging the Details into the Respective Table:**
+2. **Logging the details into the respective table:**
     - The corresponding service’s logging function is called in the CRUD layer.
     - This function in the CRUD layer performs the following actions:
         - Creates a database session.
