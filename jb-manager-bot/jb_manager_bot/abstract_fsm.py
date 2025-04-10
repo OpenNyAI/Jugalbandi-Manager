@@ -466,11 +466,12 @@ class AbstractFSM(ABC):
             task,
             options,
             self.current_input,
-            azure_endpoint=self.credentials.get("AZURE_OPENAI_API_ENDPOINT"),
-            azure_openai_api_key=self.credentials.get("AZURE_OPENAI_API_KEY"),
-            azure_openai_api_version=self.credentials.get("AZURE_OPENAI_API_VERSION"),
-            openai_api_key=self.credentials.get("OPENAI_API_KEY"),
             model=self.credentials.get("FAST_MODEL"),
+            openai_deployment_type=self.credentials.get("OPENAI_API_TYPE"),
+            openai_api_endpoint=self.credentials.get("OPENAI_API_ENDPOINT"),
+            openai_api_key=self.credentials.get("OPENAI_API_KEY"),
+            openai_api_version=self.credentials.get("OPENAI_API_VERSION"),
+            azure_credential_scope=self.credentials.get("AZURE_CREDENTIAL_SCOPE"),
         )
         if options:
             result = result["id"]

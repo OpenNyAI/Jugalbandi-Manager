@@ -1,7 +1,6 @@
 import json
 from typing import List
 from openai import OpenAI, AzureOpenAI
-import os
 
 
 class LLMManager:
@@ -12,19 +11,35 @@ class LLMManager:
     @classmethod
     def get_client(
         cls,
+        openai_deployment_type,
+        openai_api_endpoint=None,
         openai_api_key=None,
-        azure_openai_api_key=None,
-        azure_openai_api_version=None,
-        azure_endpoint=None,
+        openai_api_version=None,
+        azure_credential_scope=None,
     ):
         """Return the OpenAI client."""
         if cls.client is None:
-            if azure_openai_api_key is not None:
-                cls.client = AzureOpenAI(
-                    api_key=azure_openai_api_key,
-                    api_version=azure_openai_api_version,
-                    azure_endpoint=azure_endpoint,
-                )
+            if openai_deployment_type == "custom":
+                if openai_api_key:
+                    cls.client = AzureOpenAI(
+                        azure_endpoint=openai_api_endpoint,
+                        api_key=openai_api_key,
+                        api_version=openai_api_version,
+                    )
+                else:
+                    from azure.identity import (
+                        AzureCliCredential,
+                        get_bearer_token_provider,
+                    )
+
+                    credential = get_bearer_token_provider(
+                        AzureCliCredential(), azure_credential_scope
+                    )
+                    cls.client = AzureOpenAI(
+                        azure_endpoint=openai_api_endpoint,
+                        azure_ad_token_provider=credential,
+                        api_version=openai_api_version,
+                    )
             else:
                 cls.client = OpenAI(api_key=openai_api_key)
         return cls.client
@@ -33,20 +48,22 @@ class LLMManager:
     def llm(
         cls,
         messages,
+        openai_deployment_type=None,
+        openai_api_endpoint=None,
         openai_api_key=None,
-        azure_openai_api_key=None,
-        azure_openai_api_version=None,
-        azure_endpoint=None,
+        openai_api_version=None,
+        azure_credential_scope=None,
         **kwargs
     ):
         """Use the OpenAI Language Model API to generate a response based on the given messages."""
 
-        azure_openai_api_key = os.getenv("AZURE_OPENAI_API_KEY", azure_openai_api_key)
-        azure_openai_api_version = os.getenv(
-            "AZURE_OPENAI_API_VERSION", azure_openai_api_version
+        client = cls.get_client(
+            openai_deployment_type=openai_deployment_type,
+            openai_api_endpoint=openai_api_endpoint,
+            openai_api_key=openai_api_key,
+            openai_api_version=openai_api_version,
+            azure_credential_scope=azure_credential_scope,
         )
-        azure_endpoint = os.getenv("AZURE_OPENAI_API_ENDPOINT", azure_endpoint)
-        openai_api_key = os.getenv("OPENAI_API_KEY", openai_api_key)
 
         kwargs["model"] = kwargs.get("model")
         kwargs["messages"] = messages
@@ -67,12 +84,6 @@ class LLMManager:
         if args.get("temperature", None) is None:
             args["temperature"] = 1e-6
 
-        client = cls.get_client(
-            openai_api_key=openai_api_key,
-            azure_openai_api_key=azure_openai_api_key,
-            azure_openai_api_version=azure_openai_api_version,
-            azure_endpoint=azure_endpoint,
-        )
         completions = client.chat.completions.create(**args)
 
         if args.get("stream", False):
@@ -135,18 +146,20 @@ class LLMManager:
         cls,
         inputs: List[str],
         model: str,
+        openai_deployment_type=None,
+        openai_api_endpoint=None,
         openai_api_key=None,
-        azure_openai_api_key=None,
-        azure_openai_api_version=None,
-        azure_endpoint=None,
+        openai_api_version=None,
+        azure_credential_scope=None,
         **kwargs
     ):
         """Use the OpenAI Embeddings API to generate embeddings for the given inputs."""
         client = cls.get_client(
+            openai_deployment_type=openai_deployment_type,
+            openai_api_endpoint=openai_api_endpoint,
             openai_api_key=openai_api_key,
-            azure_openai_api_key=azure_openai_api_key,
-            azure_openai_api_version=azure_openai_api_version,
-            azure_endpoint=azure_endpoint,
+            openai_api_version=openai_api_version,
+            azure_credential_scope=azure_credential_scope,
         )
         args = {
             k: v

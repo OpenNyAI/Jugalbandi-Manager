@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "jb-manager-bot"
-version = "0.2.3"
+version = "0.2.4"
 description = "Bot for JugalBandi Manager"
 authors = ["Shrey Pandey <shreypandey1509@gmail.com>", "Sameer Segal <sameersegal@gmail.com>", "Atharv Kirtikar <atharv.kirtikar@gmail.com>"]
 readme = "README.md"
@@ -10,6 +10,7 @@ python = "^3.10"
 pydantic = "^2.6.1"
 transitions = "^0.9.0"
 openai = "^1.12.0"
+azure-identity = "^1.21.0"
 
 [tool.poetry.group.dev.dependencies]
 pygraphviz = "^1.12"
