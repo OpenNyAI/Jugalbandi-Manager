@@ -1,6 +1,4 @@
-import os
 import json
-from pathlib import Path
 
 from jb_manager_bot.parsers.utils import LLMManager
 
@@ -33,16 +31,17 @@ class OptionParser:
         user_task,
         options,
         user_input,
+        openai_deployment_type,
+        openai_api_endpoint=None,
         openai_api_key=None,
-        azure_openai_api_key=None,
-        azure_openai_api_version=None,
-        azure_endpoint=None,
-        model=None
+        openai_api_version=None,
+        azure_credential_scope=None,
+        model=None,
     ):
         """Parse the user input and return the most appropriate option ID based on the user's response."""
         if model is None:
             raise ValueError("Model is required")
-        
+
         for option in options:
             if "option_id" not in option and not hasattr(option, "option_id"):
                 raise ValueError("Option ID is required")
@@ -59,14 +58,16 @@ class OptionParser:
             ],
             response_format={"type": "json_object"},
             model=model,
+            openai_deployment_type=openai_deployment_type,
+            openai_api_endpoint=openai_api_endpoint,
             openai_api_key=openai_api_key,
-            azure_openai_api_key=azure_openai_api_key,
-            azure_openai_api_version=azure_openai_api_version,
-            azure_endpoint=azure_endpoint,
+            openai_api_version=openai_api_version,
+            azure_credential_scope=azure_credential_scope,
         )
         result = json.loads(result)
         return result["id"]
-    
+
+
 class Parser:
 
     @classmethod
@@ -75,11 +76,12 @@ class Parser:
         user_task,
         options,
         user_input,
+        openai_deployment_type,
+        openai_api_endpoint=None,
         openai_api_key=None,
-        azure_openai_api_key=None,
-        azure_openai_api_version=None,
-        azure_endpoint=None,
-        model="gpt-3.5-turbo"
+        openai_api_version=None,
+        azure_credential_scope=None,
+        model=None,
     ):
         if model is None:
             raise ValueError("Model is required")
@@ -92,10 +94,11 @@ class Parser:
                 ],
                 response_format={"type": "json_object"},
                 model=model,
+                openai_deployment_type=openai_deployment_type,
+                openai_api_endpoint=openai_api_endpoint,
                 openai_api_key=openai_api_key,
-                azure_openai_api_key=azure_openai_api_key,
-                azure_openai_api_version=azure_openai_api_version,
-                azure_endpoint=azure_endpoint,
+                openai_api_version=openai_api_version,
+                azure_credential_scope=azure_credential_scope,
             )
             result = json.loads(result)
             return result
@@ -116,10 +119,11 @@ class Parser:
                 ],
                 response_format={"type": "json_object"},
                 model=model,
+                openai_deployment_type=openai_deployment_type,
+                openai_api_endpoint=openai_api_endpoint,
                 openai_api_key=openai_api_key,
-                azure_openai_api_key=azure_openai_api_key,
-                azure_openai_api_version=azure_openai_api_version,
-                azure_endpoint=azure_endpoint,
+                openai_api_version=openai_api_version,
+                azure_credential_scope=azure_credential_scope,
             )
             result = json.loads(result)
             return result
