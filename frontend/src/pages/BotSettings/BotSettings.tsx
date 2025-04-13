@@ -47,7 +47,7 @@ export const BotSettings: React.FunctionComponent<BotSettingsProps> = ({botID}) 
   const RefreshData = async ()=>{
     try {
       sendRequest({
-        url: `${APIHOST}/v2/bot`
+        url: `${APIHOST}/v2/bot/`
       }).then((response: any) => {
         setBots(response);
         console.log("URL Bot ID: ",botID);
@@ -68,7 +68,7 @@ export const BotSettings: React.FunctionComponent<BotSettingsProps> = ({botID}) 
     }
     try {
       sendRequest({
-        url: `${APIHOST}/v2/channel`
+        url: `${APIHOST}/v2/channel/`
       }).then((response: any) => {
         setAvailableChannelTyps(response);
       });
