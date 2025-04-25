@@ -1,7 +1,7 @@
 import logging
 from typing import Dict, AsyncGenerator, Optional, Tuple
 from lib.channel_handler import ChannelHandler
-from lib.data_models import Channel, ChannelIntent, RestBotInput
+from lib.data_models import Channel, ChannelIntent, RestBotInput, Logger, APILogger
 from ...crud import (
     get_active_channel_by_identifier,
     get_user_by_number,
@@ -10,6 +10,7 @@ from ...crud import (
 )
 
 logger = logging.getLogger("jb-manager-api")
+logger.setLevel(logging.DEBUG)
 
 
 async def handle_callback(
@@ -18,7 +19,7 @@ async def handle_callback(
     headers: Dict,
     query_params: Dict,
     chosen_channel: type[ChannelHandler],
-) -> AsyncGenerator[Tuple[Optional[ValueError], Optional[Channel]], None]:
+) -> AsyncGenerator[Tuple[Optional[ValueError], Optional[Channel], Logger], None]:
     for channel_data in chosen_channel.process_message(callback_data):
         user = channel_data.user
         message_data = channel_data.message_data
@@ -28,14 +29,23 @@ async def handle_callback(
         )
         if jb_channel is None:
             logger.error("Active channel not found for identifier %s", bot_identifier)
-            yield ValueError("Active channel not found"), None
+            api_logger_input = Logger(
+                source="api",
+                logger_obj=APILogger(
+                    user_id=f"User identifier: {user.user_identifier}",
+                    turn_id=" ",
+                    session_id=" ",
+                    status="Active channel not found for given bot identifier",
+                )
+            )
+            yield ValueError("Active channel not found"), None, api_logger_input
+            continue
 
         bot_id: str = jb_channel.bot_id
         channel_id: str = jb_channel.id
 
         jb_user = await get_user_by_number(user.user_identifier, channel_id=channel_id)
         if jb_user is None:
-            # register user
             logger.info("Registering user")
             jb_user = await create_user(
                 channel_id, user.user_identifier, user.user_name, user.user_name
@@ -45,6 +55,7 @@ async def handle_callback(
         turn_id = await create_turn(
             bot_id=bot_id, channel_id=channel_id, user_id=user_id
         )
+
         channel_input = Channel(
             source="api",
             turn_id=turn_id,
@@ -56,4 +67,16 @@ async def handle_callback(
                 query_params=query_params,
             ),
         )
-        yield None, channel_input
+
+        status = "Success" if channel_input else "Channel input object not created"
+        api_logger_input = Logger(
+            source="api",
+            logger_obj=APILogger(
+                user_id=user_id,
+                turn_id=turn_id,
+                session_id=" ",
+                status=status,
+            )
+        )
+
+        yield None, channel_input, api_logger_input
